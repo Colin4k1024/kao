@@ -1,0 +1,166 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserStatus {
+  ACTIVE
+  DISABLED
+  LOCKED
+}
+
+enum DepartmentStatus {
+  ACTIVE
+  DISABLED
+}
+
+enum RoleStatus {
+  ACTIVE
+  DISABLED
+}
+
+enum MenuStatus {
+  ACTIVE
+  DISABLED
+}
+
+enum MenuType {
+  DIRECTORY
+  MENU
+  BUTTON
+}
+
+enum RoleDataScope {
+  ALL
+  CUSTOM
+  DEPT
+  DEPT_AND_CHILD
+  SELF
+}
+
+model SysDepartment {
+  id              String              @id @db.Uuid
+  code            String              @unique @db.VarChar(64)
+  name            String              @db.VarChar(128)
+  parentId        String?             @map("parent_id") @db.Uuid
+  ancestors       String              @default("")
+  path            String              @default("")
+  sortOrder       Int                 @default(0) @map("sort_order")
+  leader          String?             @db.VarChar(64)
+  phone           String?             @db.VarChar(32)
+  email           String?             @db.VarChar(255)
+  status          DepartmentStatus    @default(ACTIVE)
+  createdAt       DateTime            @default(now()) @map("created_at")
+  updatedAt       DateTime            @updatedAt @map("updated_at")
+  users           SysUser[]
+  children        SysDepartment[]     @relation("SysDepartmentParent")
+  parent          SysDepartment?      @relation("SysDepartmentParent", fields: [parentId], references: [id], onDelete: SetNull)
+  roleDepartments SysRoleDepartment[]
+
+  @@index([parentId])
+  @@index([ancestors])
+  @@map("sys_departments")
+}
+
+model SysUser {
+  id                String           @id @db.Uuid
+  username          String           @unique @db.VarChar(64)
+  email             String?          @unique @db.VarChar(255)
+  displayName       String           @map("display_name") @db.VarChar(128)
+  passwordHash      String           @map("password_hash") @db.VarChar(255)
+  avatarUrl         String?          @map("avatar_url") @db.VarChar(255)
+  phone             String?          @db.VarChar(32)
+  deptId            String?          @map("dept_id") @db.Uuid
+  status            UserStatus       @default(ACTIVE)
+  isSuperAdmin      Boolean          @default(false) @map("is_super_admin")
+  lastLoginAt       DateTime?        @map("last_login_at")
+  lastLoginIp       String?          @map("last_login_ip") @db.VarChar(64)
+  passwordChangedAt DateTime?        @map("password_changed_at")
+  createdAt         DateTime         @default(now()) @map("created_at")
+  updatedAt         DateTime         @updatedAt @map("updated_at")
+  deletedAt         DateTime?        @map("deleted_at")
+  department        SysDepartment?   @relation(fields: [deptId], references: [id], onDelete: SetNull)
+  userRoles         SysUserRole[]
+
+  @@index([deptId])
+  @@index([status])
+  @@index([isSuperAdmin])
+  @@map("sys_users")
+}
+
+model SysRole {
+  id              String              @id @db.Uuid
+  code            String              @unique @db.VarChar(64)
+  name            String              @db.VarChar(128)
+  description     String?
+  dataScope       RoleDataScope       @default(DEPT) @map("data_scope")
+  status          RoleStatus          @default(ACTIVE)
+  isSystem        Boolean             @default(false) @map("is_system")
+  createdAt       DateTime            @default(now()) @map("created_at")
+  updatedAt       DateTime            @updatedAt @map("updated_at")
+  userRoles       SysUserRole[]
+  roleMenus       SysRoleMenu[]
+  roleDepartments SysRoleDepartment[]
+
+  @@index([status])
+  @@index([dataScope])
+  @@map("sys_roles")
+}
+
+model SysMenu {
+  id         String     @id @db.Uuid
+  parentId   String?    @map("parent_id") @db.Uuid
+  name       String     @db.VarChar(128)
+  menuType   MenuType   @map("menu_type")
+  routePath  String?    @map("route_path") @db.VarChar(255)
+  component  String?    @db.VarChar(255)
+  permission String?    @unique @db.VarChar(128)
+  icon       String?    @db.VarChar(64)
+  sortOrder  Int        @default(0) @map("sort_order")
+  visible    Boolean    @default(true)
+  keepAlive  Boolean    @default(false) @map("keep_alive")
+  status     MenuStatus @default(ACTIVE)
+  createdAt  DateTime   @default(now()) @map("created_at")
+  updatedAt  DateTime   @updatedAt @map("updated_at")
+  parent     SysMenu?   @relation("SysMenuParent", fields: [parentId], references: [id], onDelete: SetNull)
+  children   SysMenu[]  @relation("SysMenuParent")
+  roleMenus  SysRoleMenu[]
+
+  @@index([parentId])
+  @@index([menuType])
+  @@index([status])
+  @@map("sys_menus")
+}
+
+model SysUserRole {
+  userId     String   @map("user_id") @db.Uuid
+  roleId     String   @map("role_id") @db.Uuid
+  assignedAt DateTime @default(now()) @map("assigned_at")
+  user       SysUser  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role       SysRole  @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@id([userId, roleId])
+  @@map("sys_user_roles")
+}
+
+model SysRoleMenu {
+  roleId     String   @map("role_id") @db.Uuid
+  menuId     String   @map("menu_id") @db.Uuid
+  assignedAt DateTime @default(now()) @map("assigned_at")
+  role       SysRole  @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  menu       SysMenu  @relation(fields: [menuId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, menuId])
+  @@map("sys_role_menus")
+}
+
+model SysRoleDepartment {
+  roleId     String         @map("role_id") @db.Uuid
+  deptId     String         @map("dept_id") @db.Uuid
+  assignedAt DateTime        @default(now()) @map("assigned_at")
+  role       SysRole         @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  department SysDepartment   @relation(fields: [deptId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, deptId])
+  @@map("sys_role_departments")
+}

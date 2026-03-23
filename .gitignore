@@ -1,0 +1,36 @@
+# Node
+node_modules/
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+frontend/vite.config.ts.timestamp-*
+frontend/vitest.config.ts.timestamp-*
+
+# Rust
+backend/target/
+target/
+
+# Environment
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Editors
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Temp
+coverage/
+dist/
+tmp/
+temp/
