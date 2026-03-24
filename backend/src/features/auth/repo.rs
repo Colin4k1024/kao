@@ -1,146 +1,206 @@
-use chrono::{DateTime, Utc};
-use sqlx::FromRow;
+use sqlx::{FromRow, PgPool, Row};
+use uuid::Uuid;
 
-use crate::common::{AppError, AppResult, DbPool};
+use crate::common::error::AppError;
 
-#[derive(Debug, Clone, FromRow)]
-pub struct UserSessionRow {
-    pub id: String,
+#[derive(sqlx::FromRow, Debug)]
+pub struct UserRecord {
+    pub id: Uuid,
     pub username: String,
-    pub email: Option<String>,
     pub display_name: String,
     pub password_hash: String,
+    pub email: Option<String>,
+    pub dept_id: Option<Uuid>,
     pub avatar_url: Option<String>,
-    pub phone: Option<String>,
-    pub dept_id: Option<String>,
-    pub dept_name: Option<String>,
     pub status: String,
     pub is_super_admin: bool,
-    pub created_at: DateTime<Utc>,
-    pub updated_at: DateTime<Utc>,
 }
 
-#[derive(Debug, Clone, FromRow)]
-pub struct RoleRow {
-    pub id: String,
-    pub code: String,
+#[derive(sqlx::FromRow, Debug)]
+pub struct MenuRecord {
+    pub id: Uuid,
+    pub parent_id: Option<Uuid>,
     pub name: String,
-    pub data_scope: String,
+    pub menu_type: String,
+    pub route_path: Option<String>,
+    pub component: Option<String>,
+    pub permission: Option<String>,
+    pub icon: Option<String>,
+    pub sort_order: i32,
+    pub visible: bool,
 }
 
-#[derive(Clone)]
-pub struct AuthRepo {
-    pool: DbPool,
+pub async fn find_user_by_username(db: &PgPool, username: &str) -> Result<Option<UserRecord>, AppError> {
+    let user = sqlx::query_as::<_, UserRecord>(
+        r#"
+        SELECT 
+            id,
+            username,
+            display_name,
+            password_hash,
+            email,
+            dept_id,
+            avatar_url,
+            status,
+            is_super_admin
+        FROM sys_users 
+        WHERE username = $1 AND status = 'ACTIVE' AND (deleted_at IS NULL OR deleted_at > NOW())
+        "#,
+    )
+    .bind(username)
+    .fetch_optional(db)
+    .await?;
+
+    Ok(user)
 }
 
-impl AuthRepo {
-    pub fn new(pool: DbPool) -> Self {
-        Self { pool }
-    }
-
-    pub async fn find_user_by_username(
-        &self,
-        username: &str,
-    ) -> AppResult<Option<UserSessionRow>> {
-        let user = sqlx::query_as::<_, UserSessionRow>(
-            r#"
-            SELECT
-                u.id::text AS id,
-                u.username,
-                u.email,
-                u.display_name,
-                u.password_hash,
-                u.avatar_url,
-                u.phone,
-                u.dept_id::text AS dept_id,
-                d.name AS dept_name,
-                u.status,
-                u.is_super_admin,
-                u.created_at,
-                u.updated_at
-            FROM sys_users u
-            LEFT JOIN sys_departments d ON d.id = u.dept_id
-            WHERE u.username = $1
-              AND u.deleted_at IS NULL
-            LIMIT 1
-            "#,
-        )
-        .bind(username)
-        .fetch_optional(&self.pool)
+pub async fn get_user_permissions(db: &PgPool, user_id: Uuid) -> Result<Vec<String>, AppError> {
+    let is_super_admin_row = sqlx::query("SELECT is_super_admin FROM sys_users WHERE id = $1")
+        .bind(user_id)
+        .fetch_optional(db)
         .await?;
-
-        Ok(user)
-    }
-
-    pub async fn find_user_by_id(&self, user_id: &str) -> AppResult<UserSessionRow> {
-        let user = sqlx::query_as::<_, UserSessionRow>(
+    
+    let is_super_admin = is_super_admin_row
+        .map(|row| row.get::<bool, _>("is_super_admin"))
+        .unwrap_or(false);
+    
+    let permissions: Vec<String> = if is_super_admin {
+        vec!["*:*:*".to_string()]
+    } else {
+        let rows = sqlx::query(
             r#"
-            SELECT
-                u.id::text AS id,
-                u.username,
-                u.email,
-                u.display_name,
-                u.password_hash,
-                u.avatar_url,
-                u.phone,
-                u.dept_id::text AS dept_id,
-                d.name AS dept_name,
-                u.status,
-                u.is_super_admin,
-                u.created_at,
-                u.updated_at
-            FROM sys_users u
-            LEFT JOIN sys_departments d ON d.id = u.dept_id
-            WHERE u.id = $1::uuid
-              AND u.deleted_at IS NULL
-            LIMIT 1
+            SELECT DISTINCT sm.permission
+            FROM sys_user_roles sur
+            JOIN sys_role_menus srm ON sur.role_id = srm.role_id
+            JOIN sys_menus sm ON srm.menu_id = sm.id
+            WHERE sur.user_id = $1 AND sm.permission IS NOT NULL AND sm.status = 'ACTIVE'
             "#,
         )
         .bind(user_id)
-        .fetch_optional(&self.pool)
-        .await?
-        .ok_or_else(|| AppError::NotFound("user not found".to_string()))?;
+        .fetch_all(db)
+        .await?;
+        
+        rows.into_iter()
+            .filter_map(|row| row.get::<Option<String>, _>("permission"))
+            .collect()
+    };
 
-        Ok(user)
-    }
+    Ok(permissions)
+}
 
-    pub async fn list_roles_by_user_id(&self, user_id: &str) -> AppResult<Vec<RoleRow>> {
-        let rows = sqlx::query_as::<_, RoleRow>(
+pub async fn get_user_roles(db: &PgPool, user_id: Uuid) -> Result<Vec<String>, AppError> {
+    let rows = sqlx::query(
+        r#"
+        SELECT sr.code
+        FROM sys_user_roles sur
+        JOIN sys_roles sr ON sur.role_id = sr.id
+        WHERE sur.user_id = $1 AND sr.status = 'ACTIVE'
+        "#,
+    )
+    .bind(user_id)
+    .fetch_all(db)
+    .await?;
+    
+    let roles: Vec<String> = rows
+        .into_iter()
+        .map(|row| row.get::<String, _>(0))
+        .collect();
+
+    Ok(roles)
+}
+
+pub async fn get_user_menu_tree(db: &PgPool, user_id: Uuid) -> Result<serde_json::Value, AppError> {
+    let is_super_admin_row = sqlx::query("SELECT is_super_admin FROM sys_users WHERE id = $1")
+        .bind(user_id)
+        .fetch_optional(db)
+        .await?;
+    
+    let is_super_admin = is_super_admin_row
+        .map(|row| row.get::<bool, _>("is_super_admin"))
+        .unwrap_or(false);
+
+    let menus: Vec<MenuRecord> = if is_super_admin {
+        sqlx::query_as::<_, MenuRecord>(
+            r#"
+            SELECT 
+                id,
+                parent_id,
+                name,
+                menu_type,
+                route_path,
+                component,
+                permission,
+                icon,
+                sort_order,
+                visible
+            FROM sys_menus 
+            WHERE status = 'ACTIVE'
+            ORDER BY parent_id, sort_order
+            "#
+        ).fetch_all(db).await?
+    } else {
+        sqlx::query_as::<_, MenuRecord>(
             r#"
             SELECT DISTINCT
-                r.id::text AS id,
-                r.code,
-                r.name,
-                r.data_scope
-            FROM sys_roles r
-            INNER JOIN sys_user_roles ur ON ur.role_id = r.id
-            WHERE ur.user_id = $1::uuid
-            ORDER BY r.code
+                sm.id,
+                sm.parent_id,
+                sm.name,
+                sm.menu_type,
+                sm.route_path,
+                sm.component,
+                sm.permission,
+                sm.icon,
+                sm.sort_order,
+                sm.visible
+            FROM sys_menus sm
+            JOIN sys_role_menus srm ON sm.id = srm.menu_id
+            JOIN sys_user_roles sur ON srm.role_id = sur.role_id
+            WHERE sur.user_id = $1 AND sm.status = 'ACTIVE'
+            ORDER BY sm.parent_id, sm.sort_order
             "#,
-        )
-        .bind(user_id)
-        .fetch_all(&self.pool)
-        .await?;
+        ).bind(user_id).fetch_all(db).await?
+    };
 
-        Ok(rows)
+    let mut menu_map: std::collections::HashMap<uuid::Uuid, serde_json::Value> = std::collections::HashMap::new();
+    let mut menu_children: std::collections::HashMap<uuid::Uuid, Vec<serde_json::Value>> = std::collections::HashMap::new();
+
+    for menu in &menus {
+        let menu_json = serde_json::json!({
+            "id": menu.id,
+            "name": menu.name,
+            "menuType": menu.menu_type,
+            "routePath": menu.route_path,
+            "component": menu.component,
+            "permission": menu.permission,
+            "icon": menu.icon,
+            "sortOrder": menu.sort_order,
+            "visible": menu.visible,
+            "children": []
+        });
+        menu_map.insert(menu.id, menu_json);
     }
 
-    pub async fn list_permissions_by_user_id(&self, user_id: &str) -> AppResult<Vec<String>> {
-        let permissions = sqlx::query_scalar::<_, String>(
-            r#"
-            SELECT DISTINCT m.permission
-            FROM sys_menus m
-            INNER JOIN sys_role_menus rm ON rm.menu_id = m.id
-            INNER JOIN sys_user_roles ur ON ur.role_id = rm.role_id
-            WHERE ur.user_id = $1::uuid
-              AND m.permission IS NOT NULL
-            ORDER BY m.permission
-            "#,
-        )
-        .bind(user_id)
-        .fetch_all(&self.pool)
-        .await?;
-
-        Ok(permissions)
+    for menu in &menus {
+        if let Some(parent_id) = menu.parent_id {
+            menu_children.entry(parent_id).or_insert_with(Vec::new).push(
+                menu_map.get(&menu.id).unwrap().clone()
+            );
+        }
     }
+
+    for (parent_id, children) in menu_children {
+        if let Some(parent_menu) = menu_map.get_mut(&parent_id) {
+            if let Some(children_field) = parent_menu.as_object_mut().unwrap().get_mut("children") {
+                *children_field = serde_json::Value::Array(children);
+            }
+        }
+    }
+
+    let root_menus: Vec<serde_json::Value> = menus
+        .iter()
+        .filter(|menu| menu.parent_id.is_none())
+        .filter_map(|menu| menu_map.get(&menu.id).cloned())
+        .collect();
+
+    Ok(serde_json::json!(root_menus))
 }

@@ -1,29 +1,41 @@
-use ai_coding_backend::app::create_app;
-use ai_coding_backend::common::config::AppConfig;
-use std::error::Error;
+use ai_coding_backend::app::{router::create_router, state::AppState};
+use ai_coding_backend::common::{config::Config, db::create_db_pool};
+use std::sync::Arc;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn Error>> {
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // Initialize logging
     tracing_subscriber::registry()
-        .with(
-            tracing_subscriber::EnvFilter::try_from_default_env()
-                .unwrap_or_else(|_| "ai_coding_backend=debug,tower_http=debug".into()),
-        )
+        .with(tracing_subscriber::EnvFilter::try_from_default_env().unwrap_or_else(|_| {
+            "ai_coding_backend=debug,tower_http=debug".into()
+        }))
         .with(tracing_subscriber::fmt::layer())
         .init();
 
-    tracing::info!("Starting AI Coding Backend");
-    dotenv::dotenv().ok();
+    // Load configuration
+    let config = Config::from_env()?;
+    
+    // Create database pool
+    let db_pool = create_db_pool(&config.database_url).await?;
+    
+    // Create application state
+    let app_state = AppState {
+        db: db_pool,
+        config: config.clone(),
+    };
 
-    let config = AppConfig::from_env()?;
-    let bind_addr = config.bind_addr()?;
-    let app = create_app(config).await?;
+    // Create router with state
+    let app = create_router(app_state);
 
-    tracing::info!("Server listening on http://{}", bind_addr);
-
-    let listener = tokio::net::TcpListener::bind(bind_addr).await?;
-    axum::serve(listener, app).await?;
+    // Run server
+    let listener = tokio::net::TcpListener::bind(format!("0.0.0.0:{}", config.port))
+        .await
+        .unwrap();
+    
+    println!("Server running on http://0.0.0.0:{}", config.port);
+    
+    axum::serve(listener, app).await.unwrap();
 
     Ok(())
 }

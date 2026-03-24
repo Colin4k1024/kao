@@ -1,169 +1,163 @@
-use bcrypt::hash;
-use chrono::Utc;
+use crate::common::error::AppError;
 use uuid::Uuid;
-use validator::Validate;
-
-use crate::common::{
-    auth::claims::Claims,
-    error::{AppError, AppResult},
-    DbPool,
-};
 
 use super::{
-    model::{
-        CreateUserRequest, UpdateUserRequest, UserListItem, UserResponse, UsersResponse,
-    },
-    repo::{UserRow, UsersRepo},
+    model::{CreateUserRequest, UpdateUserRequest, UserResponse},
+    repo::{create_user, delete_user, get_user_by_id, list_users, update_user, update_user_password},
 };
+use crate::features::auth::model::{hash_password, verify_password};
 
-const BCRYPT_COST: u32 = 10;
+pub struct UserService;
 
-#[derive(Clone)]
-pub struct UsersService {
-    repo: UsersRepo,
-}
-
-impl UsersService {
-    pub fn new(pool: DbPool) -> Self {
-        Self {
-            repo: UsersRepo::new(pool),
-        }
+impl UserService {
+    pub fn new() -> Self {
+        Self {}
     }
 
-    pub async fn list_users(&self, claims: &Claims) -> AppResult<UsersResponse> {
-        self.require_access(claims, "system:user:list")?;
+    pub async fn list_users(
+        &self,
+        db: &sqlx::PgPool,
+        page: i64,
+        page_size: i64,
+        dept_id: Option<Uuid>,
+    ) -> Result<(Vec<UserResponse>, i64), AppError> {
+        let (users, total) = list_users(db, page, page_size, dept_id).await?;
+        let responses: Vec<UserResponse> = users
+            .into_iter()
+            .map(|u| UserResponse {
+                id: u.id,
+                username: u.username,
+                email: u.email,
+                display_name: u.display_name,
+                dept_id: u.dept_id,
+                phone: u.phone,
+                avatar_url: u.avatar_url,
+                status: u.status,
+                is_super_admin: u.is_super_admin,
+                last_login_at: u.last_login_at,
+                last_login_ip: u.last_login_ip,
+                created_at: u.created_at,
+                updated_at: u.updated_at,
+            })
+            .collect();
 
-        let rows = self.repo.list_users().await?;
-        let mut users = Vec::with_capacity(rows.len());
+        Ok((responses, total))
+    }
 
-        for row in rows {
-            users.push(self.build_user_item(row).await?);
-        }
-
-        Ok(UsersResponse { users })
+    pub async fn get_user_by_id(
+        &self,
+        db: &sqlx::PgPool,
+        user_id: Uuid,
+    ) -> Result<Option<UserResponse>, AppError> {
+        let user = get_user_by_id(db, user_id).await?;
+        Ok(user.map(|u| UserResponse {
+            id: u.id,
+            username: u.username,
+            email: u.email,
+            display_name: u.display_name,
+            dept_id: u.dept_id,
+            phone: u.phone,
+            avatar_url: u.avatar_url,
+            status: u.status,
+            is_super_admin: u.is_super_admin,
+            last_login_at: u.last_login_at,
+            last_login_ip: u.last_login_ip,
+            created_at: u.created_at,
+            updated_at: u.updated_at,
+        }))
     }
 
     pub async fn create_user(
         &self,
-        claims: &Claims,
-        request: CreateUserRequest,
-    ) -> AppResult<UserResponse> {
-        self.require_access(claims, "system:user:add")?;
-        request
-            .validate()
-            .map_err(|err| AppError::BadRequest(err.to_string()))?;
-
-        let status = normalize_user_status(request.status.as_deref())?;
-        let password_hash = hash(&request.password, BCRYPT_COST)
-            .map_err(|err| AppError::Internal(err.to_string()))?;
-        let user_id = Uuid::new_v4().to_string();
-
-        self.repo
-            .create_user(
-                &user_id,
-                &request.username,
-                &request.email,
-                &request.display_name,
-                &password_hash,
-                request.dept_id.as_deref(),
-                request.avatar_url.as_deref(),
-                request.phone.as_deref(),
-                &status,
-            )
-            .await?;
-        self.repo
-            .replace_user_roles(&user_id, &request.role_ids)
-            .await?;
+        db: &sqlx::PgPool,
+        req: CreateUserRequest,
+    ) -> Result<UserResponse, AppError> {
+        let password_hash = hash_password(&req.password)?;
+        
+        let user = create_user(
+            db,
+            req.username,
+            req.email,
+            req.display_name,
+            password_hash,
+            req.dept_id,
+            req.phone,
+            req.avatar_url,
+        )
+        .await?;
 
         Ok(UserResponse {
-            user: self.load_user_item(&user_id).await?,
+            id: user.id,
+            username: user.username,
+            email: user.email,
+            display_name: user.display_name,
+            dept_id: user.dept_id,
+            phone: user.phone,
+            avatar_url: user.avatar_url,
+            status: user.status,
+            is_super_admin: user.is_super_admin,
+            last_login_at: user.last_login_at,
+            last_login_ip: user.last_login_ip,
+            created_at: user.created_at,
+            updated_at: user.updated_at,
         })
     }
 
     pub async fn update_user(
         &self,
-        claims: &Claims,
-        user_id: &str,
-        request: UpdateUserRequest,
-    ) -> AppResult<UserResponse> {
-        self.require_access(claims, "system:user:edit")?;
-        request
-            .validate()
-            .map_err(|err| AppError::BadRequest(err.to_string()))?;
-
-        let status = normalize_user_status(request.status.as_deref())?;
-
-        self.repo
-            .update_user(
-                user_id,
-                &request.username,
-                &request.email,
-                &request.display_name,
-                request.dept_id.as_deref(),
-                request.avatar_url.as_deref(),
-                request.phone.as_deref(),
-                &status,
-            )
-            .await?;
-        self.repo
-            .replace_user_roles(user_id, &request.role_ids)
-            .await?;
+        db: &sqlx::PgPool,
+        user_id: Uuid,
+        req: UpdateUserRequest,
+    ) -> Result<UserResponse, AppError> {
+        let user = update_user(
+            db,
+            user_id,
+            req.email,
+            req.display_name,
+            req.dept_id,
+            req.phone,
+            req.avatar_url,
+            req.status,
+        )
+        .await?;
 
         Ok(UserResponse {
-            user: self.load_user_item(user_id).await?,
+            id: user.id,
+            username: user.username,
+            email: user.email,
+            display_name: user.display_name,
+            dept_id: user.dept_id,
+            phone: user.phone,
+            avatar_url: user.avatar_url,
+            status: user.status,
+            is_super_admin: user.is_super_admin,
+            last_login_at: user.last_login_at,
+            last_login_ip: user.last_login_ip,
+            created_at: user.created_at,
+            updated_at: user.updated_at,
         })
     }
 
-    async fn load_user_item(&self, user_id: &str) -> AppResult<UserListItem> {
-        let row = self.repo.find_user_by_id(user_id).await?;
-        self.build_user_item(row).await
+    pub async fn update_password(
+        &self,
+        db: &sqlx::PgPool,
+        user_id: Uuid,
+        old_password: String,
+        new_password: String,
+    ) -> Result<(), AppError> {
+        let user = get_user_by_id(db, user_id)
+            .await?
+            .ok_or_else(|| AppError::Validation("User not found".to_string()))?;
+
+        verify_password(&old_password, &user.password_hash)?;
+
+        let new_hash = hash_password(&new_password)?;
+        update_user_password(db, user_id, new_hash).await?;
+
+        Ok(())
     }
 
-    async fn build_user_item(&self, row: UserRow) -> AppResult<UserListItem> {
-        let roles = self.repo.list_roles_by_user_id(&row.id).await?;
-        Ok(UserListItem {
-            id: row.id,
-            username: row.username,
-            email: row.email,
-            display_name: row.display_name,
-            avatar_url: row.avatar_url,
-            phone: row.phone,
-            dept_id: row.dept_id,
-            dept_name: row.dept_name,
-            status: row.status,
-            is_super_admin: row.is_super_admin,
-            role_ids: roles.iter().map(|role| role.role_id.clone()).collect(),
-            role_codes: roles.iter().map(|role| role.role_code.clone()).collect(),
-            created_at: row.created_at,
-            updated_at: row.updated_at,
-        })
-    }
-
-    fn require_access(&self, claims: &Claims, permission: &str) -> AppResult<()> {
-        if is_super_admin(claims) || claims.permissions.iter().any(|item| item == permission) {
-            return Ok(());
-        }
-
-        Err(AppError::Forbidden(format!(
-            "missing permission `{}`",
-            permission
-        )))
+    pub async fn delete_user(&self, db: &sqlx::PgPool, user_id: Uuid) -> Result<(), AppError> {
+        delete_user(db, user_id).await
     }
 }
-
-fn normalize_user_status(status: Option<&str>) -> AppResult<String> {
-    let normalized = status.unwrap_or("ACTIVE").to_uppercase();
-
-    match normalized.as_str() {
-        "ACTIVE" | "DISABLED" | "LOCKED" => Ok(normalized),
-        other => Err(AppError::BadRequest(format!(
-            "invalid user status `{}`",
-            other
-        ))),
-    }
-}
-
-fn is_super_admin(claims: &Claims) -> bool {
-    claims.roles.iter().any(|role| role == "SUPER_ADMIN")
-}
-

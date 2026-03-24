@@ -1,18 +1,10 @@
-use crate::common::{
-    config::AppConfig,
-    db::{create_pool, DbPool},
-    error::AppError,
-};
+use sqlx::PgPool;
+use std::sync::Arc;
+
+use crate::common::config::Config;
 
 #[derive(Clone)]
 pub struct AppState {
-    pub config: AppConfig,
-    pub db: DbPool,
-}
-
-impl AppState {
-    pub async fn bootstrap(config: AppConfig) -> Result<Self, AppError> {
-        let db = create_pool(&config.database_url).await?;
-        Ok(Self { config, db })
-    }
+    pub db: PgPool,
+    pub config: Arc<Config>,
 }

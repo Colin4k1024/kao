@@ -1,60 +1,76 @@
 use axum::{
-    extract::{Path, State},
-    middleware::from_fn_with_state,
-    routing::{get, post, put},
-    Json, Router,
+    extract::{Json, Path, State},
+    response::IntoResponse,
 };
+use uuid::Uuid;
 
 use crate::{
-    app::AppState,
-    common::{
-        auth::{extractor::CurrentClaims, middleware::auth_middleware},
-        error::AppResult,
-        response::ApiResponse,
-    },
+    app::state::AppState,
+    common::{auth::extractor::AuthUser, response::ApiResponse},
 };
 
 use super::{
-    model::{CreateRoleRequest, RoleResponse, RolesResponse, UpdateRoleRequest},
-    service::RolesService,
+    model::{CreateRoleRequest, UpdateRoleRequest},
+    service::RoleService,
 };
 
-pub fn router(state: AppState) -> Router {
-    let protected_state = state.clone();
-
-    Router::new()
-        .route("/api/v1/roles", get(list_roles).post(create_role))
-        .route("/api/v1/roles/:id", put(update_role))
-        .layer(from_fn_with_state(protected_state, auth_middleware))
-        .with_state(state)
+pub fn role_routes() -> axum::Router<AppState> {
+    axum::Router::new()
+        .route("/api/v1/roles", axum::routing::get(list_roles))
+        .route("/api/v1/roles", axum::routing::post(create_role))
+        .route("/api/v1/roles/{id}", axum::routing::get(get_role))
+        .route("/api/v1/roles/{id}", axum::routing::put(update_role))
+        .route("/api/v1/roles/{id}", axum::routing::delete(delete_role))
 }
 
-async fn list_roles(
+pub async fn list_roles(
     State(state): State<AppState>,
-    CurrentClaims(claims): CurrentClaims,
-) -> AppResult<Json<ApiResponse<RolesResponse>>> {
-    let service = RolesService::new(state.db.clone());
-    let response = service.list_roles(&claims).await?;
-    Ok(Json(ApiResponse::success(response)))
+    _auth_user: AuthUser,
+) -> Result<impl IntoResponse, crate::common::error::AppError> {
+    let role_service = RoleService::new();
+    let roles = role_service.list_roles(&state.db).await?;
+    Ok(ApiResponse::success(roles))
 }
 
-async fn create_role(
+pub async fn get_role(
     State(state): State<AppState>,
-    CurrentClaims(claims): CurrentClaims,
+    _auth_user: AuthUser,
+    Path(role_id): Path<Uuid>,
+) -> Result<impl IntoResponse, crate::common::error::AppError> {
+    let role_service = RoleService::new();
+    match role_service.get_role_by_id(&state.db, role_id).await? {
+        Some(role) => Ok(ApiResponse::success(role)),
+        None => Ok(ApiResponse::error(404, "Role not found".to_string())),
+    }
+}
+
+pub async fn create_role(
+    State(state): State<AppState>,
+    _auth_user: AuthUser,
     Json(request): Json<CreateRoleRequest>,
-) -> AppResult<Json<ApiResponse<RoleResponse>>> {
-    let service = RolesService::new(state.db.clone());
-    let response = service.create_role(&claims, request).await?;
-    Ok(Json(ApiResponse::success(response)))
+) -> Result<impl IntoResponse, crate::common::error::AppError> {
+    let role_service = RoleService::new();
+    let role = role_service.create_role(&state.db, request).await?;
+    Ok(ApiResponse::success(role))
 }
 
-async fn update_role(
+pub async fn update_role(
     State(state): State<AppState>,
-    CurrentClaims(claims): CurrentClaims,
-    Path(role_id): Path<String>,
+    _auth_user: AuthUser,
+    Path(role_id): Path<Uuid>,
     Json(request): Json<UpdateRoleRequest>,
-) -> AppResult<Json<ApiResponse<RoleResponse>>> {
-    let service = RolesService::new(state.db.clone());
-    let response = service.update_role(&claims, &role_id, request).await?;
-    Ok(Json(ApiResponse::success(response)))
+) -> Result<impl IntoResponse, crate::common::error::AppError> {
+    let role_service = RoleService::new();
+    let role = role_service.update_role(&state.db, role_id, request).await?;
+    Ok(ApiResponse::success(role))
+}
+
+pub async fn delete_role(
+    State(state): State<AppState>,
+    _auth_user: AuthUser,
+    Path(role_id): Path<Uuid>,
+) -> Result<impl IntoResponse, crate::common::error::AppError> {
+    let role_service = RoleService::new();
+    role_service.delete_role(&state.db, role_id).await?;
+    Ok(ApiResponse::success_no_data())
 }

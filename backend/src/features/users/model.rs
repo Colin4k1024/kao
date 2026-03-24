@@ -1,69 +1,65 @@
-use chrono::{DateTime, Utc};
+use axum::http::StatusCode;
 use serde::{Deserialize, Serialize};
-use validator::Validate;
+use sqlx::{PgPool, Row};
+use uuid::Uuid;
 
-#[derive(Debug, Clone, Deserialize, Validate)]
+use crate::common::error::AppError;
+
+#[derive(Debug, Deserialize)]
 pub struct CreateUserRequest {
-    #[validate(length(min = 2, max = 64))]
-    pub username: String,
-    #[validate(email)]
-    pub email: String,
-    #[validate(length(min = 2, max = 128))]
-    pub display_name: String,
-    #[validate(length(min = 6, max = 128))]
-    pub password: String,
-    pub dept_id: Option<String>,
-    pub avatar_url: Option<String>,
-    pub phone: Option<String>,
-    pub status: Option<String>,
-    #[validate(length(min = 1))]
-    pub role_ids: Vec<String>,
-}
-
-#[derive(Debug, Clone, Deserialize, Validate)]
-pub struct UpdateUserRequest {
-    #[validate(length(min = 2, max = 64))]
-    pub username: String,
-    #[validate(email)]
-    pub email: String,
-    #[validate(length(min = 2, max = 128))]
-    pub display_name: String,
-    pub dept_id: Option<String>,
-    pub avatar_url: Option<String>,
-    pub phone: Option<String>,
-    pub status: Option<String>,
-    #[validate(length(min = 1))]
-    pub role_ids: Vec<String>,
-}
-
-#[derive(Debug, Clone, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct UserListItem {
-    pub id: String,
     pub username: String,
     pub email: Option<String>,
     pub display_name: String,
-    pub avatar_url: Option<String>,
+    pub password: String,
+    pub dept_id: Option<Uuid>,
     pub phone: Option<String>,
-    pub dept_id: Option<String>,
-    pub dept_name: Option<String>,
+    pub avatar_url: Option<String>,
+    pub status: Option<String>, // ACTIVE, DISABLED, LOCKED
+}
+
+#[derive(Debug, Deserialize)]
+pub struct UpdateUserRequest {
+    pub email: Option<String>,
+    pub display_name: Option<String>,
+    pub password: Option<String>,
+    pub dept_id: Option<Uuid>,
+    pub phone: Option<String>,
+    pub avatar_url: Option<String>,
+    pub status: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct UserResponse {
+    pub id: Uuid,
+    pub username: String,
+    pub email: Option<String>,
+    pub display_name: String,
+    pub dept_id: Option<Uuid>,
+    pub phone: Option<String>,
+    pub avatar_url: Option<String>,
     pub status: String,
     pub is_super_admin: bool,
-    pub role_ids: Vec<String>,
-    pub role_codes: Vec<String>,
-    pub created_at: DateTime<Utc>,
-    pub updated_at: DateTime<Utc>,
+    pub last_login_at: Option<chrono::DateTime<chrono::Utc>>,
+    pub last_login_ip: Option<String>,
+    pub created_at: chrono::DateTime<chrono::Utc>,
+    pub updated_at: chrono::DateTime<chrono::Utc>,
 }
 
-#[derive(Debug, Clone, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct UserResponse {
-    pub user: UserListItem,
+#[derive(sqlx::FromRow, Debug)]
+pub struct UserRecord {
+    pub id: Uuid,
+    pub username: String,
+    pub email: Option<String>,
+    pub display_name: String,
+    pub password_hash: String,
+    pub dept_id: Option<Uuid>,
+    pub phone: Option<String>,
+    pub avatar_url: Option<String>,
+    pub status: String,
+    pub is_super_admin: bool,
+    pub last_login_at: Option<chrono::DateTime<chrono::Utc>>,
+    pub last_login_ip: Option<String>,
+    pub created_at: chrono::DateTime<chrono::Utc>,
+    pub updated_at: chrono::DateTime<chrono::Utc>,
+    pub deleted_at: Option<chrono::DateTime<chrono::Utc>>,
 }
-
-#[derive(Debug, Clone, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct UsersResponse {
-    pub users: Vec<UserListItem>,
-}
-

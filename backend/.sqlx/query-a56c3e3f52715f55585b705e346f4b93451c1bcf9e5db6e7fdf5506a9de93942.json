@@ -1,0 +1,102 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        INSERT INTO sys_menus (\n            parent_id, name, menu_type, route_path, component, \n            permission, icon, sort_order, visible, status\n        )\n        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'ACTIVE')\n        RETURNING \n            id, parent_id, name, menu_type, route_path, component, \n            permission, icon, sort_order, visible, status, \n            created_at, updated_at\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "parent_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "name",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 3,
+        "name": "menu_type",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 4,
+        "name": "route_path",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 5,
+        "name": "component",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 6,
+        "name": "permission",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 7,
+        "name": "icon",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 8,
+        "name": "sort_order",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 9,
+        "name": "visible",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 10,
+        "name": "status",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 11,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 12,
+        "name": "updated_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Int4",
+        "Bool"
+      ]
+    },
+    "nullable": [
+      false,
+      true,
+      false,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      false,
+      true,
+      true
+    ]
+  },
+  "hash": "a56c3e3f52715f55585b705e346f4b93451c1bcf9e5db6e7fdf5506a9de93942"
+}

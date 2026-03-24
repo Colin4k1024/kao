@@ -1,60 +1,92 @@
 use axum::{
-    extract::{Path, State},
-    middleware::from_fn_with_state,
-    routing::{get, post, put},
-    Json, Router,
+    extract::{Json, Path, Query, State},
+    response::IntoResponse,
 };
+use serde::Deserialize;
+use uuid::Uuid;
 
 use crate::{
-    app::AppState,
-    common::{
-        auth::{extractor::CurrentClaims, middleware::auth_middleware},
-        error::AppResult,
-        response::ApiResponse,
-    },
+    app::state::AppState,
+    common::{auth::extractor::AuthUser, response::ApiResponse},
 };
 
 use super::{
-    model::{CreateUserRequest, UpdateUserRequest, UserResponse, UsersResponse},
-    service::UsersService,
+    model::{CreateUserRequest, UpdateUserRequest},
+    service::UserService,
 };
 
-pub fn router(state: AppState) -> Router {
-    let protected_state = state.clone();
-
-    Router::new()
-        .route("/api/v1/users", get(list_users).post(create_user))
-        .route("/api/v1/users/:id", put(update_user))
-        .layer(from_fn_with_state(protected_state, auth_middleware))
-        .with_state(state)
+#[derive(Debug, Deserialize)]
+pub struct ListQuery {
+    pub page: Option<i64>,
+    pub page_size: Option<i64>,
+    pub dept_id: Option<Uuid>,
 }
 
-async fn list_users(
-    State(state): State<AppState>,
-    CurrentClaims(claims): CurrentClaims,
-) -> AppResult<Json<ApiResponse<UsersResponse>>> {
-    let service = UsersService::new(state.db.clone());
-    let response = service.list_users(&claims).await?;
-    Ok(Json(ApiResponse::success(response)))
+pub fn user_routes() -> axum::Router<AppState> {
+    axum::Router::new()
+        .route("/api/v1/users", axum::routing::get(list_users))
+        .route("/api/v1/users", axum::routing::post(create_user))
+        .route("/api/v1/users/{id}", axum::routing::get(get_user))
+        .route("/api/v1/users/{id}", axum::routing::put(update_user))
+        .route("/api/v1/users/{id}", axum::routing::delete(delete_user))
 }
 
-async fn create_user(
+pub async fn list_users(
     State(state): State<AppState>,
-    CurrentClaims(claims): CurrentClaims,
+    _auth_user: AuthUser,
+    Query(query): Query<ListQuery>,
+) -> Result<impl IntoResponse, crate::common::error::AppError> {
+    let user_service = UserService::new();
+    let page = query.page.unwrap_or(1);
+    let page_size = query.page_size.unwrap_or(20);
+    
+    let (users, total) = user_service.list_users(&state.db, page, page_size, query.dept_id).await?;
+    
+    Ok(ApiResponse::success(serde_json::json!({
+        "items": users,
+        "total": total
+    })))
+}
+
+pub async fn get_user(
+    State(state): State<AppState>,
+    _auth_user: AuthUser,
+    Path(user_id): Path<Uuid>,
+) -> Result<impl IntoResponse, crate::common::error::AppError> {
+    let user_service = UserService::new();
+    match user_service.get_user_by_id(&state.db, user_id).await? {
+        Some(user) => Ok(ApiResponse::success(user)),
+        None => Ok(ApiResponse::error(404, "User not found".to_string())),
+    }
+}
+
+pub async fn create_user(
+    State(state): State<AppState>,
+    _auth_user: AuthUser,
     Json(request): Json<CreateUserRequest>,
-) -> AppResult<Json<ApiResponse<UserResponse>>> {
-    let service = UsersService::new(state.db.clone());
-    let response = service.create_user(&claims, request).await?;
-    Ok(Json(ApiResponse::success(response)))
+) -> Result<impl IntoResponse, crate::common::error::AppError> {
+    let user_service = UserService::new();
+    let user = user_service.create_user(&state.db, request).await?;
+    Ok(ApiResponse::success(user))
 }
 
-async fn update_user(
+pub async fn update_user(
     State(state): State<AppState>,
-    CurrentClaims(claims): CurrentClaims,
-    Path(user_id): Path<String>,
+    _auth_user: AuthUser,
+    Path(user_id): Path<Uuid>,
     Json(request): Json<UpdateUserRequest>,
-) -> AppResult<Json<ApiResponse<UserResponse>>> {
-    let service = UsersService::new(state.db.clone());
-    let response = service.update_user(&claims, &user_id, request).await?;
-    Ok(Json(ApiResponse::success(response)))
+) -> Result<impl IntoResponse, crate::common::error::AppError> {
+    let user_service = UserService::new();
+    let user = user_service.update_user(&state.db, user_id, request).await?;
+    Ok(ApiResponse::success(user))
+}
+
+pub async fn delete_user(
+    State(state): State<AppState>,
+    _auth_user: AuthUser,
+    Path(user_id): Path<Uuid>,
+) -> Result<impl IntoResponse, crate::common::error::AppError> {
+    let user_service = UserService::new();
+    user_service.delete_user(&state.db, user_id).await?;
+    Ok(ApiResponse::success_no_data())
 }

@@ -1,41 +1,64 @@
-use crate::common::response::ApiResponse;
 use axum::{
     http::StatusCode,
     response::{IntoResponse, Response},
-    Json,
 };
-use thiserror::Error;
+use serde_json::json;
+use std::fmt;
 
-#[derive(Error, Debug)]
+#[derive(Debug)]
 pub enum AppError {
-    #[error("database error: {0}")]
-    Database(#[from] sqlx::Error),
-    #[error("unauthorized: {0}")]
-    Unauthorized(String),
-    #[error("forbidden: {0}")]
-    Forbidden(String),
-    #[error("not found: {0}")]
-    NotFound(String),
-    #[error("bad request: {0}")]
-    BadRequest(String),
-    #[error("internal error: {0}")]
+    Database(String),
+    Authentication(String),
+    Authorization(String),
+    Validation(String),
     Internal(String),
 }
 
-pub type AppResult<T> = Result<T, AppError>;
+impl fmt::Display for AppError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            AppError::Database(msg) => write!(f, "Database error: {}", msg),
+            AppError::Authentication(msg) => write!(f, "Authentication error: {}", msg),
+            AppError::Authorization(msg) => write!(f, "Authorization error: {}", msg),
+            AppError::Validation(msg) => write!(f, "Validation error: {}", msg),
+            AppError::Internal(msg) => write!(f, "Internal error: {}", msg),
+        }
+    }
+}
+
+impl std::error::Error for AppError {}
+
+impl From<sqlx::Error> for AppError {
+    fn from(err: sqlx::Error) -> Self {
+        AppError::Database(err.to_string())
+    }
+}
 
 impl IntoResponse for AppError {
     fn into_response(self) -> Response {
-        let (status, message) = match self {
-            AppError::Database(err) => (StatusCode::INTERNAL_SERVER_ERROR, err.to_string()),
-            AppError::Unauthorized(message) => (StatusCode::UNAUTHORIZED, message),
-            AppError::Forbidden(message) => (StatusCode::FORBIDDEN, message),
-            AppError::NotFound(message) => (StatusCode::NOT_FOUND, message),
-            AppError::BadRequest(message) => (StatusCode::BAD_REQUEST, message),
-            AppError::Internal(message) => (StatusCode::INTERNAL_SERVER_ERROR, message),
+        let (status, error_message) = match self {
+            AppError::Authentication(_) => (StatusCode::UNAUTHORIZED, self.to_string()),
+            AppError::Authorization(_) => (StatusCode::FORBIDDEN, self.to_string()),
+            AppError::Validation(_) => (StatusCode::UNPROCESSABLE_ENTITY, self.to_string()),
+            AppError::Database(_) => (StatusCode::INTERNAL_SERVER_ERROR, "Database error".to_string()),
+            AppError::Internal(_) => (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()),
         };
 
-        let body = Json(ApiResponse::<()>::error(status.as_u16() as i32, message));
-        (status, body).into_response()
+        (
+            status,
+            serde_json::to_string(&json!({
+                "code": status.as_u16(),
+                "message": error_message,
+                "data": null
+            }))
+            .unwrap(),
+        )
+            .into_response()
+    }
+}
+
+impl From<jsonwebtoken::errors::Error> for AppError {
+    fn from(err: jsonwebtoken::errors::Error) -> Self {
+        AppError::Authentication(format!("JWT error: {}", err))
     }
 }

@@ -1,0 +1,103 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        UPDATE sys_menus \n        SET \n            parent_id = $2,\n            name = $3,\n            menu_type = $4,\n            route_path = $5,\n            component = $6,\n            permission = $7,\n            icon = $8,\n            sort_order = $9,\n            visible = $10,\n            updated_at = NOW()\n        WHERE id = $1\n        RETURNING \n            id, parent_id, name, menu_type, route_path, component, \n            permission, icon, sort_order, visible, status, \n            created_at, updated_at\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "parent_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "name",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 3,
+        "name": "menu_type",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 4,
+        "name": "route_path",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 5,
+        "name": "component",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 6,
+        "name": "permission",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 7,
+        "name": "icon",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 8,
+        "name": "sort_order",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 9,
+        "name": "visible",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 10,
+        "name": "status",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 11,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 12,
+        "name": "updated_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Int4",
+        "Bool"
+      ]
+    },
+    "nullable": [
+      false,
+      true,
+      false,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      false,
+      true,
+      true
+    ]
+  },
+  "hash": "bf51aacb69c33ee671eaca043f22762d5f69091ccb5ac880ef066b4edc39bb1e"
+}

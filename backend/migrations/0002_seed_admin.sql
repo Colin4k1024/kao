@@ -1,247 +1,61 @@
-BEGIN;
+-- Seed Admin User and Basic Data
 
-INSERT INTO sys_departments (
-  id, code, name, parent_id, ancestors, path, sort_order, leader, phone, email, status, created_at, updated_at
-) VALUES (
-  '00000000-0000-0000-0000-000000000001',
-  'ROOT',
-  '总部',
-  NULL,
-  '',
-  '/总部',
-  0,
-  '系统管理员',
-  NULL,
-  NULL,
-  'ACTIVE',
-  NOW(),
-  NOW()
-) ON CONFLICT (id) DO NOTHING;
+-- Insert root department
+INSERT INTO sys_departments (id, code, name, sort_order, status) 
+VALUES (uuid_generate_v4(), 'ROOT_DEPT', 'Root Department', 0, 'ACTIVE');
 
-INSERT INTO sys_departments (
-  id, code, name, parent_id, ancestors, path, sort_order, leader, phone, email, status, created_at, updated_at
-) VALUES (
-  '00000000-0000-0000-0000-000000000010',
-  'EAST_REGION',
-  '华东大区',
-  '00000000-0000-0000-0000-000000000001',
-  '00000000-0000-0000-0000-000000000001',
-  '/总部/华东大区',
-  10,
-  '区域负责人',
-  NULL,
-  NULL,
-  'ACTIVE',
-  NOW(),
-  NOW()
-) ON CONFLICT (id) DO NOTHING;
+-- Get the root department ID for reference
+WITH root_dept AS (
+    SELECT id FROM sys_departments WHERE code = 'ROOT_DEPT' LIMIT 1
+)
 
-INSERT INTO sys_roles (
-  id, code, name, description, data_scope, status, is_system, created_at, updated_at
-) VALUES (
-  '00000000-0000-0000-0000-000000000002',
-  'SUPER_ADMIN',
-  '超级管理员',
-  '系统内置超级管理员角色',
-  'ALL',
-  'ACTIVE',
-  TRUE,
-  NOW(),
-  NOW()
-) ON CONFLICT (id) DO NOTHING;
+-- Insert admin role
+INSERT INTO sys_roles (id, code, name, description, data_scope, status, is_system) 
+VALUES (uuid_generate_v4(), 'ADMIN', 'Administrator', 'System Administrator Role', 'ALL', 'ACTIVE', true);
 
-INSERT INTO sys_roles (
-  id, code, name, description, data_scope, status, is_system, created_at, updated_at
-) VALUES (
-  '00000000-0000-0000-0000-000000000011',
-  'REGIONAL_AUDITOR',
-  '区域审计员',
-  '用于验证 CUSTOM 数据范围的内置示例角色',
-  'CUSTOM',
-  'ACTIVE',
-  TRUE,
-  NOW(),
-  NOW()
-) ON CONFLICT (id) DO NOTHING;
+-- Insert basic menu entries
+INSERT INTO sys_menus (id, name, menu_type, route_path, component, permission, icon, sort_order, visible, status) VALUES
+    -- Root menu items
+    (uuid_generate_v4(), 'Dashboard', 'MENU', '/dashboard', 'Dashboard', 'dashboard:view', 'dashboard', 1, true, 'ACTIVE'),
+    (uuid_generate_v4(), 'System Management', 'DIRECTORY', '/system', '', '', 'settings', 99, true, 'ACTIVE'),
 
-INSERT INTO sys_users (
-  id, username, email, display_name, password_hash, avatar_url, phone, dept_id, status, is_super_admin, last_login_at, last_login_ip, password_changed_at, created_at, updated_at, deleted_at
-) VALUES (
-  '00000000-0000-0000-0000-000000000003',
-  'admin',
-  'admin@example.com',
-  '系统管理员',
-  '$2y$10$wiqFP6.PI24n4JHUhumU..IEqBbveyBvuEbiz9aPTMOfuxlQ2oDzC',
-  NULL,
-  NULL,
-  '00000000-0000-0000-0000-000000000001',
-  'ACTIVE',
-  TRUE,
-  NULL,
-  NULL,
-  NOW(),
-  NOW(),
-  NOW(),
-  NULL
-) ON CONFLICT (id) DO NOTHING;
+    -- System management submenu items
+    (uuid_generate_v4(), 'User Management', 'MENU', '/system/users', 'system/UserManagement', 'system:user:view', 'people', 1, true, 'ACTIVE'),
+    (uuid_generate_v4(), 'Role Management', 'MENU', '/system/roles', 'system/RoleManagement', 'system:role:view', 'shield', 2, true, 'ACTIVE'),
+    (uuid_generate_v4(), 'Department Management', 'MENU', '/system/departments', 'system/DepartmentManagement', 'system:dept:view', 'business', 3, true, 'ACTIVE'),
+    (uuid_generate_v4(), 'Menu Management', 'MENU', '/system/menus', 'system/MenuManagement', 'system:menu:view', 'menu', 4, true, 'ACTIVE');
 
-INSERT INTO sys_menus (
-  id, parent_id, name, menu_type, route_path, component, permission, icon, sort_order, visible, keep_alive, status, created_at, updated_at
-) VALUES
-  (
-    '00000000-0000-0000-0000-000000000004',
-    NULL,
-    '工作台',
-    'MENU',
-    '/dashboard',
-    'dashboard/index',
-    NULL,
-    'dashboard',
-    1,
-    TRUE,
-    TRUE,
-    'ACTIVE',
-    NOW(),
-    NOW()
-  ),
-  (
-    '00000000-0000-0000-0000-000000000005',
-    NULL,
-    '系统管理',
-    'DIRECTORY',
-    '/system',
-    NULL,
-    NULL,
-    'settings',
-    2,
-    TRUE,
-    FALSE,
-    'ACTIVE',
-    NOW(),
-    NOW()
-  ),
-  (
-    '00000000-0000-0000-0000-000000000006',
-    '00000000-0000-0000-0000-000000000005',
-    '用户管理',
-    'MENU',
-    '/system/users',
-    'system/users',
-    'system:user:list',
-    'users',
-    1,
-    TRUE,
-    TRUE,
-    'ACTIVE',
-    NOW(),
-    NOW()
-  ),
-  (
-    '00000000-0000-0000-0000-000000000007',
-    '00000000-0000-0000-0000-000000000005',
-    '角色管理',
-    'MENU',
-    '/system/roles',
-    'system/roles',
-    'system:role:list',
-    'shield',
-    2,
-    TRUE,
-    TRUE,
-    'ACTIVE',
-    NOW(),
-    NOW()
-  ),
-  (
-    '00000000-0000-0000-0000-000000000008',
-    '00000000-0000-0000-0000-000000000005',
-    '部门管理',
-    'MENU',
-    '/system/departments',
-    'system/departments',
-    'system:dept:list',
-    'building',
-    3,
-    TRUE,
-    TRUE,
-    'ACTIVE',
-    NOW(),
-    NOW()
-  ),
-  (
-    '00000000-0000-0000-0000-000000000009',
-    '00000000-0000-0000-0000-000000000005',
-    '菜单管理',
-    'MENU',
-    '/system/menus',
-    'system/menus',
-    'system:menu:list',
-    'menu',
-    4,
-    TRUE,
-    TRUE,
-    'ACTIVE',
-    NOW(),
-    NOW()
-  ),
-  (
-    '00000000-0000-0000-0000-000000000012',
-    '00000000-0000-0000-0000-000000000006',
-    '新增用户',
-    'BUTTON',
-    NULL,
-    NULL,
-    'system:user:add',
-    NULL,
-    10,
-    TRUE,
-    FALSE,
-    'ACTIVE',
-    NOW(),
-    NOW()
-  ),
-  (
-    '00000000-0000-0000-0000-000000000013',
-    '00000000-0000-0000-0000-000000000007',
-    '编辑角色',
-    'BUTTON',
-    NULL,
-    NULL,
-    'system:role:edit',
-    NULL,
-    10,
-    TRUE,
-    FALSE,
-    'ACTIVE',
-    NOW(),
-    NOW()
-  )
-ON CONFLICT (id) DO NOTHING;
-
-INSERT INTO sys_user_roles (user_id, role_id, assigned_at)
+-- Insert admin user (password is 'Admin123!')
+-- The password hash for 'Admin123!' using bcrypt
+INSERT INTO sys_users (id, username, email, display_name, password_hash, status, is_super_admin) 
 VALUES (
-  '00000000-0000-0000-0000-000000000003',
-  '00000000-0000-0000-0000-000000000002',
-  NOW()
-) ON CONFLICT (user_id, role_id) DO NOTHING;
+    uuid_generate_v4(), 
+    'admin', 
+    'admin@example.com', 
+    'Administrator', 
+    '$2b$12$LQv3c14KNcEIz2xEK8zT.ejTmFTXcZp.5JrfCYxkHfqDSyqz6.G3W', -- bcrypt hash for 'Admin123!'
+    'ACTIVE', 
+    true
+);
 
-INSERT INTO sys_role_menus (role_id, menu_id, assigned_at)
-VALUES
-  ('00000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000004', NOW()),
-  ('00000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000005', NOW()),
-  ('00000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000006', NOW()),
-  ('00000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000007', NOW()),
-  ('00000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000008', NOW()),
-  ('00000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000009', NOW()),
-  ('00000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000012', NOW()),
-  ('00000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000013', NOW())
-ON CONFLICT (role_id, menu_id) DO NOTHING;
+-- Assign admin user to admin role
+WITH admin_user AS (
+    SELECT id FROM sys_users WHERE username = 'admin' LIMIT 1
+),
+admin_role AS (
+    SELECT id FROM sys_roles WHERE code = 'ADMIN' LIMIT 1
+)
+INSERT INTO sys_user_roles (user_id, role_id)
+SELECT admin_user.id, admin_role.id 
+FROM admin_user, admin_role;
 
-INSERT INTO sys_role_departments (role_id, dept_id, assigned_at)
-VALUES (
-  '00000000-0000-0000-0000-000000000011',
-  '00000000-0000-0000-0000-000000000010',
-  NOW()
-) ON CONFLICT (role_id, dept_id) DO NOTHING;
-
-COMMIT;
+-- Assign all menus to admin role
+WITH admin_role AS (
+    SELECT id FROM sys_roles WHERE code = 'ADMIN' LIMIT 1
+),
+all_menus AS (
+    SELECT id FROM sys_menus
+)
+INSERT INTO sys_role_menus (role_id, menu_id)
+SELECT admin_role.id, all_menus.id
+FROM admin_role, all_menus;

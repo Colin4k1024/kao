@@ -1,221 +1,177 @@
+use crate::common::error::AppError;
 use uuid::Uuid;
-use validator::Validate;
-
-use crate::common::{
-    auth::claims::Claims,
-    error::{AppError, AppResult},
-    DbPool,
-};
 
 use super::{
-    model::{
-        CreateDepartmentRequest, DepartmentNode, DepartmentResponse, DepartmentsResponse,
-        UpdateDepartmentRequest,
+    model::{CreateDepartmentRequest, DepartmentResponse, DepartmentTreeItem, UpdateDepartmentRequest},
+    repo::{
+        create_department, delete_department, get_child_departments, get_department_by_code,
+        get_department_by_id, list_departments, update_department,
     },
-    repo::{DepartmentInsert, DepartmentRow, DepartmentsRepo},
 };
 
-#[derive(Clone)]
-pub struct DepartmentsService {
-    repo: DepartmentsRepo,
-}
+pub struct DepartmentService;
 
-impl DepartmentsService {
-    pub fn new(pool: DbPool) -> Self {
-        Self {
-            repo: DepartmentsRepo::new(pool),
-        }
+impl DepartmentService {
+    pub fn new() -> Self {
+        Self {}
     }
 
-    pub async fn list_department_tree(
+    pub async fn get_department_tree(
         &self,
-        claims: &Claims,
-    ) -> AppResult<DepartmentsResponse> {
-        self.require_access(claims, "system:dept:list")?;
+        db: &sqlx::PgPool,
+    ) -> Result<Vec<DepartmentTreeItem>, AppError> {
+        let depts = list_departments(db).await?;
 
-        let rows = self.repo.list_departments().await?;
-        Ok(DepartmentsResponse {
-            departments: build_department_tree(rows.into_iter().map(DepartmentNode::from).collect()),
-        })
+        let mut dept_map: std::collections::HashMap<Uuid, DepartmentTreeItem> =
+            std::collections::HashMap::new();
+        let mut dept_children: std::collections::HashMap<Uuid, Vec<DepartmentTreeItem>> =
+            std::collections::HashMap::new();
+
+        for dept in &depts {
+            let tree_item = DepartmentTreeItem {
+                id: dept.id,
+                parent_id: dept.parent_id,
+                code: dept.code.clone(),
+                name: dept.name.clone(),
+                ancestors: dept.ancestors.clone(),
+                path: dept.path.clone(),
+                sort_order: dept.sort_order,
+                leader: dept.leader.clone(),
+                phone: dept.phone.clone(),
+                email: dept.email.clone(),
+                status: dept.status.clone(),
+                children: vec![],
+            };
+            dept_map.insert(dept.id, tree_item);
+        }
+
+        for dept in &depts {
+            if let Some(parent_id) = dept.parent_id {
+                if let Some(item) = dept_map.get(&dept.id).cloned() {
+                    dept_children
+                        .entry(parent_id)
+                        .or_insert_with(Vec::new)
+                        .push(item);
+                }
+            }
+        }
+
+        for (parent_id, children) in dept_children {
+            if let Some(parent) = dept_map.get_mut(&parent_id) {
+                parent.children = children;
+            }
+        }
+
+        let roots: Vec<DepartmentTreeItem> = depts
+            .iter()
+            .filter(|d| d.parent_id.is_none())
+            .filter_map(|d| dept_map.get(&d.id).cloned())
+            .collect();
+
+        Ok(roots)
+    }
+
+    pub async fn get_department_by_id(
+        &self,
+        db: &sqlx::PgPool,
+        dept_id: Uuid,
+    ) -> Result<Option<DepartmentResponse>, AppError> {
+        let dept = get_department_by_id(db, dept_id).await?;
+        Ok(dept.map(|d| DepartmentResponse {
+            id: d.id,
+            parent_id: d.parent_id,
+            code: d.code,
+            name: d.name,
+            ancestors: d.ancestors,
+            path: d.path,
+            sort_order: d.sort_order,
+            leader: d.leader,
+            phone: d.phone,
+            email: d.email,
+            status: d.status,
+            created_at: d.created_at,
+            updated_at: d.updated_at,
+        }))
     }
 
     pub async fn create_department(
         &self,
-        claims: &Claims,
-        request: CreateDepartmentRequest,
-    ) -> AppResult<DepartmentResponse> {
-        self.require_access(claims, "system:dept:add")?;
-        request
-            .validate()
-            .map_err(|err| AppError::BadRequest(err.to_string()))?;
+        db: &sqlx::PgPool,
+        req: CreateDepartmentRequest,
+    ) -> Result<DepartmentResponse, AppError> {
+        if get_department_by_code(db, &req.code).await?.is_some() {
+            return Err(AppError::Validation(
+                "Department code already exists".to_string(),
+            ));
+        }
 
-        let id = Uuid::new_v4().to_string();
-        let parent = self.load_parent(request.parent_id.as_deref()).await?;
-        let (ancestors, path) = build_ancestry(parent.as_ref(), &request.name);
-        let status = normalize_department_status(request.status.as_deref())?;
-        let sort_order = request.sort_order.unwrap_or(0);
-
-        self.repo
-            .create_department(DepartmentInsert {
-                id: &id,
-                code: &request.code,
-                name: &request.name,
-                parent_id: request.parent_id.as_deref(),
-                ancestors: &ancestors,
-                path: &path,
-                sort_order,
-                leader: request.leader.as_deref(),
-                phone: request.phone.as_deref(),
-                email: request.email.as_deref(),
-                status: &status,
-            })
-            .await?;
+        let dept = create_department(
+            db,
+            req.parent_id,
+            req.code,
+            req.name,
+            req.sort_order.unwrap_or(0),
+            req.leader,
+            req.phone,
+            req.email,
+        )
+        .await?;
 
         Ok(DepartmentResponse {
-            department: self.load_department_node(&id).await?,
+            id: dept.id,
+            parent_id: dept.parent_id,
+            code: dept.code,
+            name: dept.name,
+            ancestors: dept.ancestors,
+            path: dept.path,
+            sort_order: dept.sort_order,
+            leader: dept.leader,
+            phone: dept.phone,
+            email: dept.email,
+            status: dept.status,
+            created_at: dept.created_at,
+            updated_at: dept.updated_at,
         })
     }
 
     pub async fn update_department(
         &self,
-        claims: &Claims,
-        department_id: &str,
-        request: UpdateDepartmentRequest,
-    ) -> AppResult<DepartmentResponse> {
-        self.require_access(claims, "system:dept:edit")?;
-        request
-            .validate()
-            .map_err(|err| AppError::BadRequest(err.to_string()))?;
-
-        let parent = self.load_parent(request.parent_id.as_deref()).await?;
-        let (ancestors, path) = build_ancestry(parent.as_ref(), &request.name);
-        let status = normalize_department_status(request.status.as_deref())?;
-        let sort_order = request.sort_order.unwrap_or(0);
-
-        self.repo
-            .update_department(DepartmentInsert {
-                id: department_id,
-                code: &request.code,
-                name: &request.name,
-                parent_id: request.parent_id.as_deref(),
-                ancestors: &ancestors,
-                path: &path,
-                sort_order,
-                leader: request.leader.as_deref(),
-                phone: request.phone.as_deref(),
-                email: request.email.as_deref(),
-                status: &status,
-            })
-            .await?;
+        db: &sqlx::PgPool,
+        dept_id: Uuid,
+        req: UpdateDepartmentRequest,
+    ) -> Result<DepartmentResponse, AppError> {
+        let dept = update_department(
+            db,
+            dept_id,
+            req.parent_id,
+            req.code,
+            req.name,
+            req.sort_order,
+            req.leader,
+            req.phone,
+            req.email,
+            req.status,
+        )
+        .await?;
 
         Ok(DepartmentResponse {
-            department: self.load_department_node(department_id).await?,
+            id: dept.id,
+            parent_id: dept.parent_id,
+            code: dept.code,
+            name: dept.name,
+            ancestors: dept.ancestors,
+            path: dept.path,
+            sort_order: dept.sort_order,
+            leader: dept.leader,
+            phone: dept.phone,
+            email: dept.email,
+            status: dept.status,
+            created_at: dept.created_at,
+            updated_at: dept.updated_at,
         })
     }
 
-    async fn load_department_node(&self, department_id: &str) -> AppResult<DepartmentNode> {
-        let row = self.repo.find_department_by_id(department_id).await?;
-        Ok(DepartmentNode::from(row))
+    pub async fn delete_department(&self, db: &sqlx::PgPool, dept_id: Uuid) -> Result<(), AppError> {
+        delete_department(db, dept_id).await
     }
-
-    async fn load_parent(&self, parent_id: Option<&str>) -> AppResult<Option<DepartmentRow>> {
-        match parent_id {
-            Some(parent_id) => Ok(Some(self.repo.find_department_by_id(parent_id).await?)),
-            None => Ok(None),
-        }
-    }
-
-    fn require_access(&self, claims: &Claims, permission: &str) -> AppResult<()> {
-        if is_super_admin(claims) || claims.permissions.iter().any(|item| item == permission) {
-            return Ok(());
-        }
-
-        Err(AppError::Forbidden(format!(
-            "missing permission `{}`",
-            permission
-        )))
-    }
-}
-
-pub fn build_department_tree(rows: Vec<DepartmentNode>) -> Vec<DepartmentNode> {
-    use std::collections::HashMap;
-
-    let mut rows = rows;
-    rows.sort_by(|left, right| {
-        left.sort_order
-            .cmp(&right.sort_order)
-            .then_with(|| left.name.cmp(&right.name))
-            .then_with(|| left.id.cmp(&right.id))
-    });
-    rows.dedup_by(|left, right| left.id == right.id);
-
-    let mut nodes = HashMap::new();
-    let mut children_by_parent: HashMap<Option<String>, Vec<String>> = HashMap::new();
-
-    for row in rows {
-        children_by_parent
-            .entry(row.parent_id.clone())
-            .or_default()
-            .push(row.id.clone());
-        nodes.insert(row.id.clone(), row);
-    }
-
-    fn build_node(
-        node_id: &str,
-        nodes: &std::collections::HashMap<String, DepartmentNode>,
-        children_by_parent: &std::collections::HashMap<Option<String>, Vec<String>>,
-    ) -> DepartmentNode {
-        let mut node = nodes
-            .get(node_id)
-            .expect("department row should exist for every tree node")
-            .clone();
-        let child_ids = children_by_parent
-            .get(&Some(node_id.to_string()))
-            .cloned()
-            .unwrap_or_default();
-        node.children = child_ids
-            .into_iter()
-            .map(|child_id| build_node(&child_id, nodes, children_by_parent))
-            .collect();
-        node
-    }
-
-    children_by_parent
-        .get(&None)
-        .cloned()
-        .unwrap_or_default()
-        .into_iter()
-        .map(|root_id| build_node(&root_id, &nodes, &children_by_parent))
-        .collect()
-}
-
-fn build_ancestry(parent: Option<&DepartmentRow>, name: &str) -> (String, String) {
-    match parent {
-        Some(parent) => {
-            let ancestors = if parent.ancestors.is_empty() {
-                parent.id.clone()
-            } else {
-                format!("{},{}", parent.ancestors, parent.id)
-            };
-            let path = format!("{}/{}", parent.path.trim_end_matches('/'), name);
-            (ancestors, path)
-        }
-        None => (String::new(), format!("/{}", name)),
-    }
-}
-
-fn normalize_department_status(status: Option<&str>) -> AppResult<String> {
-    let normalized = status.unwrap_or("ACTIVE").to_uppercase();
-
-    match normalized.as_str() {
-        "ACTIVE" | "DISABLED" => Ok(normalized),
-        other => Err(AppError::BadRequest(format!(
-            "invalid department status `{}`",
-            other
-        ))),
-    }
-}
-
-fn is_super_admin(claims: &Claims) -> bool {
-    claims.roles.iter().any(|role| role == "SUPER_ADMIN")
 }

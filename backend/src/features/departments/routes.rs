@@ -1,63 +1,76 @@
 use axum::{
-    extract::{Path, State},
-    middleware::from_fn_with_state,
-    routing::{get, post, put},
-    Json, Router,
+    extract::{Json, Path, State},
+    response::IntoResponse,
 };
+use uuid::Uuid;
 
 use crate::{
-    app::AppState,
-    common::{
-        auth::{extractor::CurrentClaims, middleware::auth_middleware},
-        error::AppResult,
-        response::ApiResponse,
-    },
+    app::state::AppState,
+    common::{auth::extractor::AuthUser, response::ApiResponse},
 };
 
 use super::{
-    model::{CreateDepartmentRequest, DepartmentResponse, DepartmentsResponse, UpdateDepartmentRequest},
-    service::DepartmentsService,
+    model::{CreateDepartmentRequest, UpdateDepartmentRequest},
+    service::DepartmentService,
 };
 
-pub fn router(state: AppState) -> Router {
-    let protected_state = state.clone();
-
-    Router::new()
-        .route("/api/v1/departments/tree", get(list_department_tree))
-        .route("/api/v1/departments", post(create_department))
-        .route("/api/v1/departments/:id", put(update_department))
-        .layer(from_fn_with_state(protected_state, auth_middleware))
-        .with_state(state)
+pub fn department_routes() -> axum::Router<AppState> {
+    axum::Router::new()
+        .route("/api/v1/departments", axum::routing::get(list_departments))
+        .route("/api/v1/departments", axum::routing::post(create_department))
+        .route("/api/v1/departments/{id}", axum::routing::get(get_department))
+        .route("/api/v1/departments/{id}", axum::routing::put(update_department))
+        .route("/api/v1/departments/{id}", axum::routing::delete(delete_department))
 }
 
-async fn list_department_tree(
+pub async fn list_departments(
     State(state): State<AppState>,
-    CurrentClaims(claims): CurrentClaims,
-) -> AppResult<Json<ApiResponse<DepartmentsResponse>>> {
-    let service = DepartmentsService::new(state.db.clone());
-    let response = service.list_department_tree(&claims).await?;
-    Ok(Json(ApiResponse::success(response)))
+    _auth_user: AuthUser,
+) -> Result<impl IntoResponse, crate::common::error::AppError> {
+    let dept_service = DepartmentService::new();
+    let departments = dept_service.get_department_tree(&state.db).await?;
+    Ok(ApiResponse::success(departments))
 }
 
-async fn create_department(
+pub async fn get_department(
     State(state): State<AppState>,
-    CurrentClaims(claims): CurrentClaims,
+    _auth_user: AuthUser,
+    Path(dept_id): Path<Uuid>,
+) -> Result<impl IntoResponse, crate::common::error::AppError> {
+    let dept_service = DepartmentService::new();
+    match dept_service.get_department_by_id(&state.db, dept_id).await? {
+        Some(dept) => Ok(ApiResponse::success(dept)),
+        None => Ok(ApiResponse::error(404, "Department not found".to_string())),
+    }
+}
+
+pub async fn create_department(
+    State(state): State<AppState>,
+    _auth_user: AuthUser,
     Json(request): Json<CreateDepartmentRequest>,
-) -> AppResult<Json<ApiResponse<DepartmentResponse>>> {
-    let service = DepartmentsService::new(state.db.clone());
-    let response = service.create_department(&claims, request).await?;
-    Ok(Json(ApiResponse::success(response)))
+) -> Result<impl IntoResponse, crate::common::error::AppError> {
+    let dept_service = DepartmentService::new();
+    let dept = dept_service.create_department(&state.db, request).await?;
+    Ok(ApiResponse::success(dept))
 }
 
-async fn update_department(
+pub async fn update_department(
     State(state): State<AppState>,
-    CurrentClaims(claims): CurrentClaims,
-    Path(department_id): Path<String>,
+    _auth_user: AuthUser,
+    Path(dept_id): Path<Uuid>,
     Json(request): Json<UpdateDepartmentRequest>,
-) -> AppResult<Json<ApiResponse<DepartmentResponse>>> {
-    let service = DepartmentsService::new(state.db.clone());
-    let response = service
-        .update_department(&claims, &department_id, request)
-        .await?;
-    Ok(Json(ApiResponse::success(response)))
+) -> Result<impl IntoResponse, crate::common::error::AppError> {
+    let dept_service = DepartmentService::new();
+    let dept = dept_service.update_department(&state.db, dept_id, request).await?;
+    Ok(ApiResponse::success(dept))
+}
+
+pub async fn delete_department(
+    State(state): State<AppState>,
+    _auth_user: AuthUser,
+    Path(dept_id): Path<Uuid>,
+) -> Result<impl IntoResponse, crate::common::error::AppError> {
+    let dept_service = DepartmentService::new();
+    dept_service.delete_department(&state.db, dept_id).await?;
+    Ok(ApiResponse::success_no_data())
 }

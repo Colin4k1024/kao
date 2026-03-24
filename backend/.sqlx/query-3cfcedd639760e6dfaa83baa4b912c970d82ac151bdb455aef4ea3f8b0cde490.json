@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        UPDATE sys_users \n        SET \n            password_hash = $2,\n            password_changed_at = NOW(),\n            updated_at = NOW()\n        WHERE id = $1\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Varchar"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "3cfcedd639760e6dfaa83baa4b912c970d82ac151bdb455aef4ea3f8b0cde490"
+}

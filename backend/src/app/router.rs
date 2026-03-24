@@ -1,65 +1,45 @@
-use crate::app::state::AppState;
-use crate::common::{
-    auth::{extractor::CurrentClaims, middleware::auth_middleware},
-    response::ApiResponse,
+use axum::{
+    extract::State,
+    response::IntoResponse,
+    routing::get,
+    Router,
 };
-use crate::features::{auth, departments, menus, roles, users};
-use axum::{middleware::from_fn_with_state, routing::get, Json, Router};
-use tower_http::{cors::CorsLayer, trace::TraceLayer};
+use serde_json::json;
+use tower_http::cors::{AllowHeaders, AllowMethods, AllowOrigin, CorsLayer};
 
-pub async fn create_app(
-    config: crate::common::config::AppConfig,
-) -> Result<Router, crate::common::error::AppError> {
-    let state = AppState::bootstrap(config).await?;
-    Ok(build_router(state))
-}
+use crate::{
+    app::state::AppState,
+    common::response::ApiResponse,
+    features::{
+        auth::routes::auth_routes,
+        departments::routes::department_routes,
+        menus::routes::menu_routes,
+        roles::routes::role_routes,
+        users::routes::user_routes,
+    },
+};
 
-pub fn build_router(state: AppState) -> Router {
-    let protected_state = state.clone();
-
-    let public_router = Router::new().route("/api/v1/health", get(health));
-    let protected_router = Router::new()
-        .route("/api/v1/protected/ping", get(protected_ping))
-        .layer(from_fn_with_state(protected_state, auth_middleware));
+pub fn create_router(state: AppState) -> Router {
+    // Add CORS layer
+    let cors_layer = CorsLayer::new()
+        .allow_origin(AllowOrigin::any())
+        .allow_methods(AllowMethods::any())
+        .allow_headers(AllowHeaders::any());
 
     Router::new()
-        .merge(public_router)
-        .merge(auth::router(state.clone()))
-        .merge(users::router(state.clone()))
-        .merge(roles::router(state.clone()))
-        .merge(departments::router(state.clone()))
-        .merge(menus::router(state.clone()))
-        .merge(protected_router)
-        .layer(CorsLayer::permissive())
-        .layer(TraceLayer::new_for_http())
+        .merge(auth_routes())       // Add auth routes
+        .merge(menu_routes())       // Add menu routes
+        .merge(role_routes())       // Add role routes
+        .merge(user_routes())       // Add user routes
+        .merge(department_routes()) // Add department routes
+        .route("/api/v1/health", get(health_handler))
+        .layer(cors_layer)
+        .with_state(state)
 }
 
-async fn health() -> Json<ApiResponse<HealthResponse>> {
-    Json(ApiResponse::success(HealthResponse {
-        status: "ok",
-        service: "ai-coding-backend",
+async fn health_handler(State(_state): State<AppState>) -> impl IntoResponse {
+    ApiResponse::success(json!({
+        "status": "ok",
+        "message": "Server is running"
     }))
-}
-
-async fn protected_ping(CurrentClaims(claims): CurrentClaims) -> Json<ApiResponse<ProtectedPing>> {
-    Json(ApiResponse::success(ProtectedPing {
-        subject: claims.sub,
-        department_id: claims.dept_id,
-        roles: claims.roles,
-        permissions: claims.permissions,
-    }))
-}
-
-#[derive(Debug, serde::Serialize)]
-struct HealthResponse {
-    status: &'static str,
-    service: &'static str,
-}
-
-#[derive(Debug, serde::Serialize)]
-struct ProtectedPing {
-    subject: String,
-    department_id: Option<String>,
-    roles: Vec<String>,
-    permissions: Vec<String>,
 }

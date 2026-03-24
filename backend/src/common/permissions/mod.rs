@@ -1,2 +1,3 @@
 pub mod context;
-pub mod data_scope;
+
+pub use context::{build_data_scope_context, DataScope, DataScopeContext};

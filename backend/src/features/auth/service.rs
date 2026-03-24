@@ -1,173 +1,95 @@
-use bcrypt::verify;
-use chrono::Utc;
-use uuid::Uuid;
-use validator::Validate;
+use std::sync::Arc;
 
 use crate::common::{
-    auth::{claims::Claims, jwt},
-    config::AppConfig,
-    error::{AppError, AppResult},
-    DbPool,
+    auth::{claims::Claims, jwt::generate_jwt},
+    config::Config,
+    error::AppError,
 };
-use crate::features::menus::service::MenusService;
+use uuid::Uuid;
 
 use super::{
-    model::{
-        LoginRequest, LoginResponse, PermissionsResponse, ProfileResponse, RoleSummary,
-        SessionBundle, SessionSnapshot, UserProfile,
-    },
-    repo::{AuthRepo, UserSessionRow},
+    model::{hash_password, verify_password, LoginRequest, LoginResponse, UserProfile},
+    repo::{find_user_by_username, get_user_menu_tree, get_user_permissions, get_user_roles},
 };
 
-const DEFAULT_TOKEN_TTL_SECS: i64 = 7 * 24 * 60 * 60;
-
-#[derive(Clone)]
 pub struct AuthService {
-    repo: AuthRepo,
-    menus_service: MenusService,
+    config: Arc<Config>,
 }
 
 impl AuthService {
-    pub fn new(pool: DbPool) -> Self {
-        Self {
-            repo: AuthRepo::new(pool.clone()),
-            menus_service: MenusService::new(pool),
-        }
+    pub fn new(config: Arc<Config>) -> Self {
+        Self { config }
     }
 
-    pub async fn login(
-        &self,
-        config: &AppConfig,
-        request: LoginRequest,
-    ) -> AppResult<LoginResponse> {
-        request
-            .validate()
-            .map_err(|err| AppError::BadRequest(err.to_string()))?;
-
-        let user = self
-            .repo
-            .find_user_by_username(&request.username)
+    pub async fn login(&self, db: &sqlx::PgPool, req: LoginRequest) -> Result<LoginResponse, AppError> {
+        // Find user by username
+        let user = find_user_by_username(db, &req.username)
             .await?
-            .ok_or_else(|| AppError::Unauthorized("invalid username or password".to_string()))?;
+            .ok_or_else(|| AppError::Authentication("Invalid username or password".to_string()))?;
 
-        self.ensure_login_allowed(&user)?;
-        self.verify_password(&request.password, &user.password_hash)?;
+        // Verify password
+        verify_password(&req.password, &user.password_hash)?;
 
-        let session = self.load_session(&user.id).await?;
-        let session_snapshot = Self::build_snapshot(&user, &session);
-        let issued_at = Utc::now().timestamp().max(0) as usize;
-        let session_id = Uuid::new_v4().to_string();
-        let mut claims = build_claims(
-            &SessionSnapshot {
-                session_id: Some(session_id.clone()),
-                ..session_snapshot
-            },
-            issued_at,
-            DEFAULT_TOKEN_TTL_SECS as usize,
+        // Get user permissions and roles
+        let permissions = get_user_permissions(db, user.id).await?;
+        let roles = get_user_roles(db, user.id).await?;
+
+        // Create JWT claims
+        let claims = Claims::new(
+            user.id,
+            user.username.clone(),
+            permissions,
+            user.dept_id,
+            roles,
         );
-        claims.session_id = Some(session_id);
 
-        let access_token = jwt::encode(&claims, config)?;
+        // Generate JWT token
+        let token = generate_jwt(claims, &self.config.jwt_secret)?;
 
         Ok(LoginResponse {
-            access_token,
+            access_token: token,
             token_type: "Bearer".to_string(),
-            expires_in: DEFAULT_TOKEN_TTL_SECS,
-            profile: session.profile,
-            permissions: session.permissions,
-            menus: session.menus,
+            expires_in: 24 * 60 * 60, // 24 hours
         })
     }
 
-    pub async fn profile(&self, user_id: &str) -> AppResult<ProfileResponse> {
-        Ok(self.load_session(user_id).await?.profile)
-    }
+    pub async fn get_current_user_profile(
+        &self,
+        db: &sqlx::PgPool,
+        user_id: Uuid,
+    ) -> Result<UserProfile, AppError> {
+        // Get user details
+        let user = sqlx::query!(
+            r#"
+            SELECT 
+                id,
+                username,
+                display_name,
+                email,
+                dept_id,
+                avatar_url
+            FROM sys_users 
+            WHERE id = $1
+            "#,
+            user_id
+        )
+        .fetch_one(db)
+        .await
+        .map_err(|_| AppError::Authentication("User not found".to_string()))?;
 
-    pub async fn permissions(&self, user_id: &str) -> AppResult<PermissionsResponse> {
-        Ok(self.load_session(user_id).await?.permissions)
-    }
+        // Get user permissions and roles
+        let permissions = get_user_permissions(db, user_id).await?;
+        let roles = get_user_roles(db, user_id).await?;
 
-    async fn load_session(&self, user_id: &str) -> AppResult<SessionBundle> {
-        let user = self.repo.find_user_by_id(user_id).await?;
-        let roles = self.repo.list_roles_by_user_id(user_id).await?;
-        let permissions = self.repo.list_permissions_by_user_id(user_id).await?;
-        let menus = self.menus_service.list_menu_tree_by_user_id(user_id).await?;
-
-        let profile = ProfileResponse {
-            user: UserProfile::from(&user),
-            roles: roles.iter().map(RoleSummary::from).collect(),
-        };
-
-        let permissions = PermissionsResponse {
-            role_ids: roles.iter().map(|role| role.id.clone()).collect(),
-            roles: roles.iter().map(|role| role.code.clone()).collect(),
+        Ok(UserProfile {
+            id: user.id,
+            username: user.username,
+            display_name: user.display_name,
+            email: user.email,
+            dept_id: user.dept_id,
+            avatar_url: user.avatar_url,
             permissions,
-        };
-
-        Ok(SessionBundle {
-            profile,
-            permissions,
-            menus,
+            roles,
         })
-    }
-
-    fn build_snapshot(user: &UserSessionRow, session: &SessionBundle) -> SessionSnapshot {
-        SessionSnapshot {
-            user_id: user.id.clone(),
-            email: user
-                .email
-                .clone()
-                .unwrap_or_else(|| user.username.clone()),
-            dept_id: user.dept_id.clone(),
-            role_ids: session.permissions.role_ids.clone(),
-            roles: session.permissions.roles.clone(),
-            permissions: session.permissions.permissions.clone(),
-            session_id: None,
-        }
-    }
-
-    fn ensure_login_allowed(&self, user: &UserSessionRow) -> AppResult<()> {
-        match user.status.as_str() {
-            "ACTIVE" => Ok(()),
-            "DISABLED" => Err(AppError::Forbidden(
-                "account is disabled".to_string(),
-            )),
-            "LOCKED" => Err(AppError::Forbidden("account is locked".to_string())),
-            other => Err(AppError::Forbidden(format!(
-                "account status `{}` is not allowed to login",
-                other
-            ))),
-        }
-    }
-
-    fn verify_password(&self, password: &str, password_hash: &str) -> AppResult<()> {
-        let verified = verify(password, password_hash)
-            .map_err(|err| AppError::Internal(err.to_string()))?;
-
-        if verified {
-            Ok(())
-        } else {
-            Err(AppError::Unauthorized(
-                "invalid username or password".to_string(),
-            ))
-        }
-    }
-}
-
-pub fn build_claims(
-    snapshot: &SessionSnapshot,
-    issued_at: usize,
-    ttl_secs: usize,
-) -> Claims {
-    Claims {
-        sub: snapshot.user_id.clone(),
-        email: snapshot.email.clone(),
-        dept_id: snapshot.dept_id.clone(),
-        role_ids: snapshot.role_ids.clone(),
-        roles: snapshot.roles.clone(),
-        permissions: snapshot.permissions.clone(),
-        session_id: snapshot.session_id.clone(),
-        exp: issued_at.saturating_add(ttl_secs),
-        iat: issued_at,
     }
 }
