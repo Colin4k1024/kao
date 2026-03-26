@@ -11,3 +11,6 @@ pub mod services;
 pub mod utils;
 
 pub use app::AppState;
+
+// Export common security module
+pub use common::security;
