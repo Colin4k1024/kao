@@ -6,7 +6,7 @@
 
 **Version:** 0.1.0
 
-**Status:** Phase 2 - Feature Completeness (Plan 02-05 Complete)
+**Status:** Phase 3 - Production Readiness (Planning Complete)
 
 ---
 
@@ -18,11 +18,42 @@ Kao is an enterprise-grade admin management system inspired by RuoYi, built with
 
 ## Current Phase
 
-### Phase 2: Feature Completeness (Current)
+### Phase 3: Production Readiness (Current)
+
+**Goal:** Optimize, scale, and prepare for production deployment
+
+**Status:** Planning Complete - 5 Plans Drafted
+
+**Plans Planned:**
+- 03-01: **Performance Optimization** (database connection pool, Redis caching, frontend code splitting, API caching, database indexes) — Wave 1
+- 03-02: **Horizontal Scaling** (stateless auth, load balancer compatibility, sticky session support, scaling guide, load testing) — Wave 1
+- 03-03: **Deployment Hardening** (production Docker image, multi-stage builds, health check endpoint, graceful shutdown, environment config, CI/CD pipeline) — Wave 2
+- 03-04: **Security Audit** (password policy enforcement, password expiration policy, audit logging enhancement, security scanning integration, penetration testing) — Wave 2
+- 03-05: **Monitoring & Alerting** (Prometheus metrics, alerting rules, dashboard creation, log aggregation, performance monitoring) — Wave 2
+
+**Planning Complete:**
+- [x] Phase 03-01: Performance Optimization (5 tasks, 11 files, Wave 1)
+- [x] Phase 03-02: Horizontal Scaling (5 tasks, 7 files, Wave 1)
+- [x] Phase 03-03: Deployment Hardening (5 tasks, 6 files, Wave 2)
+- [x] Phase 03-04: Security Audit (5 tasks, 10 files, Wave 2)
+- [x] Phase 03-05: Monitoring & Alerting (5 tasks, 10 files, Wave 2)
+
+**Requirements Coverage:**
+- NFR2 (Performance): 03-01, 03-02
+- NFR3 (Reliability): 03-03, 03-05
+- NFR5 (Scalability): 03-02, 03-03
+- NFR1 (Security): 03-04
+- FR1 (Auth): 03-04
+
+---
+
+## Completed Phases
+
+### Phase 2: Feature Completeness ✅
 
 **Goal:** Complete all planned features and documentation
 
-**Status:** Plan 02-05 Complete - Documentation
+**Status:** Complete - All Features Delivered
 
 **Plans Completed:**
 - 02-01: ✅ Dynamic Configuration Module (dictionary type, data, config, notice CRUD)
@@ -50,40 +81,17 @@ Kao is an enterprise-grade admin management system inspired by RuoYi, built with
 
 ---
 
-## Completed Phases
-
-### Phase 1: Stabilization & Security
-
-**Goal:** Fix critical issues and establish stable foundation
-
-**Status:** Complete
-
-**Plans Completed:**
-- 01-01: Authentication consolidation (hardcoded credentials, JWT secrets, bcrypt)
-- 01-02: Security hardening (CORS, validation, rate limiting, account lockout)
-- 01-03: Database & migrations (table names, pool config, migrations, Claims)
-- 01-04: Testing infrastructure (unit, integration, security tests, coverage)
-- 01-05: Observability (health check, structured logging, request tracking)
-
-**Deliverables:**
-- [x] Authentication consolidation
-- [x] Security hardening
-- [x] Database & migrations
-- [x] Testing > 50% coverage
-- [x] Observability improvements
-
----
-
 ## Key Decisions
 
 1. **Authentication Strategy:** JWT + bcrypt (phase 1 priority)
 2. **Database:** PostgreSQL with SQLx
 3. **Frontend:** React 18.2 + Vite + Ant Design
-4. **Security:** All hardcoded secrets must be removed in phase 1
+4. **Security:** All hardcoded secrets removed in phase 1
 5. **Testing:** Minimum 50% coverage for critical paths
 6. **Phase 2 Focus:** Feature completeness with dynamic config, job management, monitoring, UI, and docs
 7. **Phase 2-04:** Frontend Enhancement with responsive design, loading states, error boundaries
 8. **Phase 2-05:** Documentation complete - API docs, deployment guide, development guide, architecture docs
+9. **Phase 3 Focus:** Production readiness with performance optimization, horizontal scaling, deployment hardening, security audit, monitoring & alerting
 
 ---
 
@@ -91,110 +99,29 @@ Kao is an enterprise-grade admin management system inspired by RuoYi, built with
 
 See `.planning/codebase/CONCERNS.md` for detailed list.
 
-**Phase 1 (Resolved):**
-- [x] Hardcoded admin credentials in app.rs
-- [x] JWT secret hardcoded in extractor.rs
-- [x] Password validation bypasses bcrypt
-- [x] CORS allows all origins
-- [x] Database table name mismatches
-
 ---
 
 ## Progress Tracking
 
-### Phase 2 Plans Status
+### Phase 3 Plans Status
 
 | Plan | Topic | Status |
 |------|-------|--------|
-| 02-01 | Dynamic Configuration Module | ✅ Complete |
-| 02-02 | Scheduled Job Management | ✅ Complete |
-| 02-03 | System Monitoring | ✅ Complete |
-| 02-04 | Frontend Enhancement | ✅ Complete |
-| 02-05 | Documentation | ✅ Complete |
-
-### Phase 2 Task Status (02-04 Complete)
-
-| Task | Status |
-|------|--------|
-| Dictionary type CRUD UI | ✅ Complete |
-| Dictionary data CRUD UI | ✅ Complete |
-| Parameter configuration CRUD UI | ✅ Complete |
-| Notice/announcement CRUD UI | ✅ Complete |
-| Scheduled job UI | ✅ Complete |
-| Job log tracking UI | ✅ Complete |
-| Monitoring dashboard | ✅ Complete |
-| Responsive design | ✅ Complete |
-| Loading states | ✅ Complete |
-| Error boundaries | ✅ Complete |
+| 03-01 | Performance Optimization | 🟡 Planning Complete |
+| 03-02 | Horizontal Scaling | 🟡 Planning Complete |
+| 03-03 | Deployment Hardening | 🟡 Planning Complete |
+| 03-04 | Security Audit | 🟡 Planning Complete |
+| 03-05 | Monitoring & Alerting | 🟡 Planning Complete |
 
 ---
 
-## Completed Tasks
+## Phase 3 Requirements (Current)
 
-### Task 1: Dictionary Type Module ✅
-- Created `backend/src/features/dictionary/type/` with mod.rs, model.rs, repo.rs, service.rs, routes.rs
-- Implemented full CRUD for dictionary types
-- Routes: `/api/system/dictionary/types`
-- Database table `sys_dict_type` already exists with migration
-
-### Task 2: Dictionary Data Module ✅
-- Created `backend/src/features/dictionary/data/` with mod.rs, model.rs, repo.rs, service.rs, routes.rs
-- Implemented full CRUD for dictionary data
-- Routes: `/api/system/dictionary/data` and `/api/system/dictionary/data/type/:dict_type`
-- Database table `sys_dict_data` already exists with migration
-
-### Task 3: Config Module ✅
-- Created `backend/src/features/config/` with mod.rs, model.rs, repo.rs, service.rs, routes.rs
-- Implemented full CRUD for configuration
-- Routes: `/api/system/config`
-- Database table `sys_config` already exists with migration
-
-### Task 4: Notice Module ✅
-- Created `backend/src/features/notice/` with mod.rs, model.rs, repo.rs, service.rs, routes.rs
-- Implemented full CRUD for notices
-- Routes: `/api/system/notice` and `/api/system/notice/:id/view`
-- Database table `sys_notice` already exists with migration
-
-### Frontend UI (02-04 Complete) ✅
-- Created `frontend/src/pages/dictionary/type/index.tsx` - Dictionary Type Management Page
-- Created `frontend/src/pages/dictionary/data/index.tsx` - Dictionary Data Management Page
-- Created `frontend/src/pages/config/index.tsx` - Configuration Management Page
-- Created `frontend/src/pages/notice/index.tsx` - Notice/Announcement Management Page
-- Created `frontend/src/pages/job/index.tsx` - Scheduled Job Management Page
-- Created `frontend/src/pages/job/log/index.tsx` - Job Log Tracking Page
-- Created `frontend/src/pages/dashboard/index.tsx` - System Monitoring Dashboard
-- Created `frontend/src/pages/monitoring/online-user/index.tsx` - Online User Management
-- Created `frontend/src/pages/monitoring/operation-log/index.tsx` - Operation Log Management
-- Created `frontend/src/pages/monitoring/login-log/index.tsx` - Login Log Management
-- Created `frontend/src/components/common/Loading.tsx` - Loading Component
-- Created `frontend/src/components/common/ErrorBoundary.tsx` - Error Boundary Component
-- Created `frontend/src/components/common/EmptyState.tsx` - Empty State Component
-- Created `frontend/src/components/common/PageLayout.tsx` - Page Layout Wrapper
-- Created `frontend/src/components/common/ResponsiveLayout.tsx` - Responsive Layout
-- Created `frontend/src/components/dashboard/MetricsCard.tsx` - Metrics Card Component
-- Created `frontend/src/components/dashboard/StatusCard.tsx` - Status Card Component
-- Created `frontend/src/components/dashboard/ChartSection.tsx` - Chart Section Component
-- Created `frontend/src/hooks/useResponsive.ts` - Responsive Hook
-- Created `frontend/src/hooks/useLoading.ts` - Loading State Hook
-- Created `frontend/src/hooks/useDashboard.ts` - Dashboard Data Hook
-- Updated `frontend/src/services/api/dictionary.ts` - Dictionary API Client
-- Updated `frontend/src/services/api/config.ts` - Configuration API Client
-- Updated `frontend/src/services/api/notice.ts` - Notice API Client
-- Updated `frontend/src/services/api/job.ts` - Job API Client with Cron Validator
-- Updated `frontend/src/services/api/monitoring.ts` - Monitoring API Client
-- Updated `frontend/src/routes/index.tsx` - Added routes for new pages
-- Updated `frontend/src/components/common/ErrorBoundary.tsx` - Error Boundary Component
-
-### Summary Files Created ✅
-- Created `.planning/phases/02-feature-completeness/02-04-SUMMARY.md` - Plan 02-04 Execution Summary
-- Updated `.planning/STATE.md` - Project state with plan 02-04 completion
-- Updated `.planning/ROADMAP.md` - Progress tracking
-
----
-
-### Upcoming Tasks
-
-No pending tasks - Phase 2 is complete. Ready for Phase 3: Production Readiness.
+### Non-Functional Requirements
+- NFR2: Performance (caching, query optimization, code splitting)
+- NFR3: Reliability (health check, error handling, logging, monitoring)
+- NFR5: Scalability (horizontal scaling, connection pooling, Docker)
+- NFR1: Security (password policy, audit logging, security scanning)
 
 ---
 
@@ -208,23 +135,12 @@ No pending tasks - Phase 2 is complete. Ready for Phase 3: Production Readiness.
 - .planning/REQUIREMENTS.md
 - .planning/ROADMAP.md
 - .planning/phases/01-stabilization-security/01-SUMMARY.md (Phase 1 completed)
+- .planning/phases/02-feature-completeness/02-05-SUMMARY.md (Phase 2 completed)
+- .planning/phases/03-production-readiness/03-SUMMARY.md (Phase 3 planning)
 
 ### External
 
 - None
-
----
-
-## Phase 2 Requirements
-
-### Functional Requirements
-- FR6: Dynamic Configuration (dictionary type, data, config, notice CRUD)
-- FR7: System Operations (job management, logging, monitoring)
-
-### Non-Functional Requirements
-- NFR2: Performance (caching, query optimization)
-- NFR3: Reliability (health check, error handling, logging)
-- NFR4: Maintainability (code quality, documentation)
 
 ---
 
@@ -240,19 +156,19 @@ No pending tasks - Phase 2 is complete. Ready for Phase 3: Production Readiness.
 - [x] No hardcoded credentials
 - [x] Security vulnerabilities fixed in Phase 1 addressed
 
+### Phase 3 Success (Current)
+
+- [ ] All Phase 3 plans executed successfully
+- [ ] Performance targets met (database query < 100ms, API cache headers)
+- [ ] Horizontal scaling verified with load balancer
+- [ ] Security audit passed (password policy, audit logging)
+- [ ] Monitoring and alerting operational (Prometheus, dashboards)
+- [ ] Production deployment successful
+
 ---
 
 **Last Updated:** 2026-03-26
 
-**Current Phase:** 02 - Feature Completeness (Plan 02-05 Complete)
+**Current Phase:** 03 - Production Readiness (Planning Complete)
 
-**Next:** Phase 3 - Production Readiness
-
----
-
-**Completed Plans:**
-- 02-01: Dynamic Configuration Module ✅
-- 02-02: Scheduled Job Management ✅
-- 02-03: System Monitoring ✅
-- 02-04: Frontend Enhancement ✅
-- 02-05: Documentation ✅
+**Next:** Execute Phase 3 - Production Readiness
