@@ -76,7 +76,7 @@ impl UserService {
         // Validate password
         let policy = PasswordPolicy::default();
         validate_password(&req.password, &policy)
-            .map_err(|e| AppError::Validation(self.password_validation_error_to_string(e)))?;
+            .map_err(|e| AppError::Validation(format!("Password validation failed: {}", e)))?;
         
         check_username_in_password(&req.password, &req.username)
             .map_err(|_| AppError::Validation("Password must not contain username".to_string()))?;
@@ -122,7 +122,7 @@ impl UserService {
         if let Some(ref password) = req.password {
             let policy = PasswordPolicy::default();
             validate_password(password, &policy)
-                .map_err(|e| AppError::Validation(self.password_validation_error_to_string(e)))?;
+                .map_err(|e| AppError::Validation(format!("Password validation failed: {}", e)))?;
 
             // Get username for username check
             let user = get_user_by_id(db, user_id)
@@ -178,7 +178,7 @@ impl UserService {
         // Validate new password
         let policy = PasswordPolicy::default();
         validate_password(&new_password, &policy)
-            .map_err(|e| AppError::Validation(self.password_validation_error_to_string(e)))?;
+            .map_err(|e| AppError::Validation(format!("Password validation failed: {}", e)))?;
 
         check_username_in_password(&new_password, &user.username)
             .map_err(|_| AppError::Validation("Password must not contain username".to_string()))?;
@@ -191,10 +191,5 @@ impl UserService {
 
     pub async fn delete_user(&self, db: &sqlx::PgPool, user_id: Uuid) -> Result<(), AppError> {
         delete_user(db, user_id).await
-    }
-
-    /// Convert password validation error to string message
-    fn password_validation_error_to_string(&self, error: PasswordValidationError) -> String {
-        format!("Password validation failed: {}", error)
     }
 }
