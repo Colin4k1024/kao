@@ -1,23 +1,11 @@
 import React from 'react';
-import { Card, Statistic, Typography, Row, Col, Divider } from 'antd';
-import {
-  UserOutlined,
-  TeamOutlined,
-  SettingOutlined,
-  SafetyOutlined,
-  ClockCircleOutlined,
-  CodeOutlined,
-  FileOutlined,
-  CloudOutlined,
-} from '@ant-design/icons';
+import { Card, Typography } from 'antd';
 import type { CardProps } from 'antd';
 
 const { Title, Text } = Typography;
 interface MetricsCardProps extends CardProps {
   title: string;
   value: number | string;
-  prefix?: React.ReactNode;
-  suffix?: string;
   status?: 'success' | 'warning' | 'error' | 'default';
   trend?: 'up' | 'down' | 'neutral';
   description?: string;
@@ -26,8 +14,6 @@ interface MetricsCardProps extends CardProps {
 export const MetricsCard: React.FC<MetricsCardProps> = ({
   title,
   value,
-  prefix,
-  suffix,
   status = 'default',
   trend,
   description,
@@ -67,7 +53,6 @@ export const MetricsCard: React.FC<MetricsCardProps> = ({
         </Text>
       </div>
       <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
-        {prefix && <span style={{ marginRight: '8px' }}>{prefix}</span>}
         <span
           style={{
             fontSize: '24px',
@@ -77,7 +62,6 @@ export const MetricsCard: React.FC<MetricsCardProps> = ({
         >
           {value}
         </span>
-        {suffix && <span style={{ marginLeft: '4px', color: '#8c8c8c' }}>{suffix}</span>}
       </div>
       {trend && (
         <div style={{ marginTop: '8px' }}>

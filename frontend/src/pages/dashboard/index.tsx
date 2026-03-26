@@ -13,69 +13,41 @@ import {
 import {
   DownloadOutlined,
   ReloadOutlined,
-  EyeOutlined,
-  DeleteOutlined,
 } from '@ant-design/icons';
 
 import {
   fetchMetrics,
   fetchHealthCheck,
-  OperationLog,
   fetchOperationLogs,
-  deleteOperationLog,
-  LoginLog,
   fetchLoginLogs,
-  OnlineUser,
   fetchOnlineUsers,
-  forceLogout,
 } from '@/services/api/monitoring';
 import type { MetricsResponse, HealthCheckResponse } from '@/services/api/monitoring';
 
 const DashboardPage = () => {
   const [metrics, setMetrics] = useState<MetricsResponse | null>(null);
   const [health, setHealth] = useState<HealthCheckResponse | null>(null);
-  const [operationLogs, setOperationLogs] = useState<OperationLog[]>([]);
-  const [operationLogsTotal, setOperationLogsTotal] = useState(0);
-  const [loginLogs, setLoginLogs] = useState<LoginLog[]>([]);
-  const [loginLogsTotal, setLoginLogsTotal] = useState(0);
-  const [onlineUsers, setOnlineUsers] = useState<OnlineUser[]>([]);
-  
+  const [operationLogs, setOperationLogs] = useState<any[]>([]);
+  const [loginLogs, setLoginLogs] = useState<any[]>([]);
+  const [onlineUsers, setOnlineUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
-  
-  // Load metrics
-  const loadMetrics = async () => {
-    try {
-      const data = await fetchMetrics();
-      setMetrics(data);
-    } catch (error) {
-      console.error('Failed to load metrics:', error);
-    }
-  };
 
-  // Load health check
-  const loadHealthCheck = async () => {
-    try {
-      const data = await fetchHealthCheck();
-      setHealth(data);
-    } catch (error) {
-      console.error('Failed to load health check:', error);
-    }
-  };
-
-  // Load metrics data
+  // Load data
   const loadData = async () => {
     setLoading(true);
     try {
-      const [metricsData, healthData, onlineRes, operRes] = await Promise.all([
+      const [metricsData, healthData, onlineRes, operRes, loginRes] = await Promise.all([
         fetchMetrics(),
         fetchHealthCheck(),
         fetchOnlineUsers(),
         fetchOperationLogs(),
+        fetchLoginLogs(),
       ]);
       setMetrics(metricsData);
       setHealth(healthData);
       setOnlineUsers(onlineRes.list || []);
       setOperationLogs(operRes.list || []);
+      setLoginLogs(loginRes.list || []);
     } catch (error) {
       console.error('Failed to load data:', error);
     } finally {
@@ -87,20 +59,54 @@ const DashboardPage = () => {
     loadData();
   }, []);
 
-  // Refresh handler
   const handleRefresh = () => {
     loadData();
   };
 
-  // Render
+  const columns = [
+    {
+      title: 'ID',
+      dataIndex: 'id',
+      key: 'id',
+    },
+    {
+      title: 'Username',
+      dataIndex: 'username',
+      key: 'username',
+    },
+    {
+      title: 'Status',
+      dataIndex: 'status',
+      key: 'status',
+      render: (status: number) =>
+        status === 1 ? (
+          <Tag color="success">Success</Tag>
+        ) : (
+          <Tag color="error">Failed</Tag>
+        ),
+    },
+    {
+      title: 'Create Time',
+      dataIndex: 'create_time',
+      key: 'create_time',
+    },
+  ];
+
   return (
-    <div className="monitoring-dashboard">
-      <div className="dashboard-header">
-        <h1>System Monitoring Dashboard</h1>
+    <div style={{ padding: 24 }}>
+      <div
+        style={{
+          marginBottom: 24,
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+        }}
+      >
+        <h1 style={{ margin: 0 }}>System Monitoring Dashboard</h1>
         <Button
           type="primary"
-          icon={<RefreshOutlined />}
-          onClick={loadData}
+          icon={<ReloadOutlined />}
+          onClick={handleRefresh}
           loading={loading}
         >
           Refresh
@@ -109,7 +115,7 @@ const DashboardPage = () => {
 
       {/* Metrics Section */}
       {metrics && (
-        <Card title="System Metrics" className="metrics-card">
+        <Card title="System Metrics" style={{ marginBottom: 24 }}>
           <Row gutter={[16, 16]}>
             <Col span={8}>
               <Card>
@@ -161,7 +167,7 @@ const DashboardPage = () => {
 
       {/* Health Check Section */}
       {health && (
-        <Card title="Health Check" className="health-card">
+        <Card title="Health Check" style={{ marginBottom: 24 }}>
           <Row gutter={[16, 16]}>
             <Col span={8}>
               <Card>
@@ -169,7 +175,12 @@ const DashboardPage = () => {
                   title="Overall Status"
                   value={health.status}
                   valueStyle={{
-                    color: health.status === 'healthy' ? '#52c41a' : health.status === 'degraded' ? '#faad14' : '#f5222d',
+                    color:
+                      health.status === 'healthy'
+                        ? '#52c41a'
+                        : health.status === 'degraded'
+                        ? '#faad14'
+                        : '#f5222d',
                   }}
                 />
               </Card>
@@ -182,15 +193,15 @@ const DashboardPage = () => {
                     <strong>Database:</strong> {health.checks.database}
                   </li>
                   {health.checks.redis && (
-                    <li>
-                      <strong>Redis:</strong> {health.checks.redis}
-                    </li>
-                  )}
+                      <li>
+                        <strong>Redis:</strong> {health.checks.redis}
+                      </li>
+                    )}
                   {health.checks.job_scheduler && (
-                    <li>
-                      <strong>Job Scheduler:</strong> {health.checks.job_scheduler}
-                    </li>
-                  )}
+                      <li>
+                        <strong>Job Scheduler:</strong> {health.checks.job_scheduler}
+                      </li>
+                    )}
                 </ul>
               </Card>
             </Col>
@@ -199,109 +210,18 @@ const DashboardPage = () => {
       )}
 
       {/* Tabs */}
-      <Tabs type="card">
-        <TabPane tab="Operation Logs" key="operation">
-          <Card>
-            <Table
-              columns={operationLogColumns}
-              dataSource={operationLogs}
-              pagination={{
-                total: operationLogsTotal,
-                showSizeChanger: true,
-                showQuickJumper: true,
-              }}
-              rowKey="id"
-            />
-          </Card>
-        </TabPane>
-
-        <TabPane tab="Login Logs" key="login">
-          <Card>
-            <Table
-              columns={loginLogColumns}
-              dataSource={loginLogs}
-              pagination={{
-                total: loginLogsTotal,
-                showSizeChanger: true,
-                showQuickJumper: true,
-              }}
-              rowKey="id"
-            />
-          </Card>
-        </TabPane>
-
-        <TabPane tab="Online Users" key="online">
-          <Card>
-            <Table
-              columns={onlineUserColumns}
-              dataSource={onlineUsers}
-              pagination={{
-                total: onlineUsers.length,
-                showSizeChanger: true,
-                showQuickJumper: true,
-              }}
-              rowKey="session_id"
-            />
-          </Card>
-        </TabPane>
-      </Tabs>
-
-      {/* Operation Log Detail Modal */}
-      <Modal
-        title="Operation Log Detail"
-        open={operationLogModalOpen}
-        onCancel={() => setOperationLogModalOpen(false)}
-        footer={null}
-        width={600}
-      >
-        {selectedOperationLog && (
-          <div>
-            <Form form={operationLogForm} layout="vertical">
-              <Form.Item label="ID">
-                {selectedOperationLog.id}
-              </Form.Item>
-              <Form.Item label="Username">
-                {selectedOperationLog.username}
-              </Form.Item>
-              <Form.Item label="Module">
-                {selectedOperationLog.module}
-              </Form.Item>
-              <Form.Item label="Action">
-                {selectedOperationLog.action_type}
-              </Form.Item>
-              <Form.Item label="Method">
-                {selectedOperationLog.method}
-              </Form.Item>
-              <Form.Item label="Path">
-                {selectedOperationLog.path}
-              </Form.Item>
-              <Form.Item label="Request Method">
-                {selectedOperationLog.request_method}
-              </Form.Item>
-              <Form.Item label="Response Code">
-                {selectedOperationLog.response_code}
-              </Form.Item>
-              <Form.Item label="Execution Time">
-                {selectedOperationLog.execution_time}ms
-              </Form.Item>
-              <Form.Item label="IP Address">
-                {selectedOperationLog.ip_address}
-              </Form.Item>
-              <Form.Item label="Request Params">
-                {selectedOperationLog.request_params || '-'}
-              </Form.Item>
-              <Form.Item label="Response Message">
-                {selectedOperationLog.response_message || '-'}
-              </Form.Item>
-              <Form.Item label="Create Time">
-                {selectedOperationLog.create_time}
-              </Form.Item>
-            </Form>
-          </div>
-        )}
-      </Modal>
+      <Table
+        columns={columns}
+        dataSource={[...operationLogs.slice(0, 5), ...loginLogs.slice(0, 5)]}
+        pagination={{
+          pageSize: 5,
+          showSizeChanger: true,
+        }}
+        rowKey={(record: any) => record.id || Math.random()}
+        style={{ marginBottom: 24 }}
+      />
     </div>
   );
 };
 
-export default MonitoringDashboard;
+export default DashboardPage;
