@@ -18,11 +18,118 @@ pub async fn create_app(pool: PgPool, settings: Settings) -> Router {
     
     Router::new()
         .route("/health", get(health_check))
+        .route("/api-docs", get(redirect_to_swagger))
+        .route("/api-docs/openapi.yaml", get(openapi_spec))
         .route("/api/auth/login", post(login))
         .route("/api/auth/register", post(register))
         .route("/api/auth/logout", post(logout))
         .layer(cors)
         .with_state(state)
+}
+
+/// Redirect to Swagger UI
+async fn redirect_to_swagger() -> axum::http::StatusCode {
+    axum::http::StatusCode::PERMANENT_REDIRECT
+}
+
+/// Return OpenAPI specification
+async fn openapi_spec() -> Json<serde_json::Value> {
+    Json(serde_json::json!({
+        "openapi": "3.0.0",
+        "info": {
+            "title": "Kao Admin Management System API",
+            "description": "Enterprise admin management system API documentation",
+            "contact": {
+                "name": "Kao Team",
+                "url": "https://github.com/kao-admin/kao",
+                "email": "team@kao-admin.com"
+            },
+            "version": "1.0.0"
+        },
+        "servers": [
+            {
+                "url": "http://localhost:8080",
+                "description": "Development server"
+            },
+            {
+                "url": "https://api.kao-admin.com",
+                "description": "Production server"
+            }
+        ],
+        "paths": {
+            "/api/auth/login": {
+                "post": {
+                    "summary": "User login",
+                    "description": "Authenticate user and return JWT token",
+                    "requestBody": {
+                        "required": true,
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "username": {"type": "string"},
+                                        "password": {"type": "string"}
+                                    },
+                                    "required": ["username", "password"]
+                                }
+                            }
+                        }
+                    },
+                    "responses": {
+                        "200": {
+                            "description": "Login successful",
+                            "content": {
+                                "application/json": {
+                                    "schema": {
+                                        "$ref": "#/components/schemas/ApiResponse"
+                                    }
+                                }
+                            }
+                        },
+                        "401": {
+                            "description": "Invalid credentials"
+                        }
+                    }
+                }
+            },
+            "/api/auth/logout": {
+                "post": {
+                    "summary": "User logout",
+                    "description": "Logout current user",
+                    "security": [{"Bearer": []}],
+                    "responses": {
+                        "200": {
+                            "description": "Logout successful"
+                        },
+                        "401": {
+                            "description": "Not authenticated"
+                        }
+                    }
+                }
+            }
+        },
+        "components": {
+            "securitySchemes": {
+                "Bearer": {
+                    "type": "http",
+                    "scheme": "bearer",
+                    "bearerFormat": "JWT"
+                }
+            },
+            "schemas": {
+                "ApiResponse": {
+                    "type": "object",
+                    "properties": {
+                        "code": {"type": "integer"},
+                        "message": {"type": "string"},
+                        "data": {"type": "object", "nullable": true}
+                    },
+                    "required": ["code", "message"]
+                }
+            }
+        }
+    }))
 }
 
 #[derive(Clone)]

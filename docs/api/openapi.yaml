@@ -1,0 +1,1482 @@
+openapi: 3.0.0
+info:
+  title: Kao Admin Management System API
+  description: Enterprise admin management system API documentation
+  contact:
+    name: Kao Team
+    url: https://github.com/kao-admin/kao
+    email: team@kao-admin.com
+  version: 1.0.0
+servers:
+  - url: http://localhost:8080
+    description: Development server
+  - url: https://api.kao-admin.com
+    description: Production server
+paths:
+  /api/auth/login:
+    post:
+      summary: User login
+      description: Authenticate user and return JWT token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+              required:
+                - username
+                - password
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '401':
+          description: Invalid credentials
+  /api/auth/logout:
+    post:
+      summary: User logout
+      description: Logout current user
+      security:
+        - Bearer: []
+      responses:
+        '200':
+          description: Logout successful
+        '401':
+          description: Not authenticated
+  /api/auth/refresh:
+    post:
+      summary: Refresh token
+      description: Refresh access token using refresh token
+      security:
+        - Bearer: []
+      responses:
+        '200':
+          description: Token refreshed successfully
+        '401':
+          description: Invalid refresh token
+components:
+  securitySchemes:
+    Bearer:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    ApiResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+        message:
+          type: string
+        data:
+          type: object
+          nullable: true
+      required:
+        - code
+        - message
+  /api/system/users:
+    get:
+      summary: List users
+      description: Get paginated list of users with optional filters
+      security:
+        - Bearer: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: username
+          in: query
+          schema:
+            type: string
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [active, disabled, locked]
+      responses:
+        '200':
+          description: Users list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedResponse'
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not authorized
+    post:
+      summary: Create user
+      description: Create a new user
+      security:
+        - Bearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateUserRequest'
+      responses:
+        '201':
+          description: User created
+        '400':
+          description: Validation error
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not authorized
+  /api/system/users/{id}:
+    get:
+      summary: Get user detail
+      description: Get user information by ID
+      security:
+        - Bearer: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: User detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '404':
+          description: User not found
+        '401':
+          description: Not authenticated
+    put:
+      summary: Update user
+      description: Update user information
+      security:
+        - Bearer: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUserRequest'
+      responses:
+        '200':
+          description: User updated
+        '400':
+          description: Validation error
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not authorized
+    delete:
+      summary: Delete user
+      description: Delete user by ID
+      security:
+        - Bearer: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: User deleted
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not authorized
+  /api/system/users/{id}/reset-password:
+    put:
+      summary: Reset password
+      description: Reset user password
+      security:
+        - Bearer: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                newPassword:
+                  type: string
+              required:
+                - newPassword
+      responses:
+        '200':
+          description: Password reset successfully
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not authorized
+  /api/system/users/{id}/roles:
+    put:
+      summary: Assign roles
+      description: Assign roles to user
+      security:
+        - Bearer: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                roleIds:
+                  type: array
+                  items:
+                    type: string
+                    format: uuid
+              required:
+                - roleIds
+      responses:
+        '200':
+          description: Roles assigned
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not authorized
+  /api/system/departments:
+    get:
+      summary: List departments
+      description: Get hierarchical list of departments
+      security:
+        - Bearer: []
+      responses:
+        '200':
+          description: Departments tree
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '401':
+          description: Not authenticated
+    post:
+      summary: Create department
+      description: Create a new department
+      security:
+        - Bearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateDepartmentRequest'
+      responses:
+        '201':
+          description: Department created
+        '400':
+          description: Validation error
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not authorized
+  /api/system/departments/{id}:
+    get:
+      summary: Get department detail
+      description: Get department information by ID
+      security:
+        - Bearer: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Department detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '404':
+          description: Department not found
+        '401':
+          description: Not authenticated
+    put:
+      summary: Update department
+      description: Update department information
+      security:
+        - Bearer: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateDepartmentRequest'
+      responses:
+        '200':
+          description: Department updated
+        '400':
+          description: Validation error
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not authorized
+    delete:
+      summary: Delete department
+      description: Delete department by ID
+      security:
+        - Bearer: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Department deleted
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not authorized
+  /api/system/roles:
+    get:
+      summary: List roles
+      description: Get paginated list of roles
+      security:
+        - Bearer: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: name
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Roles list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedResponse'
+        '401':
+          description: Not authenticated
+    post:
+      summary: Create role
+      description: Create a new role
+      security:
+        - Bearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateRoleRequest'
+      responses:
+        '201':
+          description: Role created
+        '400':
+          description: Validation error
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not authorized
+  /api/system/roles/{id}:
+    get:
+      summary: Get role detail
+      description: Get role information by ID
+      security:
+        - Bearer: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Role detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '404':
+          description: Role not found
+        '401':
+          description: Not authenticated
+    put:
+      summary: Update role
+      description: Update role information
+      security:
+        - Bearer: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateRoleRequest'
+      responses:
+        '200':
+          description: Role updated
+        '400':
+          description: Validation error
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not authorized
+    delete:
+      summary: Delete role
+      description: Delete role by ID
+      security:
+        - Bearer: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Role deleted
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not authorized
+  /api/system/roles/{id}/menus:
+    put:
+      summary: Assign menus
+      description: Assign menus to role
+      security:
+        - Bearer: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                menuIds:
+                  type: array
+                  items:
+                    type: string
+                    format: uuid
+              required:
+                - menuIds
+      responses:
+        '200':
+          description: Menus assigned
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not authorized
+  /api/system/menus:
+    get:
+      summary: List menus
+      description: Get hierarchical list of menus
+      security:
+        - Bearer: []
+      responses:
+        '200':
+          description: Menus tree
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '401':
+          description: Not authenticated
+    post:
+      summary: Create menu
+      description: Create a new menu
+      security:
+        - Bearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateMenuRequest'
+      responses:
+        '201':
+          description: Menu created
+        '400':
+          description: Validation error
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not authorized
+  /api/system/menus/{id}:
+    get:
+      summary: Get menu detail
+      description: Get menu information by ID
+      security:
+        - Bearer: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Menu detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '404':
+          description: Menu not found
+        '401':
+          description: Not authenticated
+    put:
+      summary: Update menu
+      description: Update menu information
+      security:
+        - Bearer: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateMenuRequest'
+      responses:
+        '200':
+          description: Menu updated
+        '400':
+          description: Validation error
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not authorized
+    delete:
+      summary: Delete menu
+      description: Delete menu by ID
+      security:
+        - Bearer: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Menu deleted
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not authorized
+  /api/system/dictionary/types:
+    get:
+      summary: List dictionary types
+      description: Get paginated list of dictionary types
+      security:
+        - Bearer: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: typeCode
+          in: query
+          schema:
+            type: string
+        - name: typeName
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Dictionary types list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedResponse'
+        '401':
+          description: Not authenticated
+    post:
+      summary: Create dictionary type
+      description: Create a new dictionary type
+      security:
+        - Bearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateDictionaryTypeRequest'
+      responses:
+        '201':
+          description: Dictionary type created
+        '400':
+          description: Validation error
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not authorized
+  /api/system/dictionary/data:
+    get:
+      summary: List dictionary data
+      description: Get paginated list of dictionary data
+      security:
+        - Bearer: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: dictTypeCode
+          in: query
+          schema:
+            type: string
+        - name: dictLabel
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Dictionary data list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedResponse'
+        '401':
+          description: Not authenticated
+    post:
+      summary: Create dictionary data
+      description: Create a new dictionary data
+      security:
+        - Bearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateDictionaryDataRequest'
+      responses:
+        '201':
+          description: Dictionary data created
+        '400':
+          description: Validation error
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not authorized
+  /api/system/config:
+    get:
+      summary: List parameters
+      description: Get paginated list of configuration parameters
+      security:
+        - Bearer: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: configKey
+          in: query
+          schema:
+            type: string
+        - name: configName
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Configuration list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedResponse'
+        '401':
+          description: Not authenticated
+    post:
+      summary: Create parameter
+      description: Create a new configuration parameter
+      security:
+        - Bearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateConfigRequest'
+      responses:
+        '201':
+          description: Parameter created
+        '400':
+          description: Validation error
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not authorized
+  /api/system/notice:
+    get:
+      summary: List notices
+      description: Get paginated list of notices/announcements
+      security:
+        - Bearer: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: noticeTitle
+          in: query
+          schema:
+            type: string
+        - name: noticeType
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Notices list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedResponse'
+        '401':
+          description: Not authenticated
+    post:
+      summary: Create notice
+      description: Create a new notice/announcement
+      security:
+        - Bearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateNoticeRequest'
+      responses:
+        '201':
+          description: Notice created
+        '400':
+          description: Validation error
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not authorized
+  /api/system/jobs:
+    get:
+      summary: List scheduled jobs
+      description: Get paginated list of scheduled jobs
+      security:
+        - Bearer: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: jobName
+          in: query
+          schema:
+            type: string
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [active, disabled, error]
+      responses:
+        '200':
+          description: Jobs list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedResponse'
+        '401':
+          description: Not authenticated
+    post:
+      summary: Create scheduled job
+      description: Create a new scheduled job
+      security:
+        - Bearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateJobRequest'
+      responses:
+        '201':
+          description: Job created
+        '400':
+          description: Validation error
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not authorized
+  /api/system/jobs/logs:
+    get:
+      summary: List job logs
+      description: Get paginated list of job execution logs
+      security:
+        - Bearer: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: jobId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: jobStatus
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Job logs list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedResponse'
+        '401':
+          description: Not authenticated
+  /api/system/oper/logs:
+    get:
+      summary: List operation logs
+      description: Get paginated list of operation logs
+      security:
+        - Bearer: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: operTitle
+          in: query
+          schema:
+            type: string
+        - name: operType
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Operation logs list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedResponse'
+        '401':
+          description: Not authenticated
+  /api/system/login/logs:
+    get:
+      summary: List login logs
+      description: Get paginated list of login logs
+      security:
+        - Bearer: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: loginIp
+          in: query
+          schema:
+            type: string
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [success, failure]
+      responses:
+        '200':
+          description: Login logs list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedResponse'
+        '401':
+          description: Not authenticated
+  /api/system/online/users:
+    get:
+      summary: List online users
+      description: Get list of currently online users
+      security:
+        - Bearer: []
+      responses:
+        '200':
+          description: Online users list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedResponse'
+        '401':
+          description: Not authenticated
+components:
+  securitySchemes:
+    Bearer:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    ApiResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+        message:
+          type: string
+        data:
+          type: object
+          nullable: true
+      required:
+        - code
+        - message
+    PaginatedResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+        message:
+          type: string
+        data:
+          type: object
+          properties:
+            records:
+              type: array
+              items:
+                type: object
+            total:
+              type: integer
+            pageSize:
+              type: integer
+            current:
+              type: integer
+          required:
+            - records
+            - total
+      required:
+        - code
+        - message
+    RegisterRequest:
+      type: object
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+        nickname:
+          type: string
+      required:
+        - username
+        - password
+    CreateUserRequest:
+      type: object
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+        nickname:
+          type: string
+        deptId:
+          type: string
+          format: uuid
+        roleIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+        status:
+          type: string
+          enum: [active, disabled, locked]
+      required:
+        - username
+        - password
+    UpdateUserRequest:
+      type: object
+      properties:
+        email:
+          type: string
+        phone:
+          type: string
+        nickname:
+          type: string
+        deptId:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [active, disabled, locked]
+    CreateDepartmentRequest:
+      type: object
+      properties:
+        code:
+          type: string
+        name:
+          type: string
+        parentId:
+          type: string
+          format: uuid
+        leader:
+          type: string
+        phone:
+          type: string
+        email:
+          type: string
+        sort:
+          type: integer
+        status:
+          type: string
+          enum: [active, disabled]
+      required:
+        - code
+        - name
+    UpdateDepartmentRequest:
+      type: object
+      properties:
+        code:
+          type: string
+        name:
+          type: string
+        parentId:
+          type: string
+          format: uuid
+        leader:
+          type: string
+        phone:
+          type: string
+        email:
+          type: string
+        sort:
+          type: integer
+        status:
+          type: string
+          enum: [active, disabled]
+    CreateRoleRequest:
+      type: object
+      properties:
+        code:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        dataScope:
+          type: string
+          enum: [all, custom, dept, deptAndChild, self]
+        status:
+          type: string
+          enum: [active, disabled]
+      required:
+        - code
+        - name
+    UpdateRoleRequest:
+      type: object
+      properties:
+        code:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        dataScope:
+          type: string
+          enum: [all, custom, dept, deptAndChild, self]
+        status:
+          type: string
+          enum: [active, disabled]
+    CreateMenuRequest:
+      type: object
+      properties:
+        parentId:
+          type: string
+          format: uuid
+        name:
+          type: string
+        menuType:
+          type: string
+          enum: [dir, menu, btn]
+        routePath:
+          type: string
+        component:
+          type: string
+        permission:
+          type: string
+        icon:
+          type: string
+        sort:
+          type: integer
+        visible:
+          type: boolean
+        keepAlive:
+          type: boolean
+        status:
+          type: string
+          enum: [active, disabled]
+      required:
+        - name
+        - menuType
+    UpdateMenuRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        menuType:
+          type: string
+          enum: [dir, menu, btn]
+        routePath:
+          type: string
+        component:
+          type: string
+        permission:
+          type: string
+        icon:
+          type: string
+        sort:
+          type: integer
+        visible:
+          type: boolean
+        keepAlive:
+          type: boolean
+        status:
+          type: string
+          enum: [active, disabled]
+    CreateDictionaryTypeRequest:
+      type: object
+      properties:
+        typeCode:
+          type: string
+        typeName:
+          type: string
+        status:
+          type: string
+          enum: [active, disabled]
+        description:
+          type: string
+        sort:
+          type: integer
+      required:
+        - typeCode
+        - typeName
+    CreateDictionaryDataRequest:
+      type: object
+      properties:
+        dictTypeCode:
+          type: string
+        dictLabel:
+          type: string
+        dictValue:
+          type: string
+        status:
+          type: string
+          enum: [active, disabled]
+        sort:
+          type: integer
+        colorType:
+          type: string
+        cssClass:
+          type: string
+        cssStyle:
+          type: string
+        remark:
+          type: string
+      required:
+        - dictTypeCode
+        - dictLabel
+        - dictValue
+    CreateConfigRequest:
+      type: object
+      properties:
+        configKey:
+          type: string
+        configName:
+          type: string
+        configValue:
+          type: string
+        configType:
+          type: string
+          enum: [yes, no]
+        remark:
+          type: string
+      required:
+        - configKey
+        - configName
+        - configValue
+    CreateNoticeRequest:
+      type: object
+      properties:
+        noticeTitle:
+          type: string
+        noticeType:
+          type: string
+          enum: [notice, announcement]
+        noticeContent:
+          type: string
+        status:
+          type: string
+          enum: [active, disabled]
+        remark:
+          type: string
+      required:
+        - noticeTitle
+        - noticeType
+    CreateJobRequest:
+      type: object
+      properties:
+        jobName:
+          type: string
+        jobGroup:
+          type: string
+        cronExpression:
+          type: string
+        method:
+          type: string
+        methodParams:
+          type: string
+        status:
+          type: string
+          enum: [active, disabled]
+        remark:
+          type: string
+      required:
+        - jobName
+        - cronExpression
+        - method
+    JobLog:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        jobId:
+          type: string
+          format: uuid
+        jobName:
+          type: string
+        jobGroup:
+          type: string
+        method:
+          type: string
+        methodParams:
+          type: string
+        jobMessage:
+          type: string
+        jobStatus:
+          type: string
+          enum: [success, failure]
+        exceptionInfo:
+          type: string
+        startTime:
+          type: string
+          format: date-time
+        stopTime:
+          type: string
+          format: date-time
+        executeTime:
+          type: integer
+        createTime:
+          type: string
+          format: date-time
+    OperationLog:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        operTitle:
+          type: string
+        operType:
+          type: string
+          enum: [insert, update, delete, query, save, common]
+        operName:
+          type: string
+        methodName:
+          type: string
+        methodParams:
+          type: string
+        returnMessage:
+          type: string
+        status:
+          type: string
+          enum: [success, failure]
+        operIp:
+          type: string
+        operLocation:
+          type: string
+        createTime:
+          type: string
+          format: date-time
+        errorMsg:
+          type: string
+    LoginLog:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        username:
+          type: string
+        ipaddr:
+          type: string
+        loginLocation:
+          type: string
+        browser:
+          type: string
+        os:
+          type: string
+        status:
+          type: string
+          enum: [success, failure]
+        msg:
+          type: string
+        createTime:
+          type: string
+          format: date-time
+    OnlineUser:
+      type: object
+      properties:
+        userId:
+          type: string
+          format: uuid
+        username:
+          type: string
+        nickName:
+          type: string
+        ipaddr:
+          type: string
+        loginLocation:
+          type: string
+        browser:
+          type: string
+        os:
+          type: string
+        loginTime:
+          type: string
+          format: date-time
+        sessionId:
+          type: string
