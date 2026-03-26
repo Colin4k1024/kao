@@ -1,11 +1,11 @@
 use axum::http::StatusCode;
-use bcrypt::{hash, verify, DEFAULT_COST};
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
-use sqlx::{PgPool, Row};
-use uuid::Uuid;
 
 use crate::common::error::AppError;
+
+use super::repo::{
+    find_user_by_username, get_user_menu_tree, get_user_permissions, get_user_roles,
+};
 
 #[derive(Debug, Deserialize)]
 pub struct LoginRequest {
@@ -22,11 +22,11 @@ pub struct LoginResponse {
 
 #[derive(Debug, Serialize)]
 pub struct UserProfile {
-    pub id: Uuid,
+    pub id: uuid::Uuid,
     pub username: String,
     pub display_name: String,
     pub email: Option<String>,
-    pub dept_id: Option<Uuid>,
+    pub dept_id: Option<uuid::Uuid>,
     pub avatar_url: Option<String>,
     pub permissions: Vec<String>,
     pub roles: Vec<String>,
@@ -37,15 +37,15 @@ pub struct CurrentSessionResponse {
     pub user: UserProfile,
     pub permissions: Vec<String>,
     pub roles: Vec<String>,
-    pub menu_tree: Value, // Will be populated with menu tree data
+    pub menu_tree: serde_json::Value,
 }
 
 pub fn hash_password(password: &str) -> Result<String, AppError> {
-    hash(password, DEFAULT_COST)
+    bcrypt::hash(password, bcrypt::DEFAULT_COST)
         .map_err(|e| AppError::Internal(format!("Failed to hash password: {}", e)))
 }
 
 pub fn verify_password(password: &str, hash: &str) -> Result<bool, AppError> {
-    verify(password, hash)
+    bcrypt::verify(password, hash)
         .map_err(|e| AppError::Internal(format!("Password verification failed: {}", e)))
 }
