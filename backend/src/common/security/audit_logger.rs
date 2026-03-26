@@ -262,8 +262,17 @@ mod tests {
 
     #[test]
     fn test_audit_log_event_type_display() {
-        assert_eq!(format!("{}", AuditLogEventType::LoginSuccess), "login_success");
-        assert_eq!(format!("{}", AuditLogEventType::LoginFailure), "login_failure");
-        assert_eq!(format!("{}", AuditLogEventType::PasswordChange), "password_change");
+        assert_eq!(
+            format!("{}", AuditLogEventType::LoginSuccess),
+            "login_success"
+        );
+        assert_eq!(
+            format!("{}", AuditLogEventType::LoginFailure),
+            "login_failure"
+        );
+        assert_eq!(
+            format!("{}", AuditLogEventType::PasswordChange),
+            "password_change"
+        );
     }
 }
