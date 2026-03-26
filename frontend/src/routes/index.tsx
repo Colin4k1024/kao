@@ -5,6 +5,12 @@ import MainLayout from '@/pages/layout/MainLayout';
 import Dashboard from '@/pages/Dashboard';
 import UserList from '@/pages/system/users/UserList';
 import DepartmentList from '@/pages/system/departments/DepartmentList';
+import DictionaryTypePage from '@/pages/system/dictionary/type/index';
+import DictionaryDataPage from '@/pages/system/dictionary/data/index';
+import ConfigPage from '@/pages/system/config/index';
+import NoticePage from '@/pages/system/notice/index';
+import JobPage from '@/pages/job/index';
+import JobLogPage from '@/pages/job/log/index';
 
 const AppRoutes: React.FC = () => {
   const isAuthenticated = !!localStorage.getItem('access_token');
@@ -22,6 +28,16 @@ const AppRoutes: React.FC = () => {
           <Route path="system">
             <Route path="users" element={<UserList />} />
             <Route path="departments" element={<DepartmentList />} />
+          </Route>
+          <Route path="dictionary">
+            <Route path="type" element={<DictionaryTypePage />} />
+            <Route path="data" element={<DictionaryDataPage />} />
+          </Route>
+          <Route path="config" element={<ConfigPage />} />
+          <Route path="notice" element={<NoticePage />} />
+          <Route path="job">
+            <Route path="" element={<JobPage />} />
+            <Route path="log" element={<JobLogPage />} />
           </Route>
         </Route>
       </Routes>

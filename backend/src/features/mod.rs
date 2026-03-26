@@ -1,5 +1,9 @@
 pub mod auth;
+pub mod config;
 pub mod departments;
+pub mod dictionary;
 pub mod menus;
+pub mod notice;
 pub mod roles;
 pub mod users;
+pub mod monitoring;

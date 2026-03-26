@@ -2,6 +2,8 @@ pub mod api;
 pub mod app;
 pub mod config;
 pub mod db;
+pub mod common;
+pub mod features;
 pub mod middleware;
 pub mod models;
 pub mod repositories;

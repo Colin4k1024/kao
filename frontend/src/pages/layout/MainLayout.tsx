@@ -7,6 +7,8 @@ import {
   TeamOutlined,
   SettingOutlined,
   LogoutOutlined,
+  DatabaseOutlined,
+  NotificationOutlined,
 } from '@ant-design/icons';
 
 const { Header, Sider, Content } = Layout;
@@ -35,6 +37,31 @@ const MainLayout: React.FC = () => {
           key: '/system/departments',
           icon: <TeamOutlined />,
           label: <Link to="/system/departments">部门管理</Link>,
+        },
+        {
+          key: '/system/roles',
+          icon: <TeamOutlined />,
+          label: <Link to="/system/roles">角色管理</Link>,
+        },
+        {
+          key: '/system/menus',
+          icon: <TeamOutlined />,
+          label: <Link to="/system/menus">菜单管理</Link>,
+        },
+        {
+          key: '/system/dictionary/type',
+          icon: <DatabaseOutlined />,
+          label: <Link to="/system/dictionary/type">字典管理</Link>,
+        },
+        {
+          key: '/system/config',
+          icon: <SettingOutlined />,
+          label: <Link to="/system/config">参数配置</Link>,
+        },
+        {
+          key: '/system/notice',
+          icon: <NotificationOutlined />,
+          label: <Link to="/system/notice">通知公告</Link>,
         },
       ],
     },

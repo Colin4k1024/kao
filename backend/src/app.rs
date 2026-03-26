@@ -7,6 +7,11 @@ use tower_http::cors::{CorsLayer, Any};
 use sqlx::PgPool;
 use crate::config::Settings;
 use axum::{extract::State, Json};
+use crate::features::monitoring::monitoring_router;
+use crate::features::dictionary::r#type::routes::type_routes;
+use crate::features::dictionary::data::routes::data_routes;
+use crate::features::config::routes::config_routes;
+use crate::features::notice::routes::notice_routes;
 
 pub async fn create_app(pool: PgPool, settings: Settings) -> Router {
     let state = AppState { pool, settings };
@@ -17,7 +22,11 @@ pub async fn create_app(pool: PgPool, settings: Settings) -> Router {
         .allow_headers([header::CONTENT_TYPE, header::AUTHORIZATION]);
     
     Router::new()
-        .route("/health", get(health_check))
+        .nest("/system/monitor", monitoring_router())
+        .nest("/api/system/dictionary", type_routes())
+        .nest("/api/system/dictionary", data_routes())
+        .nest("/api/system/config", config_routes())
+        .nest("/api/system/notice", notice_routes())
         .route("/api-docs", get(redirect_to_swagger))
         .route("/api-docs/openapi.yaml", get(openapi_spec))
         .route("/api/auth/login", post(login))
