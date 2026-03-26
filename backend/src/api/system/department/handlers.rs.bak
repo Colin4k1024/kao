@@ -1,0 +1,164 @@
+use axum::{extract::{State, Path, Query}, Json};
+use serde::{Deserialize, Serialize};
+use crate::app::AppState;
+
+#[derive(Debug, Deserialize)]
+pub struct DepartmentQueryParams {
+    pub page: Option<u32>,
+    pub page_size: Option<u32>,
+}
+
+pub async fn list_departments(
+    State(state): State<AppState>,
+    Query(params): Query<DepartmentQueryParams>,
+) -> Json<serde_json::Value> {
+    let result = sqlx::query_as::<_, (String, Option<String>, String, String, i32, Option<String>, Option<String>, Option<String>, i32)>(
+        r#"
+        SELECT id, parent_id, ancestors, department_name, display_order, leader, phone, email, status
+        FROM sys_department
+        WHERE deleted_at IS NULL
+        ORDER BY display_order ASC
+        "#
+    )
+    .fetch_all(&state.pool)
+    .await;
+
+    match result {
+        Ok(departments) => {
+            let list: Vec<serde_json::Value> = departments.into_iter().map(|d| {
+                serde_json::json!({
+                    "id": d.0,
+                    "parent_id": d.1,
+                    "ancestors": d.2,
+                    "department_name": d.3,
+                    "display_order": d.4,
+                    "leader": d.5,
+                    "phone": d.6,
+                    "email": d.7,
+                    "status": d.8
+                })
+            }).collect();
+
+            Json(serde_json::json!({
+                "code": 200,
+                "message": "success",
+                "data": list
+            }))
+        }
+        Err(e) => Json(serde_json::json!({
+            "code": 500,
+            "message": format!("查询失败: {}", e),
+            "data": null::<()>
+        }))
+    }
+}
+
+pub async fn get_department(
+    State(state): State<AppState>,
+    Path(id): Path<String>,
+) -> Json<serde_json::Value> {
+    let result = sqlx::query_as::<_, (String, Option<String>, String, String, i32, Option<String>, Option<String>, Option<String>, i32)>(
+        "SELECT id, parent_id, ancestors, department_name, display_order, leader, phone, email, status FROM sys_department WHERE id = $1 AND deleted_at IS NULL"
+    )
+    .bind(&id)
+    .fetch_optional(&state.pool)
+    .await;
+
+    match result {
+        Ok(Some(dept)) => Json(serde_json::json!({
+            "code": 200,
+            "message": "success",
+            "data": {
+                "id": dept.0,
+                "parent_id": dept.1,
+                "ancestors": dept.2,
+                "department_name": dept.3,
+                "display_order": dept.4,
+                "leader": dept.5,
+                "phone": dept.6,
+                "email": dept.7,
+                "status": dept.8
+            }
+        })),
+        Ok(None) => Json(serde_json::json!({
+            "code": 404,
+            "message": "部门不存在",
+            "data": null::<()>
+        })),
+        Err(e) => Json(serde_json::json!({
+            "code": 500,
+            "message": format!("查询失败: {}", e),
+            "data": null::<()>
+        }))
+    }
+}
+
+pub async fn create_department(
+    State(_state): State<AppState>,
+    Json(req): Json<serde_json::Value>,
+) -> Json<serde_json::Value> {
+    Json(serde_json::json!({
+        "code": 200,
+        "message": "创建部门功能开发中",
+        "data": req
+    }))
+}
+
+pub async fn update_department(
+    State(_state): State<AppState>,
+    Path(id): Path<String>,
+    Json(req): Json<serde_json::Value>,
+) -> Json<serde_json::Value> {
+    Json(serde_json::json!({
+        "code": 200,
+        "message": format!("更新部门 {} 成功", id),
+        "data": req
+    }))
+}
+
+pub async fn delete_department(
+    State(_state): State<AppState>,
+    Path(id): Path<String>,
+) -> Json<serde_json::Value> {
+    Json(serde_json::json!({
+        "code": 200,
+        "message": format!("删除部门 {} 成功", id),
+        "data": null::<()>
+    }))
+}
+
+pub async fn get_department_tree(State(state): State<AppState>) -> Json<serde_json::Value> {
+    let result = sqlx::query_as::<_, (String, Option<String>, String, String, i32, Option<String>, Option<String>, Option<String>, i32)>(
+        "SELECT id, parent_id, ancestors, department_name, display_order, leader, phone, email, status FROM sys_department WHERE deleted_at IS NULL ORDER BY display_order ASC"
+    )
+    .fetch_all(&state.pool)
+    .await;
+
+    match result {
+        Ok(departments) => {
+            Json(serde_json::json!({
+                "code": 200,
+                "message": "success",
+                "data": departments.into_iter().map(|d| {
+                    serde_json::json!({
+                        "id": d.0,
+                        "parent_id": d.1,
+                        "ancestors": d.2,
+                        "department_name": d.3,
+                        "display_order": d.4,
+                        "leader": d.5,
+                        "phone": d.6,
+                        "email": d.7,
+                        "status": d.8,
+                        "children": []
+                    })
+                }).collect::<Vec<_>>()
+            }))
+        }
+        Err(e) => Json(serde_json::json!({
+            "code": 500,
+            "message": format!("查询失败: {}", e),
+            "data": null::<()>
+        }))
+    }
+}

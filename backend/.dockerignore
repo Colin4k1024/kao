@@ -1,0 +1,11 @@
+target/
+debug/
+release/
+.git/
+.gitignore
+.env
+.env.*
+!.env.example
+*.md
+*.log
+.DS_Store

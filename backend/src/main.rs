@@ -1,41 +1,27 @@
-use ai_coding_backend::app::{router::create_router, state::AppState};
-use ai_coding_backend::common::{config::Config, db::create_db_pool};
-use std::sync::Arc;
-use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
+use kao_backend::config;
+use kao_backend::db;
+use kao_backend::middleware::logger::init_logger;
+use std::net::SocketAddr;
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // Initialize logging
-    tracing_subscriber::registry()
-        .with(tracing_subscriber::EnvFilter::try_from_default_env().unwrap_or_else(|_| {
-            "ai_coding_backend=debug,tower_http=debug".into()
-        }))
-        .with(tracing_subscriber::fmt::layer())
-        .init();
+async fn main() -> anyhow::Result<()> {
+    let settings = config::init();
 
-    // Load configuration
-    let config = Config::from_env()?;
-    
-    // Create database pool
-    let db_pool = create_db_pool(&config.database_url).await?;
-    
-    // Create application state
-    let app_state = AppState {
-        db: db_pool,
-        config: config.clone(),
-    };
+    init_logger(&settings.app.log_level);
 
-    // Create router with state
-    let app = create_router(app_state);
+    tracing::info!("Starting kao-backend server...");
 
-    // Run server
-    let listener = tokio::net::TcpListener::bind(format!("0.0.0.0:{}", config.port))
-        .await
-        .unwrap();
-    
-    println!("Server running on http://0.0.0.0:{}", config.port);
-    
-    axum::serve(listener, app).await.unwrap();
+    let pool = db::create_pool(&settings).await?;
+
+    tracing::info!("Database connection pool created");
+
+    let app = kao_backend::app::create_app(pool, settings).await;
+
+    let addr = SocketAddr::from(([0, 0, 0, 0], 8080));
+    tracing::info!("Server listening on {}", addr);
+
+    let listener = tokio::net::TcpListener::bind(addr).await?;
+    axum::serve(listener, app).await;
 
     Ok(())
 }

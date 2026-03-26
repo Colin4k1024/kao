@@ -1,0 +1,29 @@
+{
+  "name": "kao",
+  "version": "1.0.0",
+  "description": "基于 React + Rust 的类若依(RuoYi)企业级后台管理系统。",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "playwright test",
+    "test:headed": "playwright test --headed",
+    "test:ui": "playwright test --ui",
+    "test:report": "playwright show-report"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Colin4k1024/kao.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Colin4k1024/kao/issues"
+  },
+  "homepage": "https://github.com/Colin4k1024/kao#readme",
+  "devDependencies": {
+    "@playwright/test": "^1.58.2"
+  }
+}

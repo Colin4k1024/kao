@@ -1,0 +1,160 @@
+use axum::{extract::{State, Path, Query}, Json};
+use serde::{Deserialize, Serialize};
+use crate::app::AppState;
+
+#[derive(Debug, Deserialize)]
+pub struct UserQueryParams {
+    pub page: Option<u32>,
+    pub page_size: Option<u32>,
+}
+
+pub async fn list_users(
+    State(state): State<AppState>,
+    Query(params): Query<UserQueryParams>,
+) -> Json<serde_json::Value> {
+    let page = params.page.unwrap_or(1);
+    let page_size = params.page_size.unwrap_or(10);
+    let offset = (page - 1) * page_size;
+
+    let result = sqlx::query_as::<_, (String, String, Option<String>, Option<String>, Option<String>, Option<String>, i32)>(
+        r#"
+        SELECT id, username, nickname, email, phone, avatar, status
+        FROM sys_user
+        WHERE deleted_at IS NULL
+        ORDER BY created_at DESC
+        LIMIT $1 OFFSET $2
+        "#
+    )
+    .bind(page_size as i64)
+    .bind(offset as i64)
+    .fetch_all(&state.pool)
+    .await;
+
+    match result {
+        Ok(users) => {
+            let total = users.len() as i64;
+            let list: Vec<serde_json::Value> = users.into_iter().map(|u| {
+                serde_json::json!({
+                    "id": u.0,
+                    "username": u.1,
+                    "nickname": u.2,
+                    "email": u.3,
+                    "phone": u.4,
+                    "avatar": u.5,
+                    "status": u.6
+                })
+            }).collect();
+
+            Json(serde_json::json!({
+                "code": 200,
+                "message": "success",
+                "data": {
+                    "list": list,
+                    "total": total,
+                    "page": page,
+                    "pageSize": page_size
+                }
+            }))
+        }
+        Err(e) => Json(serde_json::json!({
+            "code": 500,
+            "message": format!("查询失败: {}", e),
+            "data": serde_json::Value::Null
+        }))
+    }
+}
+
+pub async fn get_user(
+    State(state): State<AppState>,
+    Path(id): Path<String>,
+) -> Json<serde_json::Value> {
+    let result = sqlx::query_as::<_, (String, String, Option<String>, Option<String>, Option<String>, Option<String>, i32)>(
+        "SELECT id, username, nickname, email, phone, avatar, status FROM sys_user WHERE id = $1 AND deleted_at IS NULL"
+    )
+    .bind(&id)
+    .fetch_optional(&state.pool)
+    .await;
+
+    match result {
+        Ok(Some(user)) => Json(serde_json::json!({
+            "code": 200,
+            "message": "success",
+            "data": {
+                "id": user.0,
+                "username": user.1,
+                "nickname": user.2,
+                "email": user.3,
+                "phone": user.4,
+                "avatar": user.5,
+                "status": user.6
+            }
+        })),
+        Ok(None) => Json(serde_json::json!({
+            "code": 404,
+            "message": "用户不存在",
+            "data": serde_json::Value::Null
+        })),
+        Err(e) => Json(serde_json::json!({
+            "code": 500,
+            "message": format!("查询失败: {}", e),
+            "data": serde_json::Value::Null
+        }))
+    }
+}
+
+pub async fn create_user(
+    State(_state): State<AppState>,
+    Json(req): Json<serde_json::Value>,
+) -> Json<serde_json::Value> {
+    Json(serde_json::json!({
+        "code": 200,
+        "message": "创建用户功能开发中",
+        "data": req
+    }))
+}
+
+pub async fn update_user(
+    State(_state): State<AppState>,
+    Path(id): Path<String>,
+    Json(req): Json<serde_json::Value>,
+) -> Json<serde_json::Value> {
+    Json(serde_json::json!({
+        "code": 200,
+        "message": format!("更新用户 {} 成功", id),
+        "data": req
+    }))
+}
+
+pub async fn delete_user(
+    State(_state): State<AppState>,
+    Path(id): Path<String>,
+) -> Json<serde_json::Value> {
+    Json(serde_json::json!({
+        "code": 200,
+        "message": format!("删除用户 {} 成功", id),
+        "data": serde_json::Value::Null
+    }))
+}
+
+pub async fn reset_password(
+    State(_state): State<AppState>,
+    Path(id): Path<String>,
+) -> Json<serde_json::Value> {
+    Json(serde_json::json!({
+        "code": 200,
+        "message": format!("重置用户 {} 密码成功", id),
+        "data": "123456"
+    }))
+}
+
+pub async fn assign_roles(
+    State(_state): State<AppState>,
+    Path(id): Path<String>,
+    Json(req): Json<serde_json::Value>,
+) -> Json<serde_json::Value> {
+    Json(serde_json::json!({
+        "code": 200,
+        "message": format!("为用户 {} 分配角色成功", id),
+        "data": req
+    }))
+}
