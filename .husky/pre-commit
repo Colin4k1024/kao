@@ -1,0 +1,55 @@
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
+# Run pre-commit hooks
+echo "Running pre-commit hooks..."
+
+# Run Rust clippy
+if command -v cargo clippy >/dev/null 2>&1; then
+    echo "Running Rust clippy..."
+    if ! cargo clippy --all-targets --all-features -- -D warnings; then
+        echo "❌ Rust clippy failed. Please fix the issues above."
+        exit 1
+    fi
+    echo "✅ Rust clippy passed"
+fi
+
+# Run Rust tests
+if command -v cargo test >/dev/null 2>&1; then
+    echo "Running Rust tests..."
+    if ! cargo test; then
+        echo "❌ Rust tests failed. Please fix the issues above."
+        exit 1
+    fi
+    echo "✅ Rust tests passed"
+fi
+
+# Run TypeScript lint
+if command -v npm >/dev/null 2>&1; then
+    echo "Running npm lint..."
+    if ! npm run lint; then
+        echo "❌ npm lint failed. Please fix the issues above."
+        exit 1
+    fi
+    echo "✅ npm lint passed"
+fi
+
+# Run TypeScript type check
+if command -v npm >/dev/null 2>&1; then
+    echo "Running TypeScript type check..."
+    if ! npm run type-check; then
+        echo "❌ TypeScript type check failed. Please fix the issues above."
+        exit 1
+    fi
+    echo "✅ TypeScript type check passed"
+fi
+
+# Format code
+echo "Formatting code..."
+if ! npm run format; then
+    echo "❌ Code formatting failed. Please run 'npm run format' and commit the changes."
+    exit 1
+fi
+
+echo "✅ All pre-commit hooks passed!"
+exit 0

@@ -1,0 +1,16 @@
+{
+  "src/**/*.rs": [
+    "cargo fmt",
+    "cargo clippy --all-targets --all-features -- -D warnings"
+  ],
+  "src/**/*.{ts,tsx}": [
+    "npm run lint",
+    "npm run format"
+  ],
+  "src/**/*.css": [
+    "prettier --write"
+  ],
+  "*.{md,json,yaml,yml,toml}": [
+    "prettier --write"
+  ]
+}
