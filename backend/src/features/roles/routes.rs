@@ -1,12 +1,13 @@
 use axum::{
     extract::{Json, Path, State},
+    http::{HeaderMap, StatusCode},
     response::IntoResponse,
 };
 use uuid::Uuid;
 
 use crate::{
     app::state::AppState,
-    common::{auth::extractor::AuthUser, response::ApiResponse},
+    common::{auth::extractor::AuthUser, middleware::caching::CacheControl, response::ApiResponse},
 };
 
 use super::{
@@ -26,10 +27,37 @@ pub fn role_routes() -> axum::Router<AppState> {
 pub async fn list_roles(
     State(state): State<AppState>,
     _auth_user: AuthUser,
+    headers: HeaderMap,
 ) -> Result<impl IntoResponse, crate::common::error::AppError> {
     let role_service = RoleService::new();
     let roles = role_service.list_roles(&state.db).await?;
-    Ok(ApiResponse::success(roles))
+    
+    // Check If-None-Match for conditional requests
+    let if_none_match = headers.get("if-none-match");
+    
+    // Generate ETag
+    let body = serde_json::to_string(&roles)?;
+    let etag = format!("\"{}\"", md5::compute(&body));
+    let etag_str = etag.as_str();
+    
+    // Check if client has cached version
+    if let Some(header_value) = if_none_match {
+        if header_value.to_str().map(|h| h.contains(etag_str)).unwrap_or(false) {
+            return Ok((
+                StatusCode::NOT_MODIFIED,
+                [(
+                    "Cache-Control",
+                    "max-age=300, public",
+                )],
+                "",
+            ));
+        }
+    }
+    
+    let response = ApiResponse::success(roles);
+    Ok(([(HeaderMap::new(), response.0)])
+        .into_response()
+        .with_cache_control(CacheControl::mutable(300)))
 }
 
 pub async fn get_role(

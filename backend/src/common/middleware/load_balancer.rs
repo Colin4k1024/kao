@@ -2,7 +2,7 @@ use axum::{
     extract::Request,
     middleware::Next,
     response::Response,
-    http::{HeaderName, HeaderValue, StatusCode},
+    http::{HeaderName, HeaderValue},
 };
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -105,38 +105,6 @@ impl LoadBalancer {
         }
     }
 
-    /// Extract instance ID from cookie
-    pub fn extract_instance_id_from_cookie(&self, req: &Request) -> Option<String> {
-        let cookie_header = req.headers().get("cookie")?;
-        let cookie_str = cookie_header.to_str().ok()?;
-        
-        for cookie in cookie_str.split(';') {
-            let cookie = cookie.trim();
-            if cookie.starts_with(format!("{}=", LB_COOKIE).as_str()) {
-                let value = cookie.trim_start_matches(format!("{}=", LB_COOKIE).as_str());
-                return LbCookie::from_str(value).map(|c| c.instance_id);
-            }
-        }
-        
-        None
-    }
-
-    /// Add sticky session cookie to response
-    pub fn add_sticky_cookie(&self, response: &mut Response) {
-        let cookie = LbCookie::new(self.instance_id.clone());
-        let cookie_str = format!(
-            "{}={}; Max-Age={}; HttpOnly; Secure; SameSite=Lax",
-            LB_COOKIE,
-            cookie.to_string(),
-            self.cookie_max_age
-        );
-        
-        response.headers_mut().append(
-            "set-cookie",
-            HeaderValue::from_str(&cookie_str).unwrap(),
-        );
-    }
-
     /// Generate a unique request ID
     pub fn generate_request_id(&self) -> String {
         Uuid::new_v4().to_string()
@@ -177,56 +145,21 @@ impl Default for LoadBalancer {
 
 /// Load balancer middleware
 pub async fn load_balancer_middleware(
-    mut req: Request,
+    req: Request,
     next: Next,
 ) -> Result<Response, axum::BoxError> {
     let lb = LoadBalancer::new();
     
-    // Generate or extract request ID
-    let request_id = req
-        .headers()
-        .get(X_REQUEST_ID)
-        .and_then(|h| h.to_str().ok())
-        .unwrap_or_else(|| lb.generate_request_id().as_str());
+    // Generate request ID
+    let request_id = lb.generate_request_id();
     
-    // Extract instance ID from cookie if sticky sessions enabled
-    if lb.sticky_sessions {
-        if let Some(instance_id) = lb.extract_instance_id_from_cookie(&req) {
-            req.headers_mut().insert(
-                HeaderName::from_static(X_BACKEND_INSTANCE),
-                HeaderValue::from_str(&instance_id).unwrap(),
-            );
-        }
-    }
+    let mut response = next.run(req).await;
     
-    // Add request ID header
-    req.headers_mut().insert(
-        HeaderName::from_static(X_REQUEST_ID),
-        HeaderValue::from_str(request_id).unwrap(),
-    );
-    
-    // Increment request count (using a simplified path for now)
-    lb.increment_request_count("/api/path");
-    
-    let response = next.run(req).await;
-    let mut response = response;
-    
-    // Add sticky cookie if not present
-    if lb.sticky_sessions {
-        let has_cookie = response
-            .headers()
-            .get("set-cookie")
-            .and_then(|h| h.to_str().ok())
-            .map(|h| h.contains(LB_COOKIE))
-            .unwrap_or(false);
-        
-        if !has_cookie {
-            lb.add_sticky_cookie(&mut response);
-        }
-    }
+    // Add sticky cookie
+    lb.add_sticky_cookie(&mut response);
     
     // Add request ID to response
-    lb.add_request_id(&mut response, request_id);
+    lb.add_request_id(&mut response, &request_id);
     
     Ok(response)
 }
