@@ -1,13 +1,12 @@
 import React from 'react';
-import { Card, Typography, Row, Col } from 'antd';
-import { Line, Bar, Progress } from '@ant-design/plots';
+import { Card } from 'antd';
 import type { CardProps } from 'antd';
 
-const { Title, Text } = Typography;
+export type ChartType = 'line' | 'bar' | 'progress';
 
 interface ChartSectionProps extends CardProps {
   title: string;
-  type?: 'line' | 'bar' | 'progress';
+  type?: ChartType;
   data?: any[];
   xField?: string;
   yField?: string;
@@ -27,19 +26,6 @@ export const ChartSection: React.FC<ChartSectionProps> = ({
   description,
   ...rest
 }) => {
-  const config = {
-    data,
-    xField,
-    yField,
-    color,
-    animation: {
-      appear: {
-        animation: 'position-update',
-        duration: 500,
-      },
-    },
-  };
-
   return (
     <Card
       hoverable
@@ -50,34 +36,50 @@ export const ChartSection: React.FC<ChartSectionProps> = ({
       {...rest}
     >
       <div style={{ marginBottom: 16 }}>
-        <Title level={5} style={{ margin: 0 }}>
+        <h3 style={{ margin: 0, fontSize: '16px' }}>
           {title}
-        </Title>
+        </h3>
         {description && (
-          <Text type="secondary" style={{ fontSize: '12px' }}>
+          <div style={{ fontSize: '12px', color: '#8c8c8c' }}>
             {description}
-          </Text>
+          </div>
         )}
       </div>
       {type === 'line' && (
-        <Line {...config} />
+        <div style={{ textAlign: 'center', padding: '40px 0' }}>
+          <div style={{ fontSize: '24px', color: color, fontWeight: '600' }}>
+            {data.length > 0 ? data.map((d) => d[yField]).reduce((a, b) => a + b, 0) : 0}
+          </div>
+          <div style={{ marginTop: '8px', fontSize: '12px', color: '#8c8c8c' }}>
+            Line Chart
+          </div>
+        </div>
       )}
       {type === 'bar' && (
-        <Bar {...config} />
+        <div style={{ textAlign: 'center', padding: '40px 0' }}>
+          <div style={{ fontSize: '24px', color: color, fontWeight: '600' }}>
+            {data.length > 0 ? data.map((d) => d[yField]).reduce((a, b) => a + b, 0) : 0}
+          </div>
+          <div style={{ marginTop: '8px', fontSize: '12px', color: '#8c8c8c' }}>
+            Bar Chart
+          </div>
+        </div>
       )}
       {type === 'progress' && (
-        <Row justify="center" align="middle" style={{ height: '100%' }}>
-          <Col>
-            <Progress
-              type="circle"
-              percent={progressValue}
-              format={(percent) => `${percent}%`}
-              width={120}
-              strokeWidth={8}
-              strokeColor={color}
-            />
-          </Col>
-        </Row>
+        <div style={{ textAlign: 'center', padding: '40px 0' }}>
+          <div
+            style={{
+              fontSize: '24px',
+              fontWeight: '600',
+              color,
+            }}
+          >
+            {progressValue}%
+          </div>
+          <div style={{ marginTop: '8px', fontSize: '12px', color: '#8c8c8c' }}>
+            Progress
+          </div>
+        </div>
       )}
     </Card>
   );

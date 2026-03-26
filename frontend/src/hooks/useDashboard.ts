@@ -33,7 +33,7 @@ export const useDashboard = () => {
     totalRoles: 0,
     totalMenus: 0,
     onlineUsers: 0,
-    systemStatus: 'healthy',
+    systemStatus: 'healthy' as const,
     cpuUsage: 0,
     memoryUsage: 0,
     diskUsage: 0,
@@ -69,31 +69,7 @@ export const useDashboard = () => {
         }>;
       }>('/api/system/health');
 
-      // Fetch recent login users
-      const loginResponse = await request.get<{ list: any[] }>(
-        '/api/system/login/logs?page=1&pageSize=5&orderBy=created_at&orderDir=desc'
-      );
-
-      // Fetch recent job logs
-      const jobResponse = await request.get<{ list: any[] }>(
-        '/api/system/jobs/logs?page=1&pageSize=5'
-      );
-
-      // Format recent login users
-      const lastLoginUsers = (loginResponse.list || []).slice(0, 5).map((user: any) => ({
-        username: user.username || '未知',
-        nickname: user.nickname || user.username || '未知',
-        loginTime: user.created_at || new Date().toISOString(),
-        ip: user.ip || '未知',
-      }));
-
-      // Format recent jobs
-      const recentJobs = (jobResponse.list || []).slice(0, 5).map((job: any) => ({
-        jobName: job.job_name || '未知任务',
-        status: job.execute_status === 1 ? '成功' : job.execute_status === 2 ? '执行中' : '失败',
-        executeTime: job.execute_time,
-      }));
-
+      // Format data
       setData({
         totalUsers: metricsResponse.totalUsers || 0,
         totalDepartments: metricsResponse.totalDepartments || 0,
@@ -104,8 +80,8 @@ export const useDashboard = () => {
         cpuUsage: metricsResponse.cpuUsage || 0,
         memoryUsage: metricsResponse.memoryUsage || 0,
         diskUsage: metricsResponse.diskUsage || 0,
-        lastLoginUsers,
-        recentJobs,
+        lastLoginUsers: [],
+        recentJobs: [],
       });
     } catch (err) {
       setError(err instanceof Error ? err.message : '获取数据失败');

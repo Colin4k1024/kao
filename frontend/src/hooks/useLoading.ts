@@ -7,37 +7,21 @@ export interface LoadingState {
 
 export const useLoading = (initialValue: boolean = false) => {
   const [loading, setLoading] = useState<boolean>(initialValue);
-  const [loadingCount, setLoadingCount] = useState<number>(0);
 
   const showLoading = () => {
-    setLoadingCount((prev) => {
-      const newCount = prev + 1;
-      if (newCount === 1) {
-        setLoading(true);
-      }
-      return newCount;
-    });
+    setLoading(true);
   };
 
   const hideLoading = () => {
-    setLoadingCount((prev) => {
-      const newCount = prev - 1;
-      if (newCount <= 0) {
-        setLoading(false);
-        return 0;
-      }
-      return newCount;
-    });
+    setLoading(false);
   };
 
   const resetLoading = () => {
     setLoading(false);
-    setLoadingCount(0);
   };
 
   return {
     loading,
-    loadingCount,
     showLoading,
     hideLoading,
     resetLoading,
@@ -55,7 +39,7 @@ export const useApiLoading = <T extends (...args: any[]) => Promise<any>>(
 } => {
   const [data, setData] = useState<Awaited<ReturnType<T>> | null>(null);
   const [error, setError] = useState<Error | null>(null);
-  const { loading, showLoading, hideLoading } = useLoading(false);
+  const { loading: apiLoading, showLoading, hideLoading } = useLoading(false);
 
   const run = async (...args: Parameters<T>) => {
     showLoading();
@@ -73,7 +57,7 @@ export const useApiLoading = <T extends (...args: any[]) => Promise<any>>(
   };
 
   return {
-    loading,
+    loading: apiLoading,
     run,
     data,
     error,
@@ -82,11 +66,11 @@ export const useApiLoading = <T extends (...args: any[]) => Promise<any>>(
 
 // Hook for Debounced Loading
 export const useDebouncedLoading = (delay: number = 300) => {
-  const { loading, showLoading, hideLoading, loadingCount } = useLoading(false);
+  const { loading, showLoading, hideLoading } = useLoading(false);
   const [debouncedLoading, setDebouncedLoading] = useState(false);
 
   useEffect(() => {
-    let timeoutId: number | undefined;
+    let timeoutId: NodeJS.Timeout | undefined;
     if (loading) {
       timeoutId = setTimeout(() => {
         setDebouncedLoading(true);

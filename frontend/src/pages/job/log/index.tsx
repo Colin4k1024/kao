@@ -6,50 +6,22 @@ import {
   Input,
   Tag,
   Modal,
-  Select,
+  Form,
   message,
+  Popconfirm,
+  Switch,
 } from 'antd';
 import {
   ReloadOutlined,
   SearchOutlined,
   EyeOutlined,
+  DeleteOutlined,
 } from '@ant-design/icons';
+import { Select } from 'antd';
+import type { ColumnType, ColumnsType } from 'antd/es/table';
 import request from '@/lib/api';
 import type { PageParams } from '@/types/api';
-import type { ColumnsType } from 'antd/es/table';
-
-// Log interface
-export interface Log {
-  id: number;
-  job_id: number;
-  job_name: string;
-  job_code: string;
-  job_group: string;
-  execute_status: number;
-  execute_message?: string;
-  execute_time: string;
-  created_at: string;
-}
-
-// API service
-export const logApi = {
-  list(params: PageParams & { job_id?: number; job_name?: string; execute_status?: number }) {
-    return request.get<{ list: Log[]; total: number }>(
-      '/api/system/jobs/logs',
-      { params }
-    );
-  },
-  get(id: number) {
-    return request.get<Log>(`/api/system/jobs/logs/${id}`);
-  },
-  clear(jobId?: number) {
-    return request.delete(
-      jobId
-        ? `/api/system/jobs/logs/clear?job_id=${jobId}`
-        : '/api/system/jobs/logs/clear'
-    );
-  },
-};
+import { logApi, Log } from '@/services/api/job';
 
 // Log Page Component
 export const JobLogPage: React.FC = () => {
@@ -183,7 +155,7 @@ export const JobLogPage: React.FC = () => {
       key: 'action',
       width: 150,
       fixed: 'right',
-      render: (_, record) => (
+      render: (_a: any, record: Log) => (
         <Space size="small">
           <Button
             type="link"
@@ -197,7 +169,7 @@ export const JobLogPage: React.FC = () => {
             description={`确定要清除任务【${record.job_name}】的日志吗？`}
             onConfirm={() => handleClearJobLogs(record.job_id)}
           >
-            <Button type="link" danger>
+            <Button type="link" danger icon={<DeleteOutlined />}>
               清除
             </Button>
           </Popconfirm>

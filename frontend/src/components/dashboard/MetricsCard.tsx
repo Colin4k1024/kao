@@ -1,8 +1,7 @@
 import React from 'react';
-import { Card, Typography } from 'antd';
+import { Card } from 'antd';
 import type { CardProps } from 'antd';
 
-const { Title, Text } = Typography;
 interface MetricsCardProps extends CardProps {
   title: string;
   value: number | string;
@@ -42,7 +41,7 @@ export const MetricsCard: React.FC<MetricsCardProps> = ({
       {...rest}
     >
       <div style={{ marginBottom: 16 }}>
-        <Text
+        <div
           style={{
             fontSize: '16px',
             fontWeight: '500',
@@ -50,10 +49,10 @@ export const MetricsCard: React.FC<MetricsCardProps> = ({
           }}
         >
           {title}
-        </Text>
+        </div>
       </div>
       <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
-        <span
+        <div
           style={{
             fontSize: '24px',
             fontWeight: '600',
@@ -61,11 +60,11 @@ export const MetricsCard: React.FC<MetricsCardProps> = ({
           }}
         >
           {value}
-        </span>
+        </div>
       </div>
       {trend && (
         <div style={{ marginTop: '8px' }}>
-          <span
+          <div
             style={{
               color: trend === 'up' ? '#52c41a' : trend === 'down' ? '#f5222d' : '#8c8c8c',
               fontSize: '12px',
@@ -74,7 +73,7 @@ export const MetricsCard: React.FC<MetricsCardProps> = ({
             {trend === 'up' && '↑'}
             {trend === 'down' && '↓'}
             {trend === 'neutral' && '—'}
-          </span>
+          </div>
         </div>
       )}
       {description && (

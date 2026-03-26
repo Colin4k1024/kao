@@ -9,10 +9,7 @@ import {
   Form,
   message,
   Popconfirm,
-  Switch,
-  Alert,
   Select,
-  InputNumber,
 } from 'antd';
 import {
   PlusOutlined,
@@ -20,72 +17,12 @@ import {
   DeleteOutlined,
   ReloadOutlined,
   SearchOutlined,
-  PlayCircleOutlined,
 } from '@ant-design/icons';
+import type { ColumnType, ColumnsType } from 'antd/es/table';
+import { Switch, Modal, Text, InputNumber } from 'antd';
 import request from '@/lib/api';
 import type { PageParams } from '@/types/api';
-import { cronValidator } from '@/services/api/job';
-
-// Job interface
-export interface Job {
-  id: number;
-  job_name: string;
-  job_code: string;
-  job_group: string;
-  job_status: number;
-  cron_expression: string;
-  retry_count: number;
-  retry_interval: number;
-  timeout: number;
-  description?: string;
-  created_by?: string;
-  created_at: string;
-  updated_at: string;
-}
-
-// API service
-export const jobApi = {
-  list(params: PageParams & { job_name?: string; job_code?: string; job_status?: number }) {
-    return request.get<{ list: Job[]; total: number }>(
-      '/api/system/jobs',
-      { params }
-    );
-  },
-  get(id: number) {
-    return request.get<Job>(`/api/system/jobs/${id}`);
-  },
-  create(data: Partial<Job>) {
-    return request.post<Job>('/api/system/jobs', data);
-  },
-  update(id: number, data: Partial<Job>) {
-    return request.put<Job>(`/api/system/jobs/${id}`, data);
-  },
-  delete(id: number) {
-    return request.delete(`/api/system/jobs/${id}`);
-  },
-  schedule(id: number) {
-    return request.put(`/api/system/jobs/${id}/schedule`);
-  },
-  unschedule(id: number) {
-    return request.put(`/api/system/jobs/${id}/unschedule`);
-  },
-  runOnce(id: number) {
-    return request.post(`/api/system/jobs/${id}/run`);
-  },
-};
-
-// Form interface
-interface JobForm {
-  job_name: string;
-  job_code: string;
-  job_group: string;
-  cron_expression: string;
-  job_status: number;
-  retry_count: number;
-  retry_interval: number;
-  timeout: number;
-  description?: string;
-}
+import { jobApi, Job, cronValidator } from '@/services/api/job';
 
 // Job Page Component
 export const JobPage: React.FC = () => {
@@ -280,11 +217,11 @@ export const JobPage: React.FC = () => {
       key: 'action',
       width: 250,
       fixed: 'right',
-      render: (_, record) => (
+      render: (_a: any, record: Job) => (
         <Space size="small">
           <Button
             type="link"
-            icon={<PlayCircleOutlined />}
+            icon={<PlusOutlined />}
             onClick={() => handleRunOnce(record.id)}
           >
             执行一次
@@ -417,17 +354,13 @@ export const JobPage: React.FC = () => {
             ]}
             extra={
               nextRunTimes ? (
-                <Alert
-                  message={
-                    <span>
-                      下次运行时间：{nextRunTimes}
-                    </span>
-                  }
-                  type="info"
-                  showIcon
-                />
+                <div style={{ marginTop: '8px' }}>
+                  <Tag color="blue">下次运行时间：{nextRunTimes}</Tag>
+                </div>
               ) : (
-                <span>支持标准Cron表达式，例如：0 0 12 * * ? (每天中午12点触发)</span>
+                <div style={{ marginTop: '8px' }}>
+                  <Text type="secondary">支持标准Cron表达式，例如：0 0 12 * * ? (每天中午12点触发)</Text>
+                </div>
               )
             }
           >

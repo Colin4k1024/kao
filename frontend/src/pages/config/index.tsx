@@ -11,6 +11,7 @@ import {
   Popconfirm,
   Switch,
   Alert,
+  Select,
 } from 'antd';
 import {
   PlusOutlined,
@@ -22,6 +23,7 @@ import {
 } from '@ant-design/icons';
 import request from '@/lib/api';
 import type { PageParams } from '@/types/api';
+import type { ColumnType, ColumnsType } from 'antd/es/table';
 
 // Config interface
 export interface Config {

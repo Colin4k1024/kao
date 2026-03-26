@@ -6,14 +6,12 @@ import {
   Col,
   Table,
   Tag,
-  Space,
   Button,
-  message,
 } from 'antd';
 import {
-  DownloadOutlined,
   ReloadOutlined,
 } from '@ant-design/icons';
+import type { ColumnType } from 'antd/es/table';
 
 import {
   fetchMetrics,
@@ -63,7 +61,7 @@ const DashboardPage = () => {
     loadData();
   };
 
-  const columns = [
+  const columns: ColumnType<any>[] = [
     {
       title: 'ID',
       dataIndex: 'id',
