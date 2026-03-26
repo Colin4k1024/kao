@@ -105,6 +105,38 @@ impl LoadBalancer {
         }
     }
 
+    /// Extract instance ID from cookie
+    pub fn extract_instance_id_from_cookie(&self, req: &Request) -> Option<String> {
+        let cookie_header = req.headers().get("cookie")?;
+        let cookie_str = cookie_header.to_str().ok()?;
+        
+        for cookie in cookie_str.split(';') {
+            let cookie = cookie.trim();
+            if cookie.starts_with(format!("{}=", LB_COOKIE).as_str()) {
+                let value = cookie.trim_start_matches(format!("{}=", LB_COOKIE).as_str());
+                return LbCookie::from_str(value).map(|c| c.instance_id);
+            }
+        }
+        
+        None
+    }
+
+    /// Add sticky session cookie to response
+    pub fn add_sticky_cookie(&self, response: &mut Response) {
+        let cookie = LbCookie::new(self.instance_id.clone());
+        let cookie_str = format!(
+            "{}={}; Max-Age={}; HttpOnly; Secure; SameSite=Lax",
+            LB_COOKIE,
+            cookie.to_string(),
+            self.cookie_max_age
+        );
+        
+        response.headers_mut().append(
+            "set-cookie",
+            HeaderValue::from_str(&cookie_str).unwrap(),
+        );
+    }
+
     /// Generate a unique request ID
     pub fn generate_request_id(&self) -> String {
         Uuid::new_v4().to_string()
@@ -150,16 +182,13 @@ pub async fn load_balancer_middleware(
 ) -> Result<Response, axum::BoxError> {
     let lb = LoadBalancer::new();
     
-    // Generate request ID
-    let request_id = lb.generate_request_id();
-    
     let mut response = next.run(req).await;
     
     // Add sticky cookie
     lb.add_sticky_cookie(&mut response);
     
     // Add request ID to response
-    lb.add_request_id(&mut response, &request_id);
+    lb.add_request_id(&mut response, &lb.generate_request_id());
     
     Ok(response)
 }

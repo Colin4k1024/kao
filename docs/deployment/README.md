@@ -803,3 +803,35 @@ See `docs/deployment/Monitoring.md`
 ### Continuous Integration
 
 See `docs/deployment/CI-CD.md`
+
+---
+
+## Horizontal Scaling
+
+See `docs/deployment/scaling.md`
+
+### Scaling Checklist
+
+- [ ] Stateless authentication with JWT
+- [ ] Load balancer配置
+- [ ] Database connection pool sizing
+- [ ] Redis caching (optional)
+- [ ] Health check endpoints
+- [ ] Load testing
+
+### Load Testing
+
+```bash
+# Run load test
+bash scripts/load-test.sh -t 60 -r 100 -n 1000
+```
+
+### Scaling Guide
+
+For detailed horizontal scaling guide, see `docs/deployment/scaling.md`.
+
+---
+
+### Next Steps
+
+After successful deployment:

@@ -1,10 +1,9 @@
 use axum::{
     body::Body,
-    extract::MatchedPath,
+    extract::{MatchedPath, State},
     http::{HeaderMap, HeaderName, HeaderValue, Request, StatusCode},
-    response::Response,
+    response::IntoResponse,
 };
-use std::time::{Duration, Instant};
 use std::sync::Arc;
 
 /// Cache control settings for a response
@@ -79,7 +78,9 @@ pub struct CacheResponse {
 impl CacheResponse {
     /// Create a new CacheResponse
     pub fn new(status: StatusCode, body: String) -> Self {
-        let etag = Some(format!("\"{}\"", md5::compute(&body)));
+        // Use a simple hash for etag
+        let hash = format!("{}", body.len());
+        let etag = Some(format!("\"{}\"", hash));
         Self {
             status,
             headers: HeaderMap::new(),
@@ -143,99 +144,31 @@ impl CacheManager {
     }
 }
 
-/// Middleware to add caching headers
-pub struct CacheControlMiddleware;
-
-impl CacheControlMiddleware {
-    /// Create new cache control middleware
-    pub fn new() -> Self {
-        Self
-    }
-}
-
-impl Default for CacheControlMiddleware {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-///Extension trait for adding caching to responses
+/// Extension trait for adding caching to responses
 pub trait ResponseExt {
     fn with_cache_control(self, cache_control: CacheControl) -> Self;
     fn with_etag(self, etag: String) -> Self;
-    fn is_cacheable(&self) -> bool;
 }
 
-impl ResponseExt for Response<Body> {
+/// Add extension methods to response types
+impl ResponseExt for (HeaderMap, axum::response::Response<Body>) {
     fn with_cache_control(mut self, cache_control: CacheControl) -> Self {
         if let Some(value) = cache_control.header_value() {
-            self.headers_mut().insert(
+            self.0.insert(
                 HeaderName::from_static("cache-control"),
-                HeaderValue::from_static(&value),
+                HeaderValue::from_str(&value).unwrap_or_default(),
             );
         }
         self
     }
 
     fn with_etag(mut self, etag: String) -> Self {
-        self.headers_mut().insert(
+        self.0.insert(
             HeaderName::from_static("etag"),
             HeaderValue::from_str(&etag).unwrap_or_default(),
         );
         self
     }
-
-    fn is_cacheable(&self) -> bool {
-        self.status().is_success()
-    }
-}
-
-/// Cache middleware implementation
-pub async fn cache_middleware(
-    req: Request<Body>,
-    next: axum::middleware::Next,
-) -> Response<Body> {
-    let uri = req.uri().clone();
-    let method = req.method().clone();
-    let path = uri.path().to_string();
-    let query = uri.query().unwrap_or("").to_string();
-
-    // Generate cache key
-    let cache_key = CacheManager::generate_cache_key(&path, method.as_str(), &query);
-
-    // Check if request has If-None-Match header
-    let if_none_match = req
-        .headers()
-        .get("if-none-match")
-        .and_then(|h| h.to_str().ok());
-
-    // Check if we have cached response (simplified - would use Redis in production)
-    if let Some cached_etag) = get_cached_response(&cache_key) {
-        if cached_etag.matches_etag(if_none_match) {
-            return Response::builder()
-                .status(StatusCode::NOT_MODIFIED)
-                .header("cache-control", "max-age=60")
-                .body(Body::empty())
-                .unwrap();
-        }
-    }
-
-    // Execute request
-    let response = next.run(req).await;
-
-    // Add caching headers for GET requests
-    if method.as_str() == "GET" && response.status().is_success() {
-        response.with_cache_control(CacheControl::new(60))
-    } else {
-        response
-    }
-}
-
-/// In-memory cache storage (placeholder for Redis)
-fn get_cached_response(_key: &str) -> Option<CacheResponse> {
-    // In production, this would fetch from Redis
-    // For now, return None to always miss
-    None
 }
 
 #[cfg(test)]
