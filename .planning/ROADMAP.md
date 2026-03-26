@@ -78,7 +78,16 @@ Build a highly scalable, security-first admin management system that provides a 
 
 ### Dependencies
 
-- None (foundation phase)
+    - None (foundation phase)
+
+### Plans
+
+Plans:
+- [ ] 01-01-PLAN.md — Fix critical security vulnerabilities (hardcoded credentials, JWT secrets, password verification)
+- [ ] 01-02-PLAN.md — Security hardening (CORS, validation middleware, rate limiting, account lockout)
+- [ ] 01-03-PLAN.md — Database & migrations (table names, pool config, migration execution, Claims fix)
+- [ ] 01-04-PLAN.md — Testing infrastructure (unit, integration, security tests, coverage >50%)
+- [ ] 01-05-PLAN.md — Observability (health check, structured logging, request tracking)
 
 ---
 
