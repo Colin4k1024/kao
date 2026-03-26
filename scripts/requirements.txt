@@ -1,0 +1,5 @@
+click==8.1.7
+locust==2.29.1
+requests==2.31.0
+pandas==2.2.1
+numpy==1.26.3
