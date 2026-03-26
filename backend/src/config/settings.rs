@@ -7,6 +7,14 @@ pub struct Settings {
     pub app: AppSettings,
     pub jwt: JwtSettings,
     pub cors: CorsSettings,
+    pub redis: RedisSettings,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct RedisSettings {
+    pub url: Option<String>,
+    pub cache_ttl: u64,
+    pub connection_pool_size: u32,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -47,8 +55,9 @@ impl Settings {
 
         Settings {
             database: DatabaseSettings {
-                url: env::var("DATABASE_URL")
-                    .unwrap_or_else(|_| "postgres://postgres:password@localhost:5432/kao_db".to_string()),
+                url: env::var("DATABASE_URL").unwrap_or_else(|_| {
+                    "postgres://postgres:password@localhost:5432/kao_db".to_string()
+                }),
                 max_connections: env::var("DATABASE_MAX_CONNECTIONS")
                     .unwrap_or_else(|_| "10".to_string())
                     .parse()
@@ -67,16 +76,13 @@ impl Settings {
                     .unwrap_or(600),
             },
             app: AppSettings {
-                host: env::var("APP_HOST")
-                    .unwrap_or_else(|_| "0.0.0.0".to_string()),
+                host: env::var("APP_HOST").unwrap_or_else(|_| "0.0.0.0".to_string()),
                 port: env::var("APP_PORT")
                     .unwrap_or_else(|_| "8080".to_string())
                     .parse()
                     .unwrap_or(8080),
-                env: env::var("APP_ENV")
-                    .unwrap_or_else(|_| "development".to_string()),
-                log_level: env::var("RUST_LOG")
-                    .unwrap_or_else(|_| "info".to_string()),
+                env: env::var("APP_ENV").unwrap_or_else(|_| "development".to_string()),
+                log_level: env::var("RUST_LOG").unwrap_or_else(|_| "info".to_string()),
             },
             jwt: JwtSettings {
                 secret: env::var("JWT_SECRET")
@@ -110,6 +116,17 @@ impl Settings {
                     .unwrap_or_else(|_| "3600".to_string())
                     .parse()
                     .unwrap_or(3600),
+            },
+            redis: RedisSettings {
+                url: env::var("REDIS_URL").ok(),
+                cache_ttl: env::var("REDIS_CACHE_TTL")
+                    .unwrap_or_else(|_| "3600".to_string())
+                    .parse()
+                    .unwrap_or(3600),
+                connection_pool_size: env::var("REDIS_CONNECTION_POOL_SIZE")
+                    .unwrap_or_else(|_| "10".to_string())
+                    .parse()
+                    .unwrap_or(10),
             },
         }
     }

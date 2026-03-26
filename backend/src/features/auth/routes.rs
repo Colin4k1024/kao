@@ -1,7 +1,7 @@
 use axum::{
     extract::{Json, State},
     http::StatusCode,
-    response::{IntoResponse, Response},
+    response::IntoResponse,
 };
 use serde_json::json;
 
@@ -11,17 +11,19 @@ use crate::{
 };
 
 use super::{
-    model::{CurrentSessionResponse, LoginRequest, LoginResponse},
+    model::{CurrentSessionResponse, LoginRequest, LoginResponse, UserProfile},
     service::AuthService,
 };
 
 pub fn auth_routes() -> axum::Router<AppState> {
     axum::Router::new()
         .route("/api/v1/auth/login", axum::routing::post(login))
+        .route("/api/v1/auth/register", axum::routing::post(register))
         .route("/api/v1/auth/profile", axum::routing::get(get_profile))
         .route("/api/v1/auth/session", axum::routing::get(get_session))
         .route("/api/v1/auth/permissions", axum::routing::get(get_permissions))
         .route("/api/v1/auth/menus", axum::routing::get(get_menus))
+        .route("/api/v1/auth/change-password", axum::routing::post(change_password))
 }
 
 pub async fn login(
@@ -31,6 +33,41 @@ pub async fn login(
     let auth_service = AuthService::new(state.config.clone());
     let response = auth_service.login(&state.db, request).await?;
     Ok(ApiResponse::success(response))
+}
+
+pub async fn register(
+    State(state): State<AppState>,
+    Json(request): Json<serde_json::Value>,
+) -> Result<impl IntoResponse, crate::common::error::AppError> {
+    let username = request
+        .get("username")
+        .and_then(|v| v.as_str())
+        .ok_or_else(|| AppError::Validation("Username is required".to_string()))?
+        .to_string();
+
+    let password = request
+        .get("password")
+        .and_then(|v| v.as_str())
+        .ok_or_else(|| AppError::Validation("Password is required".to_string()))?
+        .to_string();
+
+    let email = request
+        .get("email")
+        .and_then(|v| v.as_str())
+        .map(|s| s.to_string());
+
+    let display_name = request
+        .get("displayName")
+        .and_then(|v| v.as_str())
+        .map(|s| s.to_string())
+        .unwrap_or_else(|| username.clone());
+
+    let auth_service = AuthService::new(state.config.clone());
+    auth_service.register(&state.db, username, password, email, display_name).await?;
+
+    Ok(ApiResponse::success(json!({
+        "message": "Registration successful"
+    })))
 }
 
 pub async fn get_profile(
@@ -83,5 +120,32 @@ pub async fn get_menus(
     let menu_tree = super::repo::get_user_menu_tree(&state.db, auth_user.id).await?;
     Ok(ApiResponse::success(serde_json::json!({
         "menus": menu_tree
+    })))
+}
+
+pub async fn change_password(
+    State(state): State<AppState>,
+    auth_user: AuthUser,
+    Json(request): Json<serde_json::Value>,
+) -> Result<impl IntoResponse, crate::common::error::AppError> {
+    let old_password = request
+        .get("oldPassword")
+        .and_then(|v| v.as_str())
+        .ok_or_else(|| AppError::Validation("Old password is required".to_string()))?
+        .to_string();
+
+    let new_password = request
+        .get("newPassword")
+        .and_then(|v| v.as_str())
+        .ok_or_else(|| AppError::Validation("New password is required".to_string()))?
+        .to_string();
+
+    let auth_service = AuthService::new(state.config.clone());
+    auth_service
+        .change_password(&state.db, auth_user.id, old_password, new_password)
+        .await?;
+
+    Ok(ApiResponse::success(json!({
+        "message": "Password changed successfully"
     })))
 }

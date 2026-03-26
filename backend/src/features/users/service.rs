@@ -1,4 +1,5 @@
 use crate::common::error::AppError;
+use crate::common::security::{validate_password, check_username_in_password, PasswordValidationError, PasswordPolicy};
 use uuid::Uuid;
 
 use super::{
@@ -72,6 +73,14 @@ impl UserService {
         db: &sqlx::PgPool,
         req: CreateUserRequest,
     ) -> Result<UserResponse, AppError> {
+        // Validate password
+        let policy = PasswordPolicy::default();
+        validate_password(&req.password, &policy)
+            .map_err(|e| AppError::Validation(self.password_validation_error_to_string(e)))?;
+        
+        check_username_in_password(&req.password, &req.username)
+            .map_err(|_| AppError::Validation("Password must not contain username".to_string()))?;
+
         let password_hash = hash_password(&req.password)?;
         
         let user = create_user(
@@ -109,6 +118,21 @@ impl UserService {
         user_id: Uuid,
         req: UpdateUserRequest,
     ) -> Result<UserResponse, AppError> {
+        // If password is being updated, validate it
+        if let Some(ref password) = req.password {
+            let policy = PasswordPolicy::default();
+            validate_password(password, &policy)
+                .map_err(|e| AppError::Validation(self.password_validation_error_to_string(e)))?;
+
+            // Get username for username check
+            let user = get_user_by_id(db, user_id)
+                .await?
+                .ok_or_else(|| AppError::Validation("User not found".to_string()))?;
+
+            check_username_in_password(password, &user.username)
+                .map_err(|_| AppError::Validation("Password must not contain username".to_string()))?;
+        }
+
         let user = update_user(
             db,
             user_id,
@@ -151,6 +175,14 @@ impl UserService {
 
         verify_password(&old_password, &user.password_hash)?;
 
+        // Validate new password
+        let policy = PasswordPolicy::default();
+        validate_password(&new_password, &policy)
+            .map_err(|e| AppError::Validation(self.password_validation_error_to_string(e)))?;
+
+        check_username_in_password(&new_password, &user.username)
+            .map_err(|_| AppError::Validation("Password must not contain username".to_string()))?;
+
         let new_hash = hash_password(&new_password)?;
         update_user_password(db, user_id, new_hash).await?;
 
@@ -159,5 +191,10 @@ impl UserService {
 
     pub async fn delete_user(&self, db: &sqlx::PgPool, user_id: Uuid) -> Result<(), AppError> {
         delete_user(db, user_id).await
+    }
+
+    /// Convert password validation error to string message
+    fn password_validation_error_to_string(&self, error: PasswordValidationError) -> String {
+        format!("Password validation failed: {}", error)
     }
 }

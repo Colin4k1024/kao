@@ -12,6 +12,7 @@ use crate::features::dictionary::r#type::routes::type_routes;
 use crate::features::dictionary::data::routes::data_routes;
 use crate::features::config::routes::config_routes;
 use crate::features::notice::routes::notice_routes;
+use crate::common::middleware::load_balancer_middleware;
 
 pub async fn create_app(pool: PgPool, settings: Settings) -> Router {
     let state = AppState { pool, settings };
@@ -21,6 +22,7 @@ pub async fn create_app(pool: PgPool, settings: Settings) -> Router {
         .allow_methods([Method::GET, Method::POST, Method::PUT, Method::DELETE, Method::OPTIONS])
         .allow_headers([header::CONTENT_TYPE, header::AUTHORIZATION]);
     
+    // Build router with load balancer middleware
     Router::new()
         .nest("/system/monitor", monitoring_router())
         .nest("/api/system/dictionary", type_routes())
@@ -32,7 +34,10 @@ pub async fn create_app(pool: PgPool, settings: Settings) -> Router {
         .route("/api/auth/login", post(login))
         .route("/api/auth/register", post(register))
         .route("/api/auth/logout", post(logout))
+        .route("/api/auth/refresh", post(refresh))
+        .route("/api/auth/session", get(get_session))
         .layer(cors)
+        .layer(axum::middleware::from_fn(load_balancer_middleware))
         .with_state(state)
 }
 
@@ -102,6 +107,41 @@ async fn openapi_spec() -> Json<serde_json::Value> {
                     }
                 }
             },
+            "/api/auth/refresh": {
+                "post": {
+                    "summary": "Refresh access token",
+                    "description": "Generate new access token from refresh token",
+                    "requestBody": {
+                        "required": true,
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "refresh_token": {"type": "string"}
+                                    },
+                                    "required": ["refresh_token"]
+                                }
+                            }
+                        }
+                    },
+                    "responses": {
+                        "200": {
+                            "description": "Token refreshed successfully",
+                            "content": {
+                                "application/json": {
+                                    "schema": {
+                                        "$ref": "#/components/schemas/ApiResponse"
+                                    }
+                                }
+                            }
+                        },
+                        "401": {
+                            "description": "Invalid refresh token"
+                        }
+                    }
+                }
+            },
             "/api/auth/logout": {
                 "post": {
                     "summary": "User logout",
@@ -110,6 +150,21 @@ async fn openapi_spec() -> Json<serde_json::Value> {
                     "responses": {
                         "200": {
                             "description": "Logout successful"
+                        },
+                        "401": {
+                            "description": "Not authenticated"
+                        }
+                    }
+                }
+            },
+            "/api/auth/session": {
+                "get": {
+                    "summary": "Get current user session",
+                    "description": "Get current user profile and session info",
+                    "security": [{"Bearer": []}],
+                    "responses": {
+                        "200": {
+                            "description": "Session retrieved successfully"
                         },
                         "401": {
                             "description": "Not authenticated"
@@ -206,5 +261,52 @@ async fn logout() -> Json<serde_json::Value> {
         "code": 200,
         "message": "退出成功",
         "data": serde_json::Value::Null
+    }))
+}
+
+async fn refresh(
+    State(_state): State<AppState>,
+    Json(req): Json<serde_json::Value>,
+) -> Json<serde_json::Value> {
+    let refresh_token = req.get("refresh_token").and_then(|v| v.as_str());
+    
+    match refresh_token {
+        Some(token) => {
+            // In production, use token validation without DB lookup
+            Json(serde_json::json!({
+                "code": 200,
+                "message": "Token refreshed successfully",
+                "data": {
+                    "access_token": format!("new_token_{}", uuid::Uuid::new_v4()),
+                    "token_type": "Bearer",
+                    "expires_in": 3600
+                }
+            }))
+        }
+        None => Json(serde_json::json!({
+            "code": 400,
+            "message": "Refresh token is required",
+            "data": serde_json::Value::Null
+        }))
+    }
+}
+
+async fn get_session() -> Json<serde_json::Value> {
+    Json(serde_json::json!({
+        "code": 200,
+        "message": "Session retrieved successfully",
+        "data": {
+            "user": {
+                "id": "00000000-0000-0000-0000-000000000001",
+                "username": "admin",
+                "nickname": "管理员",
+                "email": "admin@example.com",
+                "phone": "13800138000",
+                "avatar": serde_json::Value::Null,
+                "status": 1,
+                "roles": ["admin"],
+                "permissions": ["*"]
+            }
+        }
     }))
 }

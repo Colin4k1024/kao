@@ -15,7 +15,7 @@ pub mod online_user;
 pub mod routes;
 
 // Re-export for convenience
-pub use metrics::{get_metrics, MetricsResponse};
+pub use metrics::{get_metrics, MetricsResponse, MetricsMiddleware};
 pub use health::{check_health, HealthStatus, HealthCheckResponse};
 pub use operation_log::{OperationLogController, OperationLogService, OperationLog, CreateOperationLogRequest, OperationLogQueryParams};
 pub use login_log::{LoginLogController, LoginLogService, LoginLog, CreateLoginLogRequest, LoginLogQueryParams};
