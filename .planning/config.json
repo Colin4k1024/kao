@@ -1,0 +1,45 @@
+{
+  "projectName": "Kao",
+  "description": "Enterprise RuoYi-style Admin Management System",
+  "status": "initialized",
+  "version": "0.1.0",
+  "createdDate": "2026-03-26",
+  "workflows": {
+    "newProject": {
+      "autoMode": false,
+      "completedStages": ["questioning"],
+      "nextStage": "requirements"
+    },
+    "phasePlanning": {
+      "phaseCount": 3,
+      "currentPhase": 1,
+      "currentStep": "pending"
+    }
+  },
+  "configuration": {
+    "frontend": {
+      "framework": "React 18.2",
+      "buildTool": "Vite",
+      "uiLibrary": "Ant Design",
+      "language": "TypeScript 5.6"
+    },
+    "backend": {
+      "framework": "Axum",
+      "database": "PostgreSQL 15",
+      "orm": "SQLx",
+      "auth": "JWT + bcrypt"
+    },
+    "infrastructure": {
+      "containerization": "Docker",
+      "orchestration": "Docker Compose",
+      "ciCd": "Ready for setup"
+    }
+  },
+  "directoryStructure": {
+    "backend": "backend/",
+    "frontend": "frontend/",
+    "database": "database/",
+    "migrations": "backend/migrations/",
+    "tests": "tests/"
+  }
+}
