@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import {
   Card,
   Statistic,
@@ -12,6 +12,9 @@ import {
   ReloadOutlined,
 } from '@ant-design/icons';
 import type { ColumnType } from 'antd/es/table';
+
+// Lazy load chart components
+const ChartSection = lazy(() => import('@/components/ChartSection'));
 
 import {
   fetchMetrics,
@@ -114,34 +117,9 @@ const DashboardPage = () => {
       {/* Metrics Section */}
       {metrics && (
         <Card title="System Metrics" style={{ marginBottom: 24 }}>
-          <Row gutter={[16, 16]}>
-            <Col span={8}>
-              <Card>
-                <Statistic
-                  title="HTTP Requests"
-                  value={metrics.http_requests_total}
-                />
-              </Card>
-            </Col>
-            <Col span={8}>
-              <Card>
-                <Statistic
-                  title="Avg Response Time"
-                  value={(metrics.http_request_duration_seconds_sum / metrics.http_requests_total * 1000).toFixed(2)}
-                  suffix="ms"
-                />
-              </Card>
-            </Col>
-            <Col span={8}>
-              <Card>
-                <Statistic
-                  title="CPU Usage"
-                  value={metrics.cpu_usage_percent}
-                  suffix="%"
-                />
-              </Card>
-            </Col>
-          </Row>
+          <Suspense fallback={<div>Loading chart...</div>}>
+            <ChartSection metrics={metrics} />
+          </Suspense>
           <Row gutter={[16, 16]}>
             <Col span={12}>
               <Card>

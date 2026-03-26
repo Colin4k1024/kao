@@ -1,0 +1,150 @@
+# OWASP ZAP Configuration for Kao Backend
+# Configuration for automated security scanning
+
+# Scan configuration
+scan:
+  # Target URL
+  url: "http://localhost:8080"
+  
+  # Scan policies
+  policies:
+    baseline:
+      # Alert thresholds
+      alert_threshold: "Med"
+      # Scan duration
+      max_scan_duration: 3600
+      # Maximum alerts per type
+      max_alerts_per_type: 10
+      # Passive scan delay
+      passive_scan_delay: 2
+
+  # Authentication configuration
+  authentication:
+    # Authentication type (form-based, header-based, etc.)
+    type: "header"
+    # Header name for authentication
+    header_name: "Authorization"
+    # Header value prefix (e.g., "Bearer ")
+    header_prefix: "Bearer "
+    # Valid token to use for authenticated scanning
+    # token: "${ZAP_AUTH_TOKEN}"
+    username: "admin"
+    password: "Password1!"
+
+  # Authorization configuration
+  authorization:
+    # Admin user role
+    admin_role: "admin"
+    # Regular user role
+    user_role: "user"
+
+# Scan rules configuration
+rules:
+  # Enabled rule categories
+  enabled_categories:
+    - "waf"
+    - "passive"
+    - "active"
+  
+  # Alert thresholds
+  alert_thresholds:
+    high: 0
+    medium: 3
+    low: 5
+    info: 10
+  
+  # Exclude URLs from scanning
+  exclude_urls:
+    - "/api/v1/swagger"
+    - "/api/v1/openapi"
+    - "/health"
+    - "/metrics"
+
+# Test scenarios
+scenarios:
+  # Login scenario
+  login:
+    endpoints:
+      - "/api/v1/auth/login"
+      - "/api/v1/auth/register"
+    test_cases:
+      - name: "Valid credentials"
+        credentials:
+          username: "admin"
+          password: "Password1!"
+      - name: "Invalid credentials"
+        credentials:
+          username: "admin"
+          password: "wrongpassword"
+      - name: "Missing credentials"
+        credentials:
+          username: ""
+          password: ""
+
+  # Authorization scenarios
+  authorization:
+    endpoints:
+      - "/api/v1/users"
+      - "/api/v1/roles"
+      - "/api/v1/departments"
+    test_cases:
+      - name: "Admin access"
+        role: "admin"
+        expected_status: 200
+      - name: "User access"
+        role: "user"
+        expected_status: 403
+      - name: "Unauthenticated access"
+        role: ""
+        expected_status: 401
+
+  # Input validation scenarios
+  input_validation:
+    endpoints:
+      - "/api/v1/auth/login"
+      - "/api/v1/users"
+    test_cases:
+      - name: "SQL injection"
+        payload: "' OR '1'='1"
+        expected_status: 400
+      - name: "XSS attempt"
+        payload: "<script>alert('XSS')</script>"
+        expected_status: 400
+      - name: "Path traversal"
+        payload: "../../etc/passwd"
+        expected_status: 400
+
+# Report configuration
+report:
+  # Report types
+  types:
+    - html
+    - json
+    - xml
+  
+  # Report output directory
+  output_dir: "./reports"
+  
+  # Report filename pattern
+  filename_pattern: "zap-scan-result-{timestamp}.html"
+  
+  # Include summary
+  include_summary: true
+  # Include detailed findings
+  include_details: true
+  # Include remediation advice
+  include_remediation: true
+
+# Continuous scanning
+continuous:
+  # Enable continuous scanning
+  enabled: true
+  # Scan interval in seconds
+  interval: 3600
+  # Notify on find
+  notify_on_find: true
+  # Notification channels (email, slack, webhook)
+  notification_channels:
+    - type: "webhook"
+      url: "${ZAP_WEBHOOK_URL}"
+      method: "POST"
