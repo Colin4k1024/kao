@@ -1,11 +1,42 @@
+# Build artifacts
 target/
 debug/
 release/
+
+# Git
 .git/
 .gitignore
+
+# Environment files
 .env
 .env.*
 !.env.example
+
+# Documentation
 *.md
+!.env.example
+LICENSE
+CONTRIBUTING.md
+
+# Logs
 *.log
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
 .DS_Store
+Thumbs.db
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+.travis.yml
+
+# Test coverage
+coverage/
+*.profraw
+*.profdata

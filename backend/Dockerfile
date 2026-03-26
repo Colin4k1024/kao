@@ -1,51 +1,73 @@
-# 构建阶段
-FROM rust:1.70-slim as builder
+# Build stage
+FROM rust:1.70-alpine AS builder
 
 WORKDIR /app
 
-# 安装构建依赖
-RUN apt-get update && apt-get install -y \
-    pkg-config \
-    libpq-dev \
-    && rm -rf /var/lib/apt/lists/*
+# Install build dependencies
+RUN apk add --no-cache \
+    postgresql-dev \
+    openssl-dev \
+    pkgconfig \
+    cargo
 
-# 复制源代码
-COPY . .
+# Copy only Cargo.toml and lockfile for caching
+COPY Cargo.toml .
+COPY Cargo.lock .
 
-# 构建优化标志
-ENV CARGO_PROFILE_RELEASE_LTO=true
-ENV CARGO_PROFILE_RELEASE_CODEGEN_UNITS=16
-ENV CARGO_PROFILE_RELEASE_OPT_LEVEL=3
+# Create a dummy src to allow dependency caching
+RUN mkdir -p src && echo "fn main() {}" > src/main.rs
 
-# 构建项目
-RUN cargo build --release
+# Download dependencies and build them
+RUN cargo build --release 2>/dev/null || true
 
-# 运行阶段
-FROM debian:bookworm-slim
+# Remove dummy src
+RUN rm -rf src
+
+# Copy actual source code
+COPY src/ src/
+
+# Build with optimizations
+RUN cargo build --release --bin kao-backend
+
+# Runtime stage
+FROM alpine:latest AS runtime
 
 WORKDIR /app
 
-# 安装运行时依赖
-RUN apt-get update && apt-get install -y \
+# Install runtime dependencies
+RUN apk add --no-cache \
     ca-certificates \
-    libpq5 \
-    && rm -rf /var/lib/apt/lists/*
+    postgresql-libs \
+    openssl
 
-# 从构建阶段复制二进制文件
-COPY --from=builder /app/target/release/kao-backend /app/kao-backend
-COPY --from=builder /app/.env.example /app/.env
+# Create non-root user
+RUN addgroup -g 1000 app && \
+    adduser -u 1000 -G app -s /bin/sh -D appuser
 
-# 创建非root用户
-RUN useradd -m -u 1000 appuser && chown -R appuser:appuser /app
+# Copy binary from builder
+COPY --from=builder /app/target/release/kao-backend /usr/local/bin/kao-backend
 
+# Copy .env.example
+COPY --from=builder /app/.env.example /app/.env.example
+
+# Copy entrypoint and migrate script
+COPY --from=builder /app/entrypoint.sh /app/entrypoint.sh
+COPY --from=builder /app/migrate.sh /app/migrate.sh
+RUN chmod +x /app/entrypoint.sh /app/migrate.sh
+
+# Update ownership
+RUN chown -R appuser:app /app
+
+# Switch to non-root user
 USER appuser
 
-# 暴露端口
+# Expose port
 EXPOSE 8080
 
-# 健康检查
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8080/health || exit 1
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD wget --no-verbose --tries=1 --spider http://localhost:8080/api/health || exit 1
 
-# 启动命令
-CMD ["./kao-backend"]
+# Entry point
+ENTRYPOINT ["/app/entrypoint.sh"]
+CMD ["kao-backend"]
