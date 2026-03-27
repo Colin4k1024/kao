@@ -3,50 +3,25 @@
 // This middleware automatically collects metrics for all HTTP requests
 // including request duration, method, path, and status codes.
 
-use axum::body::Body;
-use axum::extract::MatchedPath;
-use axum::http::Request;
-use axum::middleware::Next;
-use axum::response::Response;
+use axum::{
+    extract::MatchedPath,
+    http::Request,
+    middleware::Next,
+    response::Response,
+};
 use std::time::Instant;
 
 use crate::common::metrics;
 
-// MetricsMiddleware collects metrics for each request
-pub struct MetricsMiddleware;
-
-impl MetricsMiddleware {
-    pub fn new() -> Self {
-        MetricsMiddleware
-    }
-}
-
-impl Default for MetricsMiddleware {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl<S> axum::middleware::FromFn<S, BODY> for MetricsMiddleware
-where
-    BODY: axum::body::HttpBody + Send + 'static,
-    BODY::Data: Send,
-{
-    type Route<'a>
-        = impl axum::middleware::IntoMiddleware<(), S, BODY>
-    where
-        BODY: 'a;
-
-    fn from_fn() -> Self::Route<'static> {
-        axum::middleware::from_fn(middleware_fn)
-    }
-}
-
-//Middleware function
-async fn middleware_fn<B>(
+// Metrics middleware function that records metrics for each request
+pub async fn metrics_middleware<B>(
     request: Request<B>,
-    next: Next<B>,
-) -> Response {
+    next: Next,
+) -> Response
+where
+    B: axum::body::HttpBody + Send + 'static,
+    B::Data: Send,
+{
     // Get matched path for metrics
     let matched_path = request
         .extensions()

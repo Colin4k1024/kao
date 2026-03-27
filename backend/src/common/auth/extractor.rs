@@ -16,10 +16,7 @@ pub struct AuthUser {
     pub roles: Vec<String>,
 }
 
-impl<S> FromRequestParts<S> for AuthUser
-where
-    S: Send + Sync + Clone + 'static,
-{
+impl<S: Send + Sync> FromRequestParts<S> for AuthUser {
     type Rejection = AppError;
 
     async fn from_request_parts(

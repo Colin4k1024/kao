@@ -1,12 +1,12 @@
 use axum::{
     extract::{Json, Path, State},
-    http::{HeaderMap, StatusCode},
+    http::{HeaderMap, HeaderName, HeaderValue, StatusCode},
     response::IntoResponse,
 };
 use uuid::Uuid;
 
 use crate::{
-    app::state::AppState,
+    AppState,
     common::{auth::extractor::AuthUser, middleware::caching::CacheControl, response::ApiResponse},
 };
 
@@ -30,14 +30,14 @@ pub async fn list_roles(
     headers: HeaderMap,
 ) -> Result<impl IntoResponse, crate::common::error::AppError> {
     let role_service = RoleService::new();
-    let roles = role_service.list_roles(&state.db).await?;
+    let roles = role_service.list_roles(&state.pool).await?;
     
     // Check If-None-Match for conditional requests
     let if_none_match = headers.get("if-none-match");
     
     // Generate ETag
     let body = serde_json::to_string(&roles)?;
-    let etag = format!("\"{}\"", md5::compute(&body));
+    let etag = format!("\"{}\"", hex::encode(md5::compute(&body).0));
     let etag_str = etag.as_str();
     
     // Check if client has cached version
@@ -54,10 +54,12 @@ pub async fn list_roles(
         }
     }
     
-    let response = ApiResponse::success(roles);
-    Ok(([(HeaderMap::new(), response.0)])
-        .into_response()
-        .with_cache_control(CacheControl::mutable(300)))
+    let mut response = ApiResponse::success(roles);
+    response.headers_mut().insert(
+        HeaderName::from_static("etag"),
+        HeaderValue::from_str(&etag).expect("Valid etag"),
+    );
+    Ok(response)
 }
 
 pub async fn get_role(
@@ -66,7 +68,7 @@ pub async fn get_role(
     Path(role_id): Path<Uuid>,
 ) -> Result<impl IntoResponse, crate::common::error::AppError> {
     let role_service = RoleService::new();
-    match role_service.get_role_by_id(&state.db, role_id).await? {
+    match role_service.get_role_by_id(&state.pool, role_id).await? {
         Some(role) => Ok(ApiResponse::success(role)),
         None => Ok(ApiResponse::error(404, "Role not found".to_string())),
     }
@@ -78,7 +80,7 @@ pub async fn create_role(
     Json(request): Json<CreateRoleRequest>,
 ) -> Result<impl IntoResponse, crate::common::error::AppError> {
     let role_service = RoleService::new();
-    let role = role_service.create_role(&state.db, request).await?;
+    let role = role_service.create_role(&state.pool, request).await?;
     Ok(ApiResponse::success(role))
 }
 
@@ -89,7 +91,7 @@ pub async fn update_role(
     Json(request): Json<UpdateRoleRequest>,
 ) -> Result<impl IntoResponse, crate::common::error::AppError> {
     let role_service = RoleService::new();
-    let role = role_service.update_role(&state.db, role_id, request).await?;
+    let role = role_service.update_role(&state.pool, role_id, request).await?;
     Ok(ApiResponse::success(role))
 }
 
@@ -99,6 +101,6 @@ pub async fn delete_role(
     Path(role_id): Path<Uuid>,
 ) -> Result<impl IntoResponse, crate::common::error::AppError> {
     let role_service = RoleService::new();
-    role_service.delete_role(&state.db, role_id).await?;
+    role_service.delete_role(&state.pool, role_id).await?;
     Ok(ApiResponse::success_no_data())
 }

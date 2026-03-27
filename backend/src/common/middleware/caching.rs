@@ -1,10 +1,9 @@
 use axum::{
-    body::Body,
-    extract::{MatchedPath, State},
-    http::{HeaderMap, HeaderName, HeaderValue, Request, StatusCode},
-    response::IntoResponse,
+    extract::MatchedPath,
+    http::{HeaderMap, HeaderName, HeaderValue, StatusCode},
 };
-use std::sync::Arc;
+use axum::body::Body;
+use axum::response::IntoResponse;
 
 /// Cache control settings for a response
 #[derive(Debug, Clone)]
@@ -156,7 +155,7 @@ impl ResponseExt for (HeaderMap, axum::response::Response<Body>) {
         if let Some(value) = cache_control.header_value() {
             self.0.insert(
                 HeaderName::from_static("cache-control"),
-                HeaderValue::from_str(&value).unwrap_or_default(),
+                HeaderValue::from_str(&value).expect("HeaderValue"),
             );
         }
         self
@@ -165,7 +164,7 @@ impl ResponseExt for (HeaderMap, axum::response::Response<Body>) {
     fn with_etag(mut self, etag: String) -> Self {
         self.0.insert(
             HeaderName::from_static("etag"),
-            HeaderValue::from_str(&etag).unwrap_or_default(),
+            HeaderValue::from_str(&etag).expect("HeaderValue"),
         );
         self
     }

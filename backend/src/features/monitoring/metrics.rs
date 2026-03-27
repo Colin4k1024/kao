@@ -4,12 +4,11 @@ use axum::{
     Json,
 };
 use serde::Serialize;
-use std::time::Duration;
 
 // Re-export common metrics types
 pub use crate::common::metrics::{
     collect_metrics as common_collect_metrics, MetricsResponse as CommonMetricsResponse,
-    MetricsMiddleware, AlertManager, AlertRule, AlertSeverity, AlertOperator,
+    AlertManager, AlertRule, AlertSeverity, AlertOperator,
     configure_alerts as common_configure_alerts,
 };
 

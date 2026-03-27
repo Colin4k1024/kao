@@ -1,4 +1,5 @@
 use crate::common::response::ApiResponse;
+pub mod routes;
 use axum::{
     extract::State,
     http::StatusCode,
@@ -6,10 +7,10 @@ use axum::{
     Json,
 };
 use serde::{Deserialize, Serialize};
-use sqlx::PgPool;
+use sqlx::{PgPool, FromRow};
 use uuid::Uuid;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 pub struct OnlineUser {
     pub session_id: String,
     pub user_id: Uuid,
@@ -77,41 +78,41 @@ impl OnlineUserService {
     }
 
     pub async fn force_logout(&self, request: ForceLogoutRequest) -> Result<bool, sqlx::Error> {
-        let affected = sqlx::query!(
+        let rows_affected = sqlx::query!(
             r#"
             UPDATE sys_online_user
             SET status = $1, remark = $2, update_time = $3
             WHERE session_id = $4 AND user_id = $5
             "#,
-            1, // status: force logged out
-            request.reason.unwrap_or_else(|| "Force logout by admin".to_string()).as_str(),
-            chrono::Utc::now().to_rfc3339().to_string().as_str(),
-            request.session_id.as_str(),
-            request.user_id.to_string().as_str()
+            1i32, // status: force logged out
+            request.reason.unwrap_or_else(|| "Force logout by admin".to_string()),
+            chrono::Utc::now().to_rfc3339(),
+            request.session_id,
+            request.user_id
         )
         .execute(&self.pool)
         .await?
         .rows_affected();
 
-        Ok(affected > 0)
+        Ok(rows_affected > 0)
     }
 
     pub async fn update_last_activity(&self, session_id: &str) -> Result<bool, sqlx::Error> {
-        let affected = sqlx::query!(
+        let rows_affected = sqlx::query!(
             r#"
             UPDATE sys_online_user
             SET last_activity_time = $1, update_time = $2
             WHERE session_id = $3
             "#,
-            chrono::Utc::now().to_rfc3339().to_string().as_str(),
-            chrono::Utc::now().to_rfc3339().to_string().as_str(),
+            chrono::Utc::now().to_rfc3339(),
+            chrono::Utc::now().to_rfc3339(),
             session_id
         )
         .execute(&self.pool)
         .await?
         .rows_affected();
 
-        Ok(affected > 0)
+        Ok(rows_affected > 0)
     }
 }
 

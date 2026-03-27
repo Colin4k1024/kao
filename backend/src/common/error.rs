@@ -40,7 +40,10 @@ impl IntoResponse for AppError {
             AppError::Authentication(_) => (StatusCode::UNAUTHORIZED, self.to_string()),
             AppError::Authorization(_) => (StatusCode::FORBIDDEN, self.to_string()),
             AppError::Validation(_) => (StatusCode::UNPROCESSABLE_ENTITY, self.to_string()),
-            AppError::Database(_) => (StatusCode::INTERNAL_SERVER_ERROR, "Database error".to_string()),
+            AppError::Database(_) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "Database error".to_string(),
+            ),
             AppError::Internal(_) => (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()),
         };
 
@@ -60,5 +63,29 @@ impl IntoResponse for AppError {
 impl From<jsonwebtoken::errors::Error> for AppError {
     fn from(err: jsonwebtoken::errors::Error) -> Self {
         AppError::Authentication(format!("JWT error: {}", err))
+    }
+}
+
+impl From<&str> for AppError {
+    fn from(err: &str) -> Self {
+        AppError::Internal(err.to_string())
+    }
+}
+
+impl From<Box<dyn std::error::Error>> for AppError {
+    fn from(err: Box<dyn std::error::Error>) -> Self {
+        AppError::Internal(err.to_string())
+    }
+}
+
+impl From<uuid::Error> for AppError {
+    fn from(err: uuid::Error) -> Self {
+        AppError::Validation(format!("UUID error: {}", err))
+    }
+}
+
+impl From<serde_json::Error> for AppError {
+    fn from(err: serde_json::Error) -> Self {
+        AppError::Internal(err.to_string())
     }
 }

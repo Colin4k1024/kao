@@ -1,12 +1,12 @@
 use axum::{
     extract::{Json, Path, State},
-    http::{HeaderMap, StatusCode},
+    http::{HeaderMap, HeaderName, HeaderValue, StatusCode},
     response::{IntoResponse, Response},
 };
 use serde_json::json;
 
 use crate::{
-    app::state::AppState,
+    AppState,
     common::{auth::extractor::AuthUser, middleware::caching::CacheControl, response::ApiResponse},
 };
 
@@ -30,14 +30,14 @@ pub async fn get_menus(
     headers: HeaderMap,
 ) -> Result<impl IntoResponse, crate::common::error::AppError> {
     let menu_service = MenuService::new();
-    let menus = menu_service.get_menu_tree(&state.db).await?;
+    let menus = menu_service.get_menu_tree(&state.pool).await?;
     
     // Check If-None-Match for conditional requests
     let if_none_match = headers.get("if-none-match");
     
     // Generate ETag
     let body = serde_json::to_string(&menus)?;
-    let etag = format!("\"{}\"", md5::compute(&body));
+    let etag = format!("\"{}\"", hex::encode(md5::compute(&body).0));
     let etag_str = etag.as_str();
     
     // Check if client has cached version
@@ -54,10 +54,12 @@ pub async fn get_menus(
         }
     }
     
-    let response = ApiResponse::success(menus);
-    Ok(([(HeaderMap::new(), response.0)])
-        .into_response()
-        .with_cache_control(CacheControl::immutable(900)))
+    let mut response = ApiResponse::success(menus);
+    response.headers_mut().insert(
+        HeaderName::from_static("etag"),
+        HeaderValue::from_str(&etag).expect("Valid etag"),
+    );
+    Ok(response)
 }
 
 pub async fn get_menu(
@@ -66,7 +68,7 @@ pub async fn get_menu(
     Path(menu_id): Path<uuid::Uuid>,
 ) -> Result<impl IntoResponse, crate::common::error::AppError> {
     let menu_service = MenuService::new();
-    match menu_service.get_menu_by_id(&state.db, menu_id).await? {
+    match menu_service.get_menu_by_id(&state.pool, menu_id).await? {
         Some(menu) => Ok(ApiResponse::success(menu)),
         None => Ok(ApiResponse::error(404, "Menu not found".to_string())),
     }
@@ -78,7 +80,7 @@ pub async fn create_menu(
     Json(request): Json<CreateMenuRequest>,
 ) -> Result<impl IntoResponse, crate::common::error::AppError> {
     let menu_service = MenuService::new();
-    let menu = menu_service.create_menu(&state.db, request).await?;
+    let menu = menu_service.create_menu(&state.pool, request).await?;
     Ok(ApiResponse::success(menu))
 }
 
@@ -89,7 +91,7 @@ pub async fn update_menu(
     Json(request): Json<CreateMenuRequest>,
 ) -> Result<impl IntoResponse, crate::common::error::AppError> {
     let menu_service = MenuService::new();
-    let menu = menu_service.update_menu(&state.db, menu_id, request).await?;
+    let menu = menu_service.update_menu(&state.pool, menu_id, request).await?;
     Ok(ApiResponse::success(menu))
 }
 
@@ -99,6 +101,6 @@ pub async fn delete_menu(
     Path(menu_id): Path<uuid::Uuid>,
 ) -> Result<impl IntoResponse, crate::common::error::AppError> {
     let menu_service = MenuService::new();
-    menu_service.delete_menu(&state.db, menu_id).await?;
+    menu_service.delete_menu(&state.pool, menu_id).await?;
     Ok(ApiResponse::success_no_data())
 }

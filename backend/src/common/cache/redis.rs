@@ -72,7 +72,7 @@ impl RedisCache {
 
     /// Get value from cache
     /// Returns None if cache is disabled or key not found
-    pub async fn get<T: serde::de::DeserializeOwned>(&self, key: &str) -> Result<Option<T>, AppError> {
+    pub async fn get<T: serde::de::DeserializeOwned>(&self, _key: &str) -> Result<Option<T>, AppError> {
         if !self.is_enabled() {
             return Ok(None);
         }
@@ -83,7 +83,7 @@ impl RedisCache {
     }
 
     /// Set value in cache with TTL
-    pub async fn set<T: serde::Serialize>(&self, key: &str, value: &T) -> Result<(), AppError> {
+    pub async fn set<T: serde::Serialize>(&self, key: &str, _value: &T) -> Result<(), AppError> {
         if !self.is_enabled() {
             return Ok(()); // Skip if Redis not configured
         }
@@ -119,7 +119,7 @@ impl RedisCache {
     }
 
     /// Check if key exists in cache
-    pub async fn has(&self, key: &str) -> Result<bool, AppError> {
+    pub async fn has(&self, _key: &str) -> Result<bool, AppError> {
         if !self.is_enabled() {
             return Ok(false);
         }

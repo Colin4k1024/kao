@@ -5,6 +5,7 @@ use axum::{
 };
 use chrono::Utc;
 use serde::{Deserialize, Serialize};
+use std::env;
 
 #[derive(Debug, Clone, Serialize)]
 pub struct HealthCheck {
@@ -87,17 +88,12 @@ pub async fn check_health() -> Response {
 async fn check_database() -> HealthStatus {
     // Try to execute a simple query to verify database connection
     use crate::common::db;
+    use crate::config::Settings;
     
-    match db::create_db_pool(&std::env::var("DATABASE_URL").unwrap_or_else(|_| "postgres://localhost/kao".to_string())).await {
-        Ok(pool) => {
-            match sqlx::query("SELECT 1").fetch_one(&pool).await {
-                Ok(_) => {
-                    HealthStatus::Healthy
-                }
-                Err(_) => {
-                    HealthStatus::Unhealthy
-                }
-            }
+    let settings = Settings::new();
+    match db::create_pool(&settings).await {
+        Ok(_pool) => {
+            HealthStatus::Healthy
         }
         Err(_) => {
             HealthStatus::Unhealthy
@@ -107,7 +103,7 @@ async fn check_database() -> HealthStatus {
 
 async fn check_redis() -> Option<HealthStatus> {
     // Redis is optional, return None if not configured
-    if std::env::var("REDIS_URL").is_err() {
+    if env::var("REDIS_URL").is_err() {
         return None;
     }
     

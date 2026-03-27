@@ -90,6 +90,7 @@ pub struct Alert {
 }
 
 // Alert manager for managing rules and alerts
+#[derive(Clone)]
 pub struct AlertManager {
     rules: Vec<AlertRule>,
     active_alerts: Vec<Alert>,
@@ -356,14 +357,14 @@ pub fn configure_alerts() -> Vec<AlertRule> {
 }
 
 // Trigger alert via webhook
-pub async fn trigger_alert(alert: &Alert, webhook_url: &str) -> Result<(), String> {
+pub async fn trigger_alert(_alert: &Alert, _webhook_url: &str) -> Result<(), String> {
     // In production, this would make a POST request to the webhook URL
     // For now, just log the alert
-    println!("Alert triggered: {}", alert.name);
-    println!("  Severity: {}", alert.severity);
-    println!("  Value: {}", alert.value);
-    println!("  Threshold: {}", alert.operator as i32);
-    println!("  URL: {}", webhook_url);
+    println!("Alert triggered: {}", _alert.name);
+    println!("  Severity: {}", _alert.severity);
+    println!("  Value: {}", _alert.value);
+    println!("  Threshold: {}", _alert.value);
+    println!("  URL: {}", _webhook_url);
 
     Ok(())
 }

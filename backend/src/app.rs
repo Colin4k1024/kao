@@ -12,9 +12,10 @@ use crate::features::dictionary::r#type::routes::type_routes;
 use crate::features::dictionary::data::routes::data_routes;
 use crate::features::config::routes::config_routes;
 use crate::features::notice::routes::notice_routes;
+use crate::features::auth::routes::auth_routes;
 use crate::common::middleware::load_balancer_middleware;
 
-pub async fn create_app(pool: PgPool, settings: Settings) -> Router {
+pub async fn create_app(pool: PgPool, settings: Settings) -> Router<AppState> {
     let state = AppState { pool, settings };
     
     let cors = CorsLayer::new()
@@ -22,23 +23,19 @@ pub async fn create_app(pool: PgPool, settings: Settings) -> Router {
         .allow_methods([Method::GET, Method::POST, Method::PUT, Method::DELETE, Method::OPTIONS])
         .allow_headers([header::CONTENT_TYPE, header::AUTHORIZATION]);
     
-    // Build router with load balancer middleware
+    // Build router with state
     Router::new()
+        .with_state(state)
         .nest("/system/monitor", monitoring_router())
         .nest("/api/system/dictionary", type_routes())
         .nest("/api/system/dictionary", data_routes())
         .nest("/api/system/config", config_routes())
         .nest("/api/system/notice", notice_routes())
+        .nest("/api/auth", auth_routes())
         .route("/api-docs", get(redirect_to_swagger))
         .route("/api-docs/openapi.yaml", get(openapi_spec))
-        .route("/api/auth/login", post(login))
-        .route("/api/auth/register", post(register))
-        .route("/api/auth/logout", post(logout))
-        .route("/api/auth/refresh", post(refresh))
-        .route("/api/auth/session", get(get_session))
         .layer(cors)
-        .layer(axum::middleware::from_fn(load_balancer_middleware))
-        .with_state(state)
+        // .layer(axum::middleware::from_fn(load_balancer_middleware)) -- TEMPORARILY DISABLED
 }
 
 /// Redirect to Swagger UI

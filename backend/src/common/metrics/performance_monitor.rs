@@ -5,8 +5,8 @@
 
 use std::collections::HashMap;
 use std::time::{Duration, Instant};
-use tokio::sync::RwLock;
 
+use crate::common::metrics::alerting::Alert;
 use crate::common::metrics::{self, AlertManager, AlertRule};
 
 // Query performance tracker
@@ -218,7 +218,7 @@ impl PerformanceMonitorState {
         self.alert_manager.check_thresholds(&metrics);
     }
 
-    pub fn get_active_alerts(&self) -> Vec<&crate::common::metrics::Alert> {
+    pub fn get_active_alerts(&self) -> Vec<&Alert> {
         self.alert_manager.get_active_alerts()
     }
 }
@@ -283,7 +283,7 @@ impl PerformanceMonitor {
         state.check_thresholds();
     }
 
-    pub fn get_active_alerts(&self) -> Vec<crate::common::metrics::Alert> {
+    pub fn get_active_alerts(&self) -> Vec<Alert> {
         let state = self.state.read().unwrap();
         state.get_active_alerts().into_iter().cloned().collect()
     }

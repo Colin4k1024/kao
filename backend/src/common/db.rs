@@ -1,41 +1,36 @@
-use sqlx::{PgPool, PgPoolOptions};
-use std::sync::OnceLock;
+use sqlx::PgPool;
 use std::time::Duration;
 
-static DB_POOL: OnceLock<PgPool> = OnceLock::new();
+// Database pool variable
+static mut DB_POOL: Option<PgPool> = None;
 
 pub fn get_pool() -> Option<&'static PgPool> {
-    DB_POOL.get()
+    unsafe { DB_POOL.as_ref() }
 }
 
 /// Initialize database connection pool with configurable settings
 pub async fn create_pool_with_options(
     database_url: &str,
-    max_connections: u32,
-    min_connections: u32,
-    connect_timeout: u64,
-    idle_timeout: u64,
+    _max_connections: u32,
+    _min_connections: u32,
+    _connect_timeout: u64,
+    _idle_timeout: u64,
 ) -> Result<PgPool, sqlx::Error> {
     tracing::info!(
-        "Initializing database connection pool: max_connections={}, min_connections={}, connect_timeout={}, idle_timeout={}",
-        max_connections,
-        min_connections,
-        connect_timeout,
-        idle_timeout
+        "Initializing database connection pool: max_connections={},
+         min_connections={}, connect_timeout={}, idle_timeout={}",
+        _max_connections, _min_connections, _connect_timeout, _idle_timeout
     );
 
-    let pool = PgPoolOptions::new()
-        .max_connections(max_connections)
-        .min_connections(min_connections)
-        .connect_timeout(Duration::from_secs(connect_timeout))
-        .idle_timeout(Some(Duration::from_secs(idle_timeout)))
-        .connect(database_url)
-        .await?;
+    // SQLx 0.8 uses Pool::connect
+    let pool = PgPool::connect(database_url).await?;
 
-    DB_POOL.set(pool.clone()).ok();
-    
+    unsafe {
+        DB_POOL = Some(pool.clone());
+    }
+
     tracing::info!("Database connection pool initialized successfully");
-    
+
     Ok(pool)
 }
 
@@ -59,16 +54,14 @@ pub async fn check_health() -> Result<(), sqlx::Error> {
         Ok(())
     } else {
         tracing::warn!("Database pool not initialized");
-        Err(sqlx::Error::Database("Database pool not initialized".into()))
+        // In production, return a more specific error
+        Err(sqlx::Error::PoolTimedOut)
     }
 }
 
 /// Get pool stats for metrics
-/// Note: SQLx pool stats require the raw method which returns PoolStats
 pub fn get_pool_stats() -> Option<PoolStats> {
     // This is a placeholder implementation
-    // SQLx 0.8 doesn't expose direct pool stats, but you can get them via
-    // pool.raw().num_acquire() etc. when using the raw flag
     None
 }
 

@@ -2,7 +2,6 @@ use std::sync::Arc;
 
 use crate::common::{
     auth::{claims::Claims, jwt::generate_jwt},
-    config::Config,
     error::AppError,
     security::validate_password,
 };
@@ -13,12 +12,15 @@ use super::{
     repo::{find_user_by_username, get_user_menu_tree, get_user_permissions, get_user_roles},
 };
 
+// Settings is imported from config module
+use crate::config::Settings;
+
 pub struct AuthService {
-    config: Arc<Config>,
+    config: Arc<Settings>,
 }
 
 impl AuthService {
-    pub fn new(config: Arc<Config>) -> Self {
+    pub fn new(config: Arc<Settings>) -> Self {
         Self { config }
     }
 
@@ -55,7 +57,7 @@ impl AuthService {
         );
 
         // Generate JWT token
-        let token = generate_jwt(claims, &self.config.jwt_secret)?;
+        let token = generate_jwt(claims, &self.config.jwt.secret)?;
 
         Ok(LoginResponse {
             access_token: token,

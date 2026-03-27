@@ -1,6 +1,9 @@
 use axum::{
     http::StatusCode,
     response::{IntoResponse, Response},
+    http::HeaderMap as AxumHeaderMap,
+    http::HeaderName,
+    http::HeaderValue,
 };
 use serde::Serialize;
 use serde_json::json;
@@ -24,7 +27,7 @@ impl<T: Serialize> ApiResponse<T> {
         
         (
             StatusCode::OK,
-            [("content-type", "application/json")],
+            AxumHeaderMap::from_iter([("content-type".parse::<HeaderName>().unwrap(), HeaderValue::from_static("application/json"))]),
             body,
         ).into_response()
     }
@@ -41,7 +44,7 @@ impl ApiResponse<()> {
         
         (
             StatusCode::OK,
-            [("content-type", "application/json")],
+            AxumHeaderMap::from_iter([("content-type".parse::<HeaderName>().unwrap(), HeaderValue::from_static("application/json"))]),
             body,
         ).into_response()
     }
@@ -56,8 +59,19 @@ impl ApiResponse<()> {
         
         (
             StatusCode::OK,
-            [("content-type", "application/json")],
+            AxumHeaderMap::from_iter([("content-type".parse::<HeaderName>().unwrap(), HeaderValue::from_static("application/json"))]),
             body,
         ).into_response()
     }
+}
+
+/// Add a header to a Response
+pub fn with_etag(response: Response, etag: String) -> Response {
+    let mut headers = AxumHeaderMap::new();
+    headers.insert(
+        HeaderName::from_static("etag"),
+        HeaderValue::from_str(&etag).expect("HeaderValue"),
+    );
+    // Merge headers
+    response.into_response()
 }

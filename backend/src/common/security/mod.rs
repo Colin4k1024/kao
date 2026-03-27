@@ -5,5 +5,5 @@ pub mod scanner;
 
 pub use password_policy::{validate_password, check_username_in_password, PasswordPolicy, PasswordValidationError};
 pub use password_expiration::{is_password_expired, password_expires_on, days_since_last_change, PasswordExpiration, PasswordStatus, check_password_status};
-pub use audit_logger::{AuditLogger, log_security_event, AuditLogEventType, AuditLogEntry, AuditLoggerError};
+pub use audit_logger::{AuditLogger, AuditLogEventType, AuditLogEntry, AuditLoggerError};
 pub use scanner::{SecurityScanner, run_security_scan, ScanResult, ScanType, ScanStatus, Finding, Severity, ScanMetrics};
