@@ -24,7 +24,7 @@ impl UserRepository {
 
     pub async fn find_by_id(&self, id: Uuid) -> Result<User, RepositoryError> {
         let user = sqlx::query_as::<_, User>(
-            "SELECT id, username, password, email, phone, nickname, avatar, status, department_id, role_id, created_at, updated_at FROM users WHERE id = $1",
+            "SELECT id, username, password, email, phone, nickname, avatar, status, department_id, role_id, created_at, updated_at FROM sys_user WHERE id = $1",
         )
         .bind(id)
         .fetch_optional(&self.pool)
@@ -36,7 +36,7 @@ impl UserRepository {
 
     pub async fn find_by_username(&self, username: &str) -> Result<User, RepositoryError> {
         let user = sqlx::query_as::<_, User>(
-            "SELECT id, username, password, email, phone, nickname, avatar, status, department_id, role_id, created_at, updated_at FROM users WHERE username = $1",
+            "SELECT id, username, password, email, phone, nickname, avatar, status, department_id, role_id, created_at, updated_at FROM sys_user WHERE username = $1",
         )
         .bind(username)
         .fetch_optional(&self.pool)
@@ -52,7 +52,7 @@ impl UserRepository {
 
         let user = sqlx::query_as::<_, User>(
             r#"
-            INSERT INTO users (id, username, password, email, phone, nickname, status, department_id, role_id, created_at, updated_at)
+            INSERT INTO sys_user (id, username, password, email, phone, nickname, status, department_id, role_id, created_at, updated_at)
             VALUES ($1, $2, $3, $4, $5, $6, 1, $7, $8, $9, $10)
             RETURNING id, username, password, email, phone, nickname, avatar, status, department_id, role_id, created_at, updated_at
             "#,
@@ -78,7 +78,7 @@ impl UserRepository {
 
         let user = sqlx::query_as::<_, User>(
             r#"
-            UPDATE users
+            UPDATE sys_user
             SET email = COALESCE($2, email),
                 phone = COALESCE($3, phone),
                 nickname = COALESCE($4, nickname),
@@ -106,7 +106,7 @@ impl UserRepository {
     }
 
     pub async fn delete(&self, id: Uuid) -> Result<(), RepositoryError> {
-        let result = sqlx::query("DELETE FROM users WHERE id = $1")
+        let result = sqlx::query("DELETE FROM sys_user WHERE id = $1")
             .bind(id)
             .execute(&self.pool)
             .await?;
@@ -120,7 +120,7 @@ impl UserRepository {
 
     pub async fn find_all(&self) -> Result<Vec<User>, RepositoryError> {
         let users = sqlx::query_as::<_, User>(
-            "SELECT id, username, password, email, phone, nickname, avatar, status, department_id, role_id, created_at, updated_at FROM users",
+            "SELECT id, username, password, email, phone, nickname, avatar, status, department_id, role_id, created_at, updated_at FROM sys_user",
         )
         .fetch_all(&self.pool)
         .await?;
