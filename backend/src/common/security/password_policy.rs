@@ -258,7 +258,8 @@ mod tests {
     #[test]
     fn test_common_password() {
         let policy = PasswordPolicy::default();
-        let result = validate_password("password", &policy);
+        // "P@ssw0rd" passes all checks except common password check
+        let result = validate_password("P@ssw0rd", &policy);
         assert!(matches!(
             result,
             Err(PasswordValidationError::CommonPassword)

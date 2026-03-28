@@ -103,7 +103,14 @@ impl CacheResponse {
             .map(|header| {
                 header
                     .split(',')
-                    .any(|tag| tag.trim().trim_matches('"') == self.etag.as_deref().unwrap_or(""))
+                    .any(|tag| {
+                        let trimmed = tag.trim();
+                        let etag = self.etag.as_deref().unwrap_or("");
+                        // Handle both quoted and unquoted ETags
+                        trimmed == etag
+                            || trimmed == format!("\"{}\"", etag.trim_matches('"'))
+                            || etag.trim_matches('"') == trimmed.trim_matches('"')
+                    })
             })
             .unwrap_or(false)
     }

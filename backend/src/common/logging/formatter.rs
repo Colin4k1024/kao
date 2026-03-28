@@ -444,8 +444,9 @@ mod tests {
             .with_request_id("req456");
 
         let json = log.to_json();
-        assert!(json.contains("\"level\":\"info\""));
-        assert!(json.contains("\"user_id\":\"user123\""));
+        // Check for lowercase level (serde rename_all = "lowercase")
+        assert!(json.contains("\"level\": \"info\""), "JSON: {}", json);
+        assert!(json.contains("\"user_id\": \"user123\""));
     }
 
     #[test]

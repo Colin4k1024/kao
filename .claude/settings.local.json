@@ -22,7 +22,8 @@
       "Bash(grep -B2 impl.*Service.*IncomingStream.*for.*Router ~/.cargo/registry/src/*/axum-0.7*/src/routing/mod.rs)",
       "Bash(cargo test:*)",
       "Skill(gsd:list-workspaces)",
-      "Bash(cargo clippy:*)"
+      "Bash(cargo clippy:*)",
+      "Bash(git push:*)"
     ]
   }
 }
