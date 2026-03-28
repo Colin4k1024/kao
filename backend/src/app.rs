@@ -1,4 +1,4 @@
-use axum::{extract::State, Json, Router, routing::get};
+use axum::{extract::State, routing::get, Json, Router};
 use sqlx::PgPool;
 use crate::config::Settings;
 use crate::features::monitoring::routes::monitoring_router;
@@ -183,45 +183,8 @@ async fn health_check() -> &'static str {
     "OK"
 }
 
-#[allow(dead_code)]
-async fn login(
-    State(_state): State<AppState>,
-    Json(req): Json<serde_json::Value>,
-) -> Json<serde_json::Value> {
-    let username = req.get("username").and_then(|v| v.as_str()).unwrap_or("");
-    let password = req.get("password").and_then(|v| v.as_str()).unwrap_or("");
-
-    if username == "admin" && password == "admin123" {
-        let token = format!("token_{}", uuid::Uuid::new_v4());
-        Json(serde_json::json!({
-            "code": 200,
-            "message": "登录成功",
-            "data": {
-                "access_token": token,
-                "refresh_token": token,
-                "token_type": "Bearer",
-                "expires_in": 3600,
-                "user": {
-                    "id": "00000000-0000-0000-0000-000000000001",
-                    "username": "admin",
-                    "nickname": "管理员",
-                    "email": "admin@example.com",
-                    "phone": "13800138000",
-                    "avatar": serde_json::Value::Null,
-                    "status": 1,
-                    "roles": ["admin"],
-                    "permissions": ["*"]
-                }
-            }
-        }))
-    } else {
-        Json(serde_json::json!({
-            "code": 401,
-            "message": "用户名或密码错误",
-            "data": serde_json::Value::Null
-        }))
-    }
-}
+// Login handler moved to backend/src/api/auth/handlers.rs
+// Authentication is handled via the auth service with bcrypt + JWT
 
 #[allow(dead_code)]
 async fn register(
