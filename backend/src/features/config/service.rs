@@ -1,11 +1,11 @@
 use crate::common::error::AppError;
-use uuid::Uuid;
 
 use super::{
     model::{CreateConfigRequest, UpdateConfigRequest, ConfigResponse},
     repo::ConfigRepository,
 };
 
+#[derive(Default)]
 pub struct ConfigService;
 
 impl ConfigService {

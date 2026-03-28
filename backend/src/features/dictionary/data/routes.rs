@@ -1,5 +1,5 @@
 use axum::{
-    extract::{Path, Query, State},
+    extract::Path,
     response::IntoResponse,
     Json,
 };
@@ -8,7 +8,7 @@ use uuid::Uuid;
 use crate::common::{db::get_pool, auth::extractor::AuthUser, error::AppError, response::ApiResponse};
 
 use super::{
-    model::{CreateDataRequest, UpdateDataRequest, DataResponse},
+    model::{CreateDataRequest, UpdateDataRequest},
     service::DataService,
 };
 
@@ -28,7 +28,7 @@ pub async fn list_data(
     let service = DataService::new();
     let db = get_pool()
         .ok_or_else(|| AppError::Internal("Database pool not initialized".to_string()))?;
-    let data = service.list_data_by_type(&db, "").await?;
+    let data = service.list_data_by_type(db, "").await?;
     Ok(ApiResponse::success(data))
 }
 
@@ -39,7 +39,7 @@ pub async fn list_data_by_type(
     let service = DataService::new();
     let db = get_pool()
         .ok_or_else(|| AppError::Internal("Database pool not initialized".to_string()))?;
-    let data = service.list_data_by_type(&db, &dict_type).await?;
+    let data = service.list_data_by_type(db, &dict_type).await?;
     Ok(ApiResponse::success(data))
 }
 
@@ -50,7 +50,7 @@ pub async fn get_data(
     let service = DataService::new();
     let db = get_pool()
         .ok_or_else(|| AppError::Internal("Database pool not initialized".to_string()))?;
-    match service.get_data_by_id(&db, data_id).await? {
+    match service.get_data_by_id(db, data_id).await? {
         Some(d) => Ok(ApiResponse::success(d)),
         None => Ok(ApiResponse::error(404, "Data not found".to_string())),
     }
@@ -63,7 +63,7 @@ pub async fn create_data(
     let service = DataService::new();
     let db = get_pool()
         .ok_or_else(|| AppError::Internal("Database pool not initialized".to_string()))?;
-    let d = service.create_data(&db, request).await?;
+    let d = service.create_data(db, request).await?;
     Ok(ApiResponse::success(d))
 }
 
@@ -75,7 +75,7 @@ pub async fn update_data(
     let service = DataService::new();
     let db = get_pool()
         .ok_or_else(|| AppError::Internal("Database pool not initialized".to_string()))?;
-    let d = service.update_data(&db, data_id, request).await?;
+    let d = service.update_data(db, data_id, request).await?;
     Ok(ApiResponse::success(d))
 }
 
@@ -86,6 +86,6 @@ pub async fn delete_data(
     let service = DataService::new();
     let db = get_pool()
         .ok_or_else(|| AppError::Internal("Database pool not initialized".to_string()))?;
-    service.delete_data(&db, data_id).await?;
+    service.delete_data(db, data_id).await?;
     Ok(ApiResponse::success_no_data())
 }

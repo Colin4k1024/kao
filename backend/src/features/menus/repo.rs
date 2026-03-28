@@ -1,4 +1,4 @@
-use sqlx::{FromRow, PgPool, Row};
+use sqlx::{PgPool, Row};
 use uuid::Uuid;
 
 use crate::common::error::AppError;
@@ -61,6 +61,7 @@ pub async fn get_menu_tree(db: &PgPool) -> Result<Vec<MenuRecord>, AppError> {
     Ok(menus)
 }
 
+#[allow(clippy::too_many_arguments)]
 pub async fn create_menu(
     db: &PgPool,
     parent_id: Option<Uuid>,
@@ -101,6 +102,7 @@ pub async fn create_menu(
     Ok(menu)
 }
 
+#[allow(clippy::too_many_arguments)]
 pub async fn update_menu(
     db: &PgPool,
     menu_id: Uuid,

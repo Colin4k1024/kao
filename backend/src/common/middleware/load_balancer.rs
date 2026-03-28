@@ -38,13 +38,13 @@ impl LbCookie {
         }
     }
 
-    /// Serialize cookie to string
-    pub fn to_string(&self) -> String {
+    /// Serialize cookie to JSON string
+    pub fn to_json_string(&self) -> String {
         serde_json::to_string(self).unwrap_or_default()
     }
 
-    /// Deserialize cookie from string
-    pub fn from_str(s: &str) -> Option<Self> {
+    /// Deserialize cookie from JSON string
+    pub fn from_json_str(s: &str) -> Option<Self> {
         serde_json::from_str(s).ok()
     }
 }
@@ -52,9 +52,11 @@ impl LbCookie {
 /// Load balancer middleware configuration
 #[derive(Clone)]
 pub struct LoadBalancer {
+    #[allow(dead_code)]
     sticky_sessions: bool,
     instance_id: String,
     cookie_max_age: u64,
+    #[allow(dead_code)]
     enable_tracing: bool,
     request_counts: Arc<std::sync::Mutex<HashMap<String, u64>>>,
 }
@@ -68,7 +70,7 @@ impl LoadBalancer {
             == "true";
         
         let instance_id = env::var("INSTANCE_ID")
-            .unwrap_or_else(|_| format!("instance-{}", Uuid::new_v4().to_string()[..8].to_string()));
+            .unwrap_or_else(|_| format!("instance-{}", &Uuid::new_v4().to_string()[..8]));
         
         let cookie_max_age = env::var("COOKIE_MAX_AGE")
             .unwrap_or_else(|_| "86400".to_string()) // 24 hours
@@ -114,7 +116,7 @@ impl LoadBalancer {
             let cookie = cookie.trim();
             if cookie.starts_with(format!("{}=", LB_COOKIE).as_str()) {
                 let value = cookie.trim_start_matches(format!("{}=", LB_COOKIE).as_str());
-                return LbCookie::from_str(value).map(|c| c.instance_id);
+                return LbCookie::from_json_str(value).map(|c| c.instance_id);
             }
         }
         
@@ -127,7 +129,7 @@ impl LoadBalancer {
         let cookie_str = format!(
             "{}={}; Max-Age={}; HttpOnly; Secure; SameSite=Lax",
             LB_COOKIE,
-            cookie.to_string(),
+            cookie.to_json_string(),
             self.cookie_max_age
         );
         
@@ -200,15 +202,15 @@ mod tests {
     #[test]
     fn test_lb_cookie_generation() {
         let cookie = LbCookie::new("instance-123".to_string());
-        assert!(cookie.session_id.len() > 0);
+        assert!(!cookie.session_id.is_empty());
         assert_eq!(cookie.instance_id, "instance-123");
     }
 
     #[test]
     fn test_lb_cookie_serialization() {
         let cookie = LbCookie::new("instance-123".to_string());
-        let serialized = cookie.to_string();
-        let deserialized = LbCookie::from_str(&serialized);
+        let serialized = cookie.to_json_string();
+        let deserialized = LbCookie::from_json_str(&serialized);
         assert!(deserialized.is_some());
         assert_eq!(deserialized.unwrap().instance_id, "instance-123");
     }
@@ -219,6 +221,6 @@ mod tests {
         
         // Test generation
         let request_id = lb.generate_request_id();
-        assert!(request_id.len() > 0);
+        assert!(!request_id.is_empty());
     }
 }

@@ -1,9 +1,9 @@
 use sqlx::PgPool;
-use std::time::Duration;
 
 // Database pool variable
 static mut DB_POOL: Option<PgPool> = None;
 
+#[allow(static_mut_refs)]
 pub fn get_pool() -> Option<&'static PgPool> {
     unsafe { DB_POOL.as_ref() }
 }

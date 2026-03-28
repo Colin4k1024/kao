@@ -1,4 +1,4 @@
-use sqlx::{PgPool, Row};
+use sqlx::PgPool;
 use uuid::Uuid;
 
 use crate::common::error::AppError;
@@ -49,6 +49,7 @@ impl DataRepository {
         Ok(data)
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub async fn create_data(
         db: &PgPool,
         dict_sort: Option<i32>,
@@ -88,6 +89,7 @@ impl DataRepository {
         Ok(d)
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub async fn update_data(
         db: &PgPool,
         data_id: Uuid,

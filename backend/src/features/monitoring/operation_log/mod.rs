@@ -2,8 +2,7 @@ use crate::common::response::ApiResponse;
 pub mod routes;
 use axum::{
     extract::State,
-    http::StatusCode,
-    response::{IntoResponse, Response},
+    response::Response,
     Json,
 };
 use serde::{Deserialize, Serialize};
@@ -99,8 +98,8 @@ impl OperationLogService {
             ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
             "#,
         )
-        .bind(&log.id)
-        .bind(&log.user_id)
+        .bind(log.id)
+        .bind(log.user_id)
         .bind(&log.username)
         .bind(&log.module)
         .bind(&log.action_type)
@@ -126,11 +125,11 @@ impl OperationLogService {
         params: OperationLogQueryParams,
     ) -> Result<OperationLogListResponse, sqlx::Error> {
         let page = params.page.max(1);
-        let page_size = params.page_size.max(1).min(100);
+        let page_size = params.page_size.clamp(1, 100);
         let offset = (page - 1) * page_size;
 
         // Build dynamic SQL query
-        let mut sql = String::from("SELECT id, user_id, username, module, action_type, method, path, request_method, request_params, response_code, response_message, execution_time, ip_address, user_agent, status, create_time FROM sys_oper_log WHERE 1=1");
+        let sql = String::from("SELECT id, user_id, username, module, action_type, method, path, request_method, request_params, response_code, response_message, execution_time, ip_address, user_agent, status, create_time FROM sys_oper_log WHERE 1=1");
         let mut count_sql = String::from("SELECT COUNT(*) FROM sys_oper_log WHERE 1=1");
         
         // Build the query with parameters

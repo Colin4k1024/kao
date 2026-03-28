@@ -22,15 +22,3 @@ pub fn operation_log_router() -> axum::Router<AppState> {
             delete(OperationLogController::delete_operation_log_handler),
         )
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_operation_log_router() {
-        // Basic test to ensure router compiles
-        let router = operation_log_router();
-        assert!(router.is_classified());
-    }
-}

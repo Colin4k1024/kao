@@ -9,6 +9,7 @@ use super::{
     },
 };
 
+#[derive(Default)]
 pub struct RoleService;
 
 impl RoleService {

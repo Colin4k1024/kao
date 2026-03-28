@@ -1,4 +1,4 @@
-use sqlx::{FromRow, PgPool, Row};
+use sqlx::{PgPool, Row};
 use uuid::Uuid;
 
 use crate::common::error::AppError;

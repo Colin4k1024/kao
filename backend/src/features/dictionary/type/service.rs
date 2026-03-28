@@ -6,6 +6,7 @@ use super::{
     repo::TypeRepository,
 };
 
+#[derive(Default)]
 pub struct TypeService;
 
 impl TypeService {

@@ -1,15 +1,13 @@
 use axum::{
-    extract::{Path, Query, State},
+    extract::Path,
     response::IntoResponse,
     Json,
 };
-use uuid::Uuid;
 
 use crate::common::{auth::extractor::AuthUser, db::get_pool, error::AppError, response::ApiResponse};
-use crate::AppState;
 
 use super::{
-    model::{CreateConfigRequest, UpdateConfigRequest, ConfigResponse},
+    model::{CreateConfigRequest, UpdateConfigRequest},
     service::ConfigService,
 };
 
@@ -28,7 +26,7 @@ pub async fn list_configs(
     let service = ConfigService::new();
     let db = get_pool()
         .ok_or_else(|| AppError::Internal("Database pool not initialized".to_string()))?;
-    let configs = service.list_configs(&db, None, None).await?;
+    let configs = service.list_configs(db, None, None).await?;
     Ok(ApiResponse::success(configs))
 }
 
@@ -39,7 +37,7 @@ pub async fn get_config(
     let service = ConfigService::new();
     let db = get_pool()
         .ok_or_else(|| AppError::Internal("Database pool not initialized".to_string()))?;
-    match service.get_config_by_key(&db, &key).await? {
+    match service.get_config_by_key(db, &key).await? {
         Some(c) => Ok(ApiResponse::success(c)),
         None => Ok(ApiResponse::error(404, "Config not found".to_string())),
     }
@@ -52,7 +50,7 @@ pub async fn create_config(
     let service = ConfigService::new();
     let db = get_pool()
         .ok_or_else(|| AppError::Internal("Database pool not initialized".to_string()))?;
-    let c = service.create_config(&db, request).await?;
+    let c = service.create_config(db, request).await?;
     Ok(ApiResponse::success(c))
 }
 
@@ -64,7 +62,7 @@ pub async fn update_config(
     let service = ConfigService::new();
     let db = get_pool()
         .ok_or_else(|| AppError::Internal("Database pool not initialized".to_string()))?;
-    let c = service.update_config(&db, &key, request).await?;
+    let c = service.update_config(db, &key, request).await?;
     Ok(ApiResponse::success(c))
 }
 
@@ -75,6 +73,6 @@ pub async fn delete_config(
     let service = ConfigService::new();
     let db = get_pool()
         .ok_or_else(|| AppError::Internal("Database pool not initialized".to_string()))?;
-    service.delete_config(&db, &key).await?;
+    service.delete_config(db, &key).await?;
     Ok(ApiResponse::success_no_data())
 }

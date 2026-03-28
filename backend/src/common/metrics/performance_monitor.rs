@@ -7,7 +7,7 @@ use std::collections::HashMap;
 use std::time::{Duration, Instant};
 
 use crate::common::metrics::alerting::Alert;
-use crate::common::metrics::{self, AlertManager, AlertRule};
+use crate::common::metrics::{self, AlertManager};
 
 // Query performance tracker
 pub struct QueryPerformanceTracker {
@@ -91,6 +91,7 @@ impl HighLatencyRequestTracker {
 
 // Cache performance tracker
 pub struct CachePerformanceTracker {
+    #[allow(dead_code)]
     cache_key: String,
     hit: bool,
     duration: Option<Duration>,

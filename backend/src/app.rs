@@ -1,19 +1,6 @@
-use axum::{
-    routing::{get, post},
-    Router,
-    http::{Method, header},
-};
-use tower_http::cors::{CorsLayer, Any};
+use axum::{extract::State, Json, Router};
 use sqlx::PgPool;
 use crate::config::Settings;
-use axum::{extract::State, Json};
-use crate::features::monitoring::monitoring_router;
-use crate::features::dictionary::r#type::routes::type_routes;
-use crate::features::dictionary::data::routes::data_routes;
-use crate::features::config::routes::config_routes;
-use crate::features::notice::routes::notice_routes;
-use crate::features::auth::routes::auth_routes;
-use crate::common::middleware::load_balancer_middleware;
 
 pub fn create_app(pool: PgPool, settings: Settings) -> Router {
     let state = AppState { pool, settings };
@@ -23,11 +10,13 @@ pub fn create_app(pool: PgPool, settings: Settings) -> Router {
 }
 
 /// Redirect to Swagger UI
+#[allow(dead_code)]
 async fn redirect_to_swagger() -> axum::http::StatusCode {
     axum::http::StatusCode::PERMANENT_REDIRECT
 }
 
 /// Return OpenAPI specification
+#[allow(dead_code)]
 async fn openapi_spec() -> Json<serde_json::Value> {
     Json(serde_json::json!({
         "openapi": "3.0.0",
@@ -183,10 +172,12 @@ pub struct AppState {
     pub settings: Settings,
 }
 
+#[allow(dead_code)]
 async fn health_check() -> &'static str {
     "OK"
 }
 
+#[allow(dead_code)]
 async fn login(
     State(_state): State<AppState>,
     Json(req): Json<serde_json::Value>,
@@ -226,6 +217,7 @@ async fn login(
     }
 }
 
+#[allow(dead_code)]
 async fn register(
     State(_state): State<AppState>,
     Json(_req): Json<serde_json::Value>,
@@ -237,6 +229,7 @@ async fn register(
     }))
 }
 
+#[allow(dead_code)]
 async fn logout() -> Json<serde_json::Value> {
     Json(serde_json::json!({
         "code": 200,
@@ -245,6 +238,7 @@ async fn logout() -> Json<serde_json::Value> {
     }))
 }
 
+#[allow(dead_code)]
 async fn refresh(
     State(_state): State<AppState>,
     Json(req): Json<serde_json::Value>,
@@ -252,7 +246,7 @@ async fn refresh(
     let refresh_token = req.get("refresh_token").and_then(|v| v.as_str());
     
     match refresh_token {
-        Some(token) => {
+        Some(_token) => {
             // In production, use token validation without DB lookup
             Json(serde_json::json!({
                 "code": 200,
@@ -272,6 +266,7 @@ async fn refresh(
     }
 }
 
+#[allow(dead_code)]
 async fn get_session() -> Json<serde_json::Value> {
     Json(serde_json::json!({
         "code": 200,

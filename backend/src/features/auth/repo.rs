@@ -1,4 +1,4 @@
-use sqlx::{FromRow, PgPool, Row};
+use sqlx::{PgPool, Row};
 use uuid::Uuid;
 
 use crate::common::error::AppError;
@@ -182,7 +182,7 @@ pub async fn get_user_menu_tree(db: &PgPool, user_id: Uuid) -> Result<serde_json
 
     for menu in &menus {
         if let Some(parent_id) = menu.parent_id {
-            menu_children.entry(parent_id).or_insert_with(Vec::new).push(
+            menu_children.entry(parent_id).or_default().push(
                 menu_map.get(&menu.id).unwrap().clone()
             );
         }

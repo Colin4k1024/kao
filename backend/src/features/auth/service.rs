@@ -9,7 +9,7 @@ use uuid::Uuid;
 
 use super::{
     model::{hash_password, verify_password, LoginRequest, LoginResponse, UserProfile},
-    repo::{find_user_by_username, get_user_menu_tree, get_user_permissions, get_user_roles},
+    repo::{find_user_by_username, get_user_permissions, get_user_roles},
 };
 
 // Settings is imported from config module

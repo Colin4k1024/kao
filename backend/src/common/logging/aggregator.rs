@@ -3,7 +3,6 @@
 // This module provides log aggregation functionality for sending
 // logs to Elasticsearch and other log aggregation systems.
 
-use serde_json::Value;
 use std::collections::VecDeque;
 use std::time::Duration;
 use tokio::sync::mpsc;
@@ -97,6 +96,7 @@ impl LogAggregatorState {
 pub struct LogAggregator {
     state: LogAggregatorState,
     config: LogAggregatorConfig,
+    #[allow(dead_code)]
     tx: Option<mpsc::Sender<StructuredLog>>,
 }
 

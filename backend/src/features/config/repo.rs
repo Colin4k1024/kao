@@ -1,5 +1,4 @@
-use sqlx::{PgPool, Row};
-use uuid::Uuid;
+use sqlx::PgPool;
 
 use crate::common::error::AppError;
 
@@ -58,6 +57,7 @@ impl ConfigRepository {
         Ok(configs)
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub async fn create_config(
         db: &PgPool,
         config_name: String,
@@ -93,6 +93,7 @@ impl ConfigRepository {
         Ok(c)
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub async fn update_config(
         db: &PgPool,
         config_key: &str,

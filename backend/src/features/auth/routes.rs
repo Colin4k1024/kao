@@ -1,6 +1,5 @@
 use axum::{
     extract::{Json, State},
-    http::StatusCode,
     response::IntoResponse,
 };
 use serde_json::json;
@@ -12,7 +11,7 @@ use crate::{
 };
 
 use super::{
-    model::{CurrentSessionResponse, LoginRequest, LoginResponse, UserProfile},
+    model::{CurrentSessionResponse, LoginRequest},
     service::AuthService,
 };
 
@@ -106,7 +105,7 @@ pub async fn get_session(
 }
 
 pub async fn get_permissions(
-    State(state): State<AppState>,
+    State(_state): State<AppState>,
     auth_user: AuthUser,
 ) -> Result<impl IntoResponse, crate::common::error::AppError> {
     Ok(ApiResponse::success(serde_json::json!({

@@ -6,6 +6,7 @@ use super::{
     repo::{create_menu, delete_menu, get_menu_by_id, get_menu_tree, update_menu},
 };
 
+#[derive(Default)]
 pub struct MenuService;
 
 impl MenuService {
@@ -42,7 +43,7 @@ impl MenuService {
                 if let Some(item) = menu_map.get(&menu.id).cloned() {
                     menu_children
                         .entry(parent_id)
-                        .or_insert_with(Vec::new)
+                        .or_default()
                         .push(item);
                 }
             }

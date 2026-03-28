@@ -1,5 +1,5 @@
 use axum::{
-    extract::{Path, Query, State},
+    extract::Path,
     response::IntoResponse,
     Json,
 };
@@ -8,7 +8,7 @@ use uuid::Uuid;
 use crate::common::{db::get_pool, auth::extractor::AuthUser, error::AppError, response::ApiResponse};
 
 use super::{
-    model::{CreateTypeRequest, UpdateTypeRequest, TypeResponse},
+    model::{CreateTypeRequest, UpdateTypeRequest},
     service::TypeService,
 };
 
@@ -27,7 +27,7 @@ pub async fn list_types(
     let service = TypeService::new();
     let db = get_pool()
         .ok_or_else(|| AppError::Internal("Database pool not initialized".to_string()))?;
-    let types = service.list_types(&db).await?;
+    let types = service.list_types(db).await?;
     Ok(ApiResponse::success(types))
 }
 
@@ -38,7 +38,7 @@ pub async fn get_type(
     let service = TypeService::new();
     let db = get_pool()
         .ok_or_else(|| AppError::Internal("Database pool not initialized".to_string()))?;
-    match service.get_type_by_id(&db, type_id).await? {
+    match service.get_type_by_id(db, type_id).await? {
         Some(t) => Ok(ApiResponse::success(t)),
         None => Ok(ApiResponse::error(404, "Type not found".to_string())),
     }
@@ -51,7 +51,7 @@ pub async fn create_type(
     let service = TypeService::new();
     let db = get_pool()
         .ok_or_else(|| AppError::Internal("Database pool not initialized".to_string()))?;
-    let t = service.create_type(&db, request).await?;
+    let t = service.create_type(db, request).await?;
     Ok(ApiResponse::success(t))
 }
 
@@ -63,7 +63,7 @@ pub async fn update_type(
     let service = TypeService::new();
     let db = get_pool()
         .ok_or_else(|| AppError::Internal("Database pool not initialized".to_string()))?;
-    let t = service.update_type(&db, type_id, request).await?;
+    let t = service.update_type(db, type_id, request).await?;
     Ok(ApiResponse::success(t))
 }
 
@@ -74,6 +74,6 @@ pub async fn delete_type(
     let service = TypeService::new();
     let db = get_pool()
         .ok_or_else(|| AppError::Internal("Database pool not initialized".to_string()))?;
-    service.delete_type(&db, type_id).await?;
+    service.delete_type(db, type_id).await?;
     Ok(ApiResponse::success_no_data())
 }

@@ -1,4 +1,4 @@
-use sqlx::{FromRow, PgPool, Row};
+use sqlx::{PgPool, Row};
 use uuid::Uuid;
 
 use crate::common::error::AppError;
@@ -56,6 +56,7 @@ pub async fn list_departments(db: &PgPool) -> Result<Vec<DepartmentRecord>, AppE
     Ok(depts)
 }
 
+#[allow(clippy::too_many_arguments)]
 pub async fn create_department(
     db: &PgPool,
     parent_id: Option<Uuid>,
@@ -111,6 +112,7 @@ pub async fn create_department(
     Ok(dept)
 }
 
+#[allow(clippy::too_many_arguments)]
 pub async fn update_department(
     db: &PgPool,
     dept_id: Uuid,

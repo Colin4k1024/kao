@@ -6,6 +6,7 @@ use super::{
     repo::DataRepository,
 };
 
+#[derive(Default)]
 pub struct DataService;
 
 impl DataService {

@@ -1,15 +1,14 @@
 use axum::{
-  extract::{Path, Query, State},
+  extract::Path,
   response::IntoResponse,
   Json,
 };
 use uuid::Uuid;
 
-use crate::common::{auth::extractor::AuthUser, db::{get_pool, check_health}, error::AppError, response::ApiResponse};
-use crate::AppState;
+use crate::common::{auth::extractor::AuthUser, db::get_pool, error::AppError, response::ApiResponse};
 
 use super::{
-  model::{CreateNoticeRequest, UpdateNoticeRequest, NoticeResponse},
+  model::{CreateNoticeRequest, UpdateNoticeRequest},
   service::NoticeService,
 };
 
@@ -29,7 +28,7 @@ pub async fn list_notices(
   let service = NoticeService::new();
   let db = get_pool()
     .ok_or_else(|| AppError::Internal("Database pool not initialized".to_string()))?;
-  let notices = service.list_notices(&db, None, None).await?;
+  let notices = service.list_notices(db, None, None).await?;
   Ok(ApiResponse::success(notices))
 }
 
@@ -40,7 +39,7 @@ pub async fn get_notice(
   let service = NoticeService::new();
   let db = get_pool()
     .ok_or_else(|| AppError::Internal("Database pool not initialized".to_string()))?;
-  match service.get_notice_by_id(&db, notice_id).await? {
+  match service.get_notice_by_id(db, notice_id).await? {
     Some(n) => Ok(ApiResponse::success(n)),
     None => Ok(ApiResponse::error(404, "Notice not found".to_string())),
   }
@@ -53,7 +52,7 @@ pub async fn create_notice(
   let service = NoticeService::new();
   let db = get_pool()
     .ok_or_else(|| AppError::Internal("Database pool not initialized".to_string()))?;
-  let n = service.create_notice(&db, request).await?;
+  let n = service.create_notice(db, request).await?;
   Ok(ApiResponse::success(n))
 }
 
@@ -65,7 +64,7 @@ pub async fn update_notice(
   let service = NoticeService::new();
   let db = get_pool()
     .ok_or_else(|| AppError::Internal("Database pool not initialized".to_string()))?;
-  let n = service.update_notice(&db, notice_id, request).await?;
+  let n = service.update_notice(db, notice_id, request).await?;
   Ok(ApiResponse::success(n))
 }
 
@@ -76,7 +75,7 @@ pub async fn delete_notice(
   let service = NoticeService::new();
   let db = get_pool()
     .ok_or_else(|| AppError::Internal("Database pool not initialized".to_string()))?;
-  service.delete_notice(&db, notice_id).await?;
+  service.delete_notice(db, notice_id).await?;
   Ok(ApiResponse::success_no_data())
 }
 
@@ -87,6 +86,6 @@ pub async fn increment_view(
   let service = NoticeService::new();
   let db = get_pool()
     .ok_or_else(|| AppError::Internal("Database pool not initialized".to_string()))?;
-  let view_count = service.increment_view_count(&db, notice_id).await?;
+  let view_count = service.increment_view_count(db, notice_id).await?;
   Ok(ApiResponse::success(view_count))
 }

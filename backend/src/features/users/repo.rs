@@ -1,4 +1,4 @@
-use sqlx::{FromRow, PgPool, Row};
+use sqlx::{PgPool, Row};
 use uuid::Uuid;
 
 use crate::common::error::AppError;
@@ -74,6 +74,7 @@ pub async fn list_users(
     Ok((users, count))
 }
 
+#[allow(clippy::too_many_arguments)]
 pub async fn create_user(
     db: &PgPool,
     username: String,
@@ -110,6 +111,7 @@ pub async fn create_user(
     Ok(user)
 }
 
+#[allow(clippy::too_many_arguments)]
 pub async fn update_user(
     db: &PgPool,
     user_id: Uuid,

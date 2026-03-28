@@ -60,6 +60,7 @@ impl NoticeRepository {
         Ok(notices)
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub async fn create_notice(
         db: &PgPool,
         notice_title: String,
@@ -100,6 +101,7 @@ impl NoticeRepository {
         Ok(n)
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub async fn update_notice(
         db: &PgPool,
         notice_id: Uuid,

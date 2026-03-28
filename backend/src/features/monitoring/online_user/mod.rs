@@ -2,8 +2,7 @@ use crate::common::response::ApiResponse;
 pub mod routes;
 use axum::{
     extract::State,
-    http::StatusCode,
-    response::{IntoResponse, Response},
+    response::Response,
     Json,
 };
 use serde::{Deserialize, Serialize};
@@ -90,7 +89,7 @@ impl OnlineUserService {
         .bind(request.reason.unwrap_or_else(|| "Force logout by admin".to_string()))
         .bind(chrono::Utc::now().to_rfc3339())
         .bind(&request.session_id)
-        .bind(&request.user_id)
+        .bind(request.user_id)
         .execute(&self.pool)
         .await?
         .rows_affected();

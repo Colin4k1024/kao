@@ -1,6 +1,5 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use tracing::{info, warn};
 use uuid::Uuid;
 
 /// Audit log event types
@@ -34,6 +33,7 @@ pub struct AuditLogEntry {
 
 /// Audit logger for security events
 pub struct AuditLogger {
+    #[allow(dead_code)]
     pool: sqlx::PgPool,
 }
 

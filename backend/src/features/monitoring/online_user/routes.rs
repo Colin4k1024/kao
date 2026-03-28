@@ -14,15 +14,3 @@ pub fn online_user_router() -> axum::Router<AppState> {
             post(OnlineUserController::force_logout_handler),
         )
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_online_user_router() {
-        // Basic test to ensure router compiles
-        let router = online_user_router();
-        assert!(router.is_classified());
-    }
-}

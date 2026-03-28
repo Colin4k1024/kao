@@ -156,7 +156,7 @@ impl AlertManager {
                     // No existing alert, check if we should create one
                     if threshold_breached {
                         let new_alert = Alert {
-                            id: format!("{}-{}", rule.id, now.timestamp()),
+                            id: format!("{}-{}", rule.id, now.and_utc().timestamp()),
                             rule_id: rule.id.clone(),
                             name: rule.name.clone(),
                             description: rule.description.clone(),

@@ -1,9 +1,5 @@
-use axum::{
-    extract::MatchedPath,
-    http::{HeaderMap, HeaderName, HeaderValue, StatusCode},
-};
+use axum::http::{HeaderMap, HeaderName, HeaderValue, StatusCode};
 use axum::body::Body;
-use axum::response::IntoResponse;
 
 /// Cache control settings for a response
 #[derive(Debug, Clone)]
@@ -193,7 +189,7 @@ mod tests {
     #[test]
     fn test_etag_matching() {
         let response = CacheResponse::new(StatusCode::OK, "test body".to_string());
-        let etag = response.etag.unwrap();
+        let etag = response.etag.clone().unwrap();
         assert!(response.matches_etag(Some(&etag)));
     }
 }

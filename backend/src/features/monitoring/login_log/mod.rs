@@ -2,8 +2,7 @@ use crate::common::response::ApiResponse;
 pub mod routes;
 use axum::{
     extract::State,
-    http::StatusCode,
-    response::{IntoResponse, Response},
+    response::Response,
     Json,
 };
 use serde::{Deserialize, Serialize};
@@ -78,12 +77,12 @@ impl LoginLogService {
             ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
             "#,
         )
-        .bind(&log.id)
-        .bind(&log.user_id)
+        .bind(log.id)
+        .bind(log.user_id)
         .bind(&log.username)
         .bind(&log.ip_address)
         .bind(&log.user_agent)
-        .bind(&log.status)
+        .bind(log.status)
         .bind(&log.message)
         .bind(chrono::Utc::now().to_rfc3339())
         .execute(&self.pool)
@@ -97,7 +96,7 @@ impl LoginLogService {
         params: LoginLogQueryParams,
     ) -> Result<LoginLogListResponse, sqlx::Error> {
         let page = params.page.max(1);
-        let page_size = params.page_size.max(1).min(100);
+        let page_size = params.page_size.clamp(1, 100);
         let offset = (page - 1) * page_size;
 
         // Simplified query without dynamic WHERE clause (needs refactoring for full filter support)

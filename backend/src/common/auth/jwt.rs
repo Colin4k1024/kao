@@ -1,6 +1,5 @@
 use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
-use serde::{Deserialize, Serialize};
-use std::time::{Duration, SystemTime};
+use std::time::SystemTime;
 
 use crate::common::{auth::claims::Claims, error::AppError};
 

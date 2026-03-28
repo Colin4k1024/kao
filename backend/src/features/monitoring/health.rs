@@ -1,10 +1,9 @@
 use axum::{
-    http::StatusCode,
     response::{IntoResponse, Response},
     Json,
 };
 use chrono::Utc;
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use std::env;
 
 #[derive(Debug, Clone, Serialize)]
@@ -49,7 +48,7 @@ pub struct MetricsEndpointStatus {
 }
 
 pub async fn check_health() -> Response {
-    let start_time = chrono::Utc::now();
+    let _start_time = chrono::Utc::now();
     
     // Check database connection
     let db_status = check_database().await;

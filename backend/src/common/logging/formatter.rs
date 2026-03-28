@@ -36,6 +36,12 @@ pub struct LogMetadata {
     pub additional: HashMap<String, String>,
 }
 
+impl Default for LogMetadata {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl LogMetadata {
     pub fn new() -> Self {
         LogMetadata {

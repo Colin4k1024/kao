@@ -1,5 +1,5 @@
 use crate::common::error::AppError;
-use crate::common::security::{validate_password, check_username_in_password, PasswordValidationError, PasswordPolicy};
+use crate::common::security::{validate_password, check_username_in_password, PasswordPolicy};
 use uuid::Uuid;
 
 use super::{
@@ -8,6 +8,7 @@ use super::{
 };
 use crate::features::auth::model::{hash_password, verify_password};
 
+#[derive(Default)]
 pub struct UserService;
 
 impl UserService {

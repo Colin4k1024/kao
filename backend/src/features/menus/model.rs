@@ -1,9 +1,5 @@
-use axum::http::StatusCode;
 use serde::{Deserialize, Serialize};
-use sqlx::{PgPool, Row};
 use uuid::Uuid;
-
-use crate::common::error::AppError;
 
 #[derive(Debug, Deserialize)]
 pub struct CreateMenuRequest {

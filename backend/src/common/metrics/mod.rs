@@ -13,7 +13,6 @@ use prometheus::{
     opts, register_histogram_vec, register_int_counter, register_int_gauge, HistogramVec,
     IntCounter, IntGauge,
 };
-use std::collections::HashMap;
 
 // Re-export key metrics components
 pub use alerting::{AlertManager, AlertRule, AlertSeverity, AlertOperator, configure_alerts};
@@ -131,24 +130,21 @@ pub fn init_metrics() -> MetricsStateArc {
 }
 
 // Increment request counter
-pub fn record_request(method: &str, path: &str, status: u16) {
+pub fn record_request(_method: &str, _path: &str, _status: u16) {
     REQUESTS_TOTAL.inc();
-
-    let status_str = status.to_string();
-    let duration = request_duration_from_status(status);
 
     // Note: prometheus histogram observe is not thread-safe for get_metric_with
     // In production, use a different approach or cache the histogram
 }
 
 // Record request duration
-pub fn record_request_duration(method: &str, path: &str, status: u16, duration: f64) {
-    let status_str = status.to_string();
+pub fn record_request_duration(_method: &str, _path: &str, _status: u16, _duration: f64) {
     // Note:prometheus histogram observe is not thread-safe for get_metric_with
     // In production, use a different approach or cache the histogram
 }
 
 // Helper to estimate duration from status (for when we don't track timing)
+#[allow(dead_code)]
 fn request_duration_from_status(_status: u16) -> f64 {
     // Default assumed duration for unmeasured requests
     0.01
@@ -161,7 +157,7 @@ pub fn record_error(status_code: u16) {
 }
 
 // Record database query time
-pub fn record_db_query_time(query_name: &str, duration: f64) {
+pub fn record_db_query_time(_query_name: &str, _duration: f64) {
     // Note: prometheus histogram observe is not thread-safe for get_metric_with
     // In production, use a different approach or cache the histogram
 }
@@ -182,7 +178,7 @@ pub fn record_password_failure() {
 }
 
 // Record audit log write latency
-pub fn record_audit_log_latency(log_type: &str, duration: f64) {
+pub fn record_audit_log_latency(_log_type: &str, _duration: f64) {
     // Note: prometheus histogram observe is not thread-safe for get_metric_with
     // In production, use a different approach or cache the histogram
 }
@@ -222,6 +218,12 @@ pub struct MetricsResponse {
     pub cache_misses: u64,
     pub password_failures: u64,
     pub timestamp: String,
+}
+
+impl Default for MetricsResponse {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl MetricsResponse {
@@ -314,6 +316,9 @@ pub fn collect_metrics() -> MetricsResponse {
     MetricsResponse::new()
 }
 
+// Metrics middleware wrapper
+pub use middleware::metrics_middleware as MetricsMiddleware;
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -337,6 +342,3 @@ mod tests {
         assert!(CACHE_OPERATIONS_TOTAL.get() > 0);
     }
 }
-
-// Metrics middleware wrapper
-pub use middleware::metrics_middleware as MetricsMiddleware;

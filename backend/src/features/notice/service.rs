@@ -6,6 +6,7 @@ use super::{
     repo::NoticeRepository,
 };
 
+#[derive(Default)]
 pub struct NoticeService;
 
 impl NoticeService {

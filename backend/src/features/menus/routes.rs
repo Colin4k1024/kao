@@ -1,17 +1,16 @@
 use axum::{
     extract::{Json, Path, State},
-    http::{HeaderMap, HeaderName, HeaderValue, StatusCode},
-    response::{IntoResponse, Response},
+    http::HeaderMap,
+    response::IntoResponse,
 };
-use serde_json::json;
 
 use crate::{
     AppState,
-    common::{auth::extractor::AuthUser, middleware::caching::CacheControl, response::ApiResponse},
+    common::{auth::extractor::AuthUser, response::ApiResponse},
 };
 
 use super::{
-    model::{CreateMenuRequest, MenuTreeItem},
+    model::CreateMenuRequest,
     service::MenuService,
 };
 

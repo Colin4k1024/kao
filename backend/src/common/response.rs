@@ -6,7 +6,6 @@ use axum::{
     http::HeaderValue,
 };
 use serde::Serialize;
-use serde_json::json;
 
 #[derive(Serialize)]
 pub struct ApiResponse<T> {

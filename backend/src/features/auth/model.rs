@@ -1,11 +1,6 @@
-use axum::http::StatusCode;
 use serde::{Deserialize, Serialize};
 
 use crate::common::error::AppError;
-
-use super::repo::{
-    find_user_by_username, get_user_menu_tree, get_user_permissions, get_user_roles,
-};
 
 #[derive(Debug, Deserialize)]
 pub struct LoginRequest {

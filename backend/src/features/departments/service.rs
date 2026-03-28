@@ -4,11 +4,12 @@ use uuid::Uuid;
 use super::{
     model::{CreateDepartmentRequest, DepartmentResponse, DepartmentTreeItem, UpdateDepartmentRequest},
     repo::{
-        create_department, delete_department, get_child_departments, get_department_by_code,
+        create_department, delete_department, get_department_by_code,
         get_department_by_id, list_departments, update_department,
     },
 };
 
+#[derive(Default)]
 pub struct DepartmentService;
 
 impl DepartmentService {
@@ -50,7 +51,7 @@ impl DepartmentService {
                 if let Some(item) = dept_map.get(&dept.id).cloned() {
                     dept_children
                         .entry(parent_id)
-                        .or_insert_with(Vec::new)
+                        .or_default()
                         .push(item);
                 }
             }
