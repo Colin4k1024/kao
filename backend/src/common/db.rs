@@ -1,6 +1,5 @@
 use sqlx::PgPool;
 use sqlx::postgres::PgPoolOptions;
-use std::path::Path;
 use tokio::fs;
 
 // Database pool variable for global access
@@ -108,7 +107,7 @@ pub async fn run_migrations(pool: &PgPool) -> Result<(), MigrationError> {
 
     // Run pending migrations
     for filename in &migration_files {
-        if applied.contains(*filename) {
+        if applied.contains(filename) {
             tracing::info!("Migration {} already applied, skipping", filename);
             continue;
         }
