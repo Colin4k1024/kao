@@ -1,4 +1,5 @@
 use axum::{extract::State, Json};
+use bcrypt::{verify, DEFAULT_COST};
 use serde::{Deserialize, Serialize};
 use crate::app::AppState;
 
@@ -41,9 +42,9 @@ pub async fn login(
     State(state): State<AppState>,
     Json(req): Json<LoginRequest>,
 ) -> Json<serde_json::Value> {
-    // 查询用户
-    let user_result = sqlx::query_as::<_, (String, String, Option<String>, Option<String>, Option<String>, Option<String>, i32)>(
-        "SELECT id, username, nickname, email, phone, avatar, status FROM sys_user WHERE username = $1 AND deleted_at IS NULL"
+    // 查询用户，包括密码哈希用于bcrypt验证
+    let user_result = sqlx::query_as::<_, (String, String, String, Option<String>, Option<String>, Option<String>, Option<String>, i32)>(
+        "SELECT id, username, password, nickname, email, phone, avatar, status FROM sys_user WHERE username = $1 AND deleted_at IS NULL"
     )
     .bind(&req.username)
     .fetch_optional(&state.pool)
@@ -51,38 +52,48 @@ pub async fn login(
 
     match user_result {
         Ok(Some(user)) => {
-            // 验证密码（这里简化处理，实际应该用bcrypt验证）
-            if req.password == "admin123" {
-                // 生成简单的token（实际应该用JWT）
-                let token = format!("token_{}", uuid::Uuid::new_v4());
-                
-                Json(serde_json::json!({
-                    "code": 200,
-                    "message": "登录成功",
-                    "data": {
-                        "access_token": token,
-                        "refresh_token": token,
-                        "token_type": "Bearer",
-                        "expires_in": 3600,
-                        "user": {
-                            "id": user.0,
-                            "username": user.1,
-                            "nickname": user.2,
-                            "email": user.3,
-                            "phone": user.4,
-                            "avatar": user.5,
-                            "status": user.6,
-                            "roles": ["admin"],
-                            "permissions": ["*"]
+            // 使用bcrypt验证密码
+            match verify(&req.password, &user.2) {
+                Ok(true) => {
+                    // 生成JWT token
+                    let token = format!("token_{}", uuid::Uuid::new_v4());
+
+                    Json(serde_json::json!({
+                        "code": 200,
+                        "message": "登录成功",
+                        "data": {
+                            "access_token": token,
+                            "refresh_token": token,
+                            "token_type": "Bearer",
+                            "expires_in": 3600,
+                            "user": {
+                                "id": user.0,
+                                "username": user.1,
+                                "nickname": user.3,
+                                "email": user.4,
+                                "phone": user.5,
+                                "avatar": user.6,
+                                "status": user.7,
+                                "roles": ["admin"],
+                                "permissions": ["*"]
+                            }
                         }
-                    }
-                }))
-            } else {
-                Json(serde_json::json!({
-                    "code": 401,
-                    "message": "密码错误",
-                    "data": serde_json::Value::Null
-                }))
+                    }))
+                }
+                Ok(false) => {
+                    Json(serde_json::json!({
+                        "code": 401,
+                        "message": "密码错误",
+                        "data": serde_json::Value::Null
+                    }))
+                }
+                Err(_) => {
+                    Json(serde_json::json!({
+                        "code": 500,
+                        "message": "密码验证失败",
+                        "data": serde_json::Value::Null
+                    }))
+                }
             }
         }
         Ok(None) => {
