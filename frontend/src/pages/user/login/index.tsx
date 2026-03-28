@@ -1,6 +1,6 @@
 import { LockOutlined, UserOutlined } from '@ant-design/icons';
 import { LoginForm, ProFormText } from '@ant-design/pro-components';
-import { Helmet, SelectLang } from '@umijs/max';
+import { Helmet, SelectLang } from '@/lib/umi-max-stub';
 import { App } from 'antd';
 import React, { useState } from 'react';
 import { Footer } from '@/components';

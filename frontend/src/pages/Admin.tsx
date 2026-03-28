@@ -1,6 +1,6 @@
 import { HeartTwoTone, SmileTwoTone } from '@ant-design/icons';
 import { PageContainer } from '@ant-design/pro-components';
-import { useIntl } from '@umijs/max';
+import { useIntl } from '@/lib/umi-max-stub';
 import { Alert, Card, Typography } from 'antd';
 import React from 'react';
 

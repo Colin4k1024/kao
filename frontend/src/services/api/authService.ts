@@ -3,7 +3,10 @@ import type { ApiResponse, LoginParams, LoginResult, UserInfo } from '@/types/ap
 
 export const authApi = {
   login: (params: LoginParams) => {
-    return api.post<LoginResult>('/auth/login', params)
+    return api.post<LoginResult>('/auth/login', params).then(res => {
+      const response = res as unknown as { code: number; data: LoginResult }
+      return { code: response.code, data: response.data } as ApiResponse<LoginResult>
+    })
   },
 
   logout: () => {

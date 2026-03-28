@@ -204,7 +204,7 @@ const ConfigList: React.FC = () => {
             label="参数值"
             rules={[{ required: true, message: '请输入参数值' }]}
           >
-            <TextArea rows={6} />
+            <Input.TextArea rows={6} />
           </Form.Item>
           <Form.Item name="configType" label="系统内置" initialValue="N">
             <Select>
@@ -225,7 +225,7 @@ const ConfigList: React.FC = () => {
             </Select>
           </Form.Item>
           <Form.Item name="remark" label="备注">
-            <TextArea rows={4} />
+            <Input.TextArea rows={4} />
           </Form.Item>
         </Form>
       </Modal>

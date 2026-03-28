@@ -70,7 +70,7 @@ export const useDebouncedLoading = (delay: number = 300) => {
   const [debouncedLoading, setDebouncedLoading] = useState(false);
 
   useEffect(() => {
-    let timeoutId: NodeJS.Timeout | undefined;
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
     if (loading) {
       timeoutId = setTimeout(() => {
         setDebouncedLoading(true);

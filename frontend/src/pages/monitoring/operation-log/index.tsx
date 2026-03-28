@@ -9,10 +9,11 @@ import {
   Form,
   Input,
   Select,
+  Modal,
 } from 'antd';
 import {
   DownloadOutlined,
-  RefreshOutlined,
+  ReloadOutlined,
   EyeOutlined,
   DeleteOutlined,
 } from '@ant-design/icons';
@@ -196,7 +197,7 @@ const OperationLogList = () => {
         <Space>
           <Button
             type="primary"
-            icon={<RefreshOutlined />}
+            icon={<ReloadOutlined />}
             onClick={() => loadData()}
             loading={loading}
           >

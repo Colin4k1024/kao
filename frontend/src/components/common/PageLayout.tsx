@@ -4,8 +4,6 @@ import ErrorBoundary from './ErrorBoundary';
 import EmptyState from './EmptyState';
 import useResponsive from '@/hooks/useResponsive';
 
-const { Header, Content, Footer } = Card;
-
 export interface PageLayoutProps {
   title?: React.ReactNode;
   description?: React.ReactNode;
@@ -131,7 +129,7 @@ export const PageLayout: React.FC<PageLayoutProps> = ({
         }}
       >
         {(title || extra || actions) && (
-          <Header
+          <div
             style={{
               display: 'flex',
               justifyContent: 'space-between',
@@ -164,18 +162,18 @@ export const PageLayout: React.FC<PageLayoutProps> = ({
                 {actions}
               </div>
             )}
-          </Header>
+          </div>
         )}
-        <Content
+        <div
           style={{
             padding: 16,
             ...contentStyle,
           }}
         >
           {children}
-        </Content>
+        </div>
         {footer && (
-          <Footer
+          <div
             style={{
               borderTop: '1px solid #f0f0f0',
               paddingTop: 16,
@@ -183,7 +181,7 @@ export const PageLayout: React.FC<PageLayoutProps> = ({
             }}
           >
             {footer}
-          </Footer>
+          </div>
         )}
       </Card>
     </div>

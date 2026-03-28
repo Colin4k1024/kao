@@ -86,5 +86,6 @@ export const request = {
   },
 };
 
-export { api, ApiResponse, PageResult, PageParams };
+export { api };
+export type { ApiResponse, PageResult, PageParams };
 export default request;

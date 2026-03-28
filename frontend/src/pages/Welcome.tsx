@@ -1,5 +1,5 @@
 import { PageContainer } from '@ant-design/pro-components';
-import { useModel } from '@umijs/max';
+import { useModel } from '@/lib/umi-max-stub';
 import { Card, theme } from 'antd';
 import React from 'react';
 

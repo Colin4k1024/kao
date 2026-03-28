@@ -1,8 +1,9 @@
 import { useQuery } from '@tanstack/react-query'
 import { roleApi } from '@/services/api/systemService'
+import type { Role } from '@/types/user'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Plus, Edit, Trash2, Setting } from 'lucide-react'
+import { Plus, Edit, Trash2, Settings } from 'lucide-react'
 
 export default function RoleList() {
   const { data, isLoading } = useQuery({
@@ -29,7 +30,7 @@ export default function RoleList() {
             <div className="text-center py-8">加载中...</div>
           ) : (
             <div className="space-y-2">
-              {data?.data?.data?.list?.map((role) => (
+              {data?.list?.map((role: Role) => (
                 <div
                   key={role.id}
                   className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent/50"
@@ -48,7 +49,7 @@ export default function RoleList() {
                     </span>
                     <div className="flex items-center gap-2">
                       <Button variant="ghost" size="icon" title="分配权限">
-                        <Setting className="h-4 w-4" />
+                        <Settings className="h-4 w-4" />
                       </Button>
                       <Button variant="ghost" size="icon">
                         <Edit className="h-4 w-4" />

@@ -34,7 +34,7 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
       }}
     >
       <Empty
-        image={image === 'simple' ? Empty.PRESET_IMAGE_SIMPLE : image === 'predefined' ? Empty.PRESENTED_IMAGE_DEFAULT : image}
+        image={image === 'simple' ? Empty.PRESENTED_IMAGE_SIMPLE : image === 'predefined' ? Empty.PRESENTED_IMAGE_DEFAULT : image}
         description={
           <Space direction="vertical">
             <span>{title}</span>

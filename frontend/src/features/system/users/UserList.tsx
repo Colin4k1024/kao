@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { userApi } from '@/services/api/systemService'
+import type { User } from '@/types/user'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -66,7 +67,7 @@ export default function UserList() {
                   </tr>
                 </thead>
                 <tbody>
-                  {data?.data?.data?.list?.map((user) => (
+                  {data?.list?.map((user: User) => (
                     <tr key={user.id} className="border-b hover:bg-accent/50">
                       <td className="p-3">{user.id}</td>
                       <td className="p-3">{user.username}</td>
@@ -85,8 +86,8 @@ export default function UserList() {
                           <Button variant="ghost" size="icon">
                             <Edit className="h-4 w-4" />
                           </Button>
-                          <Button 
-                            variant="ghost" 
+                          <Button
+                            variant="ghost"
                             size="icon"
                             onClick={() => deleteMutation.mutate(user.id)}
                           >
@@ -100,10 +101,10 @@ export default function UserList() {
               </table>
             </div>
           )}
-          
+
           <div className="flex items-center justify-between mt-4">
             <div className="text-sm text-muted-foreground">
-              共 {data?.data?.data?.total || 0} 条记录
+              共 {data?.total || 0} 条记录
             </div>
             <div className="flex items-center gap-2">
               <Button
@@ -114,12 +115,12 @@ export default function UserList() {
                 上一页
               </Button>
               <span className="text-sm">
-                第 {page} / {Math.ceil((data?.data?.data?.total || 0) / pageSize)} 页
+                第 {page} / {Math.ceil((data?.total || 0) / pageSize)} 页
               </span>
               <Button
                 variant="outline"
                 onClick={() => setPage(p => p + 1)}
-                disabled={page * pageSize >= (data?.data?.data?.total || 0)}
+                disabled={page * pageSize >= (data?.total || 0)}
               >
                 下一页
               </Button>

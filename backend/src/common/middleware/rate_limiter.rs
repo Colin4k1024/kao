@@ -15,7 +15,7 @@ use tokio::sync::RwLock;
 use axum::{
     body::Body,
     extract::Request,
-    http::{StatusCode, header},
+    http::StatusCode,
     middleware::Next,
     response::Response,
 };

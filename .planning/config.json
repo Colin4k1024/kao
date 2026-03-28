@@ -7,7 +7,9 @@
   "workflows": {
     "newProject": {
       "autoMode": false,
-      "completedStages": ["questioning"],
+      "completedStages": [
+        "questioning"
+      ],
       "nextStage": "requirements"
     },
     "phasePlanning": {
@@ -41,5 +43,8 @@
     "database": "database/",
     "migrations": "backend/migrations/",
     "tests": "tests/"
+  },
+  "workflow": {
+    "_auto_chain_active": false
   }
 }

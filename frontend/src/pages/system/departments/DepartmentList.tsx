@@ -46,7 +46,7 @@ const DepartmentList: React.FC = () => {
     console.log('删除部门', department);
   };
 
-  const renderTreeNodes = (data: Department[]) => {
+  const renderTreeNodes = (data: Department[]): any[] => {
     return data.map((item) => ({
       key: item.id,
       title: (
@@ -92,8 +92,7 @@ const DepartmentList: React.FC = () => {
         <Tree
           showLine
           defaultExpandAll
-          treeData={renderTreeNodes(departments)}
-          loading={loading}
+          treeData={loading ? [] : renderTreeNodes(departments)}
         />
       </Card>
     </div>

@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { postApi } from '@/services/api/systemService'
+import type { Post } from '@/types/user'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Plus, Edit, Trash2 } from 'lucide-react'
@@ -42,7 +43,7 @@ export default function PostList() {
                   </tr>
                 </thead>
                 <tbody>
-                  {data?.data?.data?.list?.map((post) => (
+                  {data?.list?.map((post: Post) => (
                     <tr key={post.id} className="border-b hover:bg-accent/50">
                       <td className="p-3">{post.id}</td>
                       <td className="p-3">{post.name}</td>

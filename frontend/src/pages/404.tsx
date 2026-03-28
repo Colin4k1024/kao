@@ -1,4 +1,4 @@
-import { history, useIntl } from '@umijs/max';
+import { history, useIntl } from '@/lib/umi-max-stub';
 import { Button, Card, Result } from 'antd';
 import React from 'react';
 

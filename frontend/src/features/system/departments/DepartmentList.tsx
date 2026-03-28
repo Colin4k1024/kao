@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { deptApi } from '@/services/api/systemService'
+import type { Department } from '@/types/user'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -29,7 +30,7 @@ export default function DepartmentList() {
             <div className="text-center py-8">加载中...</div>
           ) : (
             <div className="space-y-2">
-              {data?.data?.data?.map((dept) => (
+              {data?.map((dept: Department) => (
                 <div
                   key={dept.id}
                   className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent/50"

@@ -34,8 +34,8 @@ export default function LoginForm() {
     setIsLoading(true)
     try {
       const response = await authApi.login(data)
-      if (response.data.code === 200) {
-        login(response.data.data.token, response.data.data.userInfo)
+      if (response.code === 200) {
+        login(response.data.token, response.data.userInfo)
         navigate({ to: '/dashboard' })
       }
     } catch (error) {

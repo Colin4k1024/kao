@@ -53,7 +53,7 @@ export default function MenuList() {
             <div className="text-center py-8">加载中...</div>
           ) : (
             <div>
-              {renderMenuTree(data?.data?.data || [])}
+              {renderMenuTree(Array.isArray(data) ? data : [])}
             </div>
           )}
         </CardContent>

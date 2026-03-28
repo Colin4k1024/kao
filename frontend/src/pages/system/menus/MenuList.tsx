@@ -71,7 +71,7 @@ const MenuList: React.FC = () => {
     }
   };
 
-  const renderTreeNodes = (data: Menu[]) => {
+  const renderTreeNodes = (data: Menu[]): any[] => {
     return data.map((item) => ({
       key: item.id,
       title: (
@@ -123,7 +123,7 @@ const MenuList: React.FC = () => {
         </Space>
       </div>
       <Card>
-        <Tree showLine defaultExpandAll treeData={renderTreeNodes(menus)} loading={loading} />
+        <Tree showLine defaultExpandAll treeData={loading ? [] : renderTreeNodes(menus)} />
       </Card>
       <Modal
         title={editingMenu ? '编辑菜单' : '新增菜单'}

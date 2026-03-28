@@ -4,7 +4,7 @@ import type { CardProps } from 'antd';
 
 export type ChartType = 'line' | 'bar' | 'progress';
 
-interface ChartSectionProps extends CardProps {
+interface ChartSectionProps extends Omit<CardProps, 'type'> {
   title: string;
   type?: ChartType;
   data?: any[];

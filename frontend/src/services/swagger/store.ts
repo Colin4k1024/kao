@@ -1,22 +1,15 @@
 // @ts-ignore
 /* eslint-disable */
-import { request } from '@umijs/max';
+import { api } from '@/lib/api';
 
 /** Returns pet inventories by status Returns a map of status codes to quantities GET /store/inventory */
 export async function getInventory(options?: { [key: string]: any }) {
-  return request<Record<string, any>>('/store/inventory', {
-    method: 'GET',
-    ...(options || {}),
-  });
+  return api.get<Record<string, any>>('/store/inventory', options);
 }
 
 /** Place an order for a pet POST /store/order */
 export async function placeOrder(body: API.Order, options?: { [key: string]: any }) {
-  return request<API.Order>('/store/order', {
-    method: 'POST',
-    data: body,
-    ...(options || {}),
-  });
+  return api.post<API.Order>('/store/order', body, options);
 }
 
 /** Find purchase order by ID For valid response try integer IDs with value >= 1 and <= 10.         Other values will generated exceptions GET /store/order/${param0} */
@@ -26,11 +19,7 @@ export async function getOrderById(
   options?: { [key: string]: any },
 ) {
   const { orderId: param0, ...queryParams } = params;
-  return request<API.Order>(`/store/order/${param0}`, {
-    method: 'GET',
-    params: { ...queryParams },
-    ...(options || {}),
-  });
+  return api.get<API.Order>(`/store/order/${param0}`, { params: { ...queryParams }, ...options });
 }
 
 /** Delete purchase order by ID For valid response try integer IDs with positive integer value.         Negative or non-integer values will generate API errors DELETE /store/order/${param0} */
@@ -40,9 +29,5 @@ export async function deleteOrder(
   options?: { [key: string]: any },
 ) {
   const { orderId: param0, ...queryParams } = params;
-  return request<any>(`/store/order/${param0}`, {
-    method: 'DELETE',
-    params: { ...queryParams },
-    ...(options || {}),
-  });
+  return api.delete<any>(`/store/order/${param0}`, { params: { ...queryParams }, ...options });
 }

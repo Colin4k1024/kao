@@ -10,9 +10,9 @@ import {
   Input,
   Select,
   DatePicker,
+  Modal,
 } from 'antd';
-import Modal from 'antd/es/modal';
-import { DownloadOutlined, RefreshOutlined, EyeOutlined } from '@ant-design/icons';
+import { DownloadOutlined, ReloadOutlined, EyeOutlined } from '@ant-design/icons';
 import type { TableRowSelection } from 'antd/es/table/interface';
 
 import {
@@ -146,7 +146,7 @@ const LoginLogList = () => {
         <Space>
           <Button
             type="primary"
-            icon={<RefreshOutlined />}
+            icon={<ReloadOutlined />}
             onClick={() => loadData()}
             loading={loading}
           >

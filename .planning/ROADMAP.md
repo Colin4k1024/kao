@@ -391,7 +391,7 @@ Plans:
 
 ### Dependencies
 
-- Phase 1, 2, 3 complete
+- Phase 1, 2, 3, 4 complete
 
 ### Plans
 
@@ -400,12 +400,47 @@ Plans:
 
 ---
 
+## Phase 5: Docker & E2E
+
+**Timeline:** 1 week
+
+**Goal:** Build Docker image, verify docker-compose, run E2E tests
+
+**Status:** Planning
+
+### Deliverables
+
+1. **Docker Image Build**
+   - Verify backend/Dockerfile builds successfully
+   - Multi-stage build with non-root user
+   - Entrypoint script works
+
+2. **docker-compose Verification**
+   - All services start correctly (backend, frontend, postgres)
+   - Health checks pass
+   - Environment variables configured
+
+3. **Playwright E2E Tests**
+   - Login flow works
+   - Dashboard loads
+   - Navigation works
+   - All tests pass
+
+### Dependencies
+
+- Phase 4 complete (backend compiles)
+
+### Plans
+
+Plans:
+- [ ] 05-01-PLAN.md — Docker Build & E2E Tests
+
+---
+
 ## Next Steps
 
-1. Start Phase 1: Stabilization & Security (COMPLETE)
-2. Execute Phase 2: Feature Completeness (COMPLETE)
-3. Execute Phase 3: Production Readiness (COMPLETE)
-4. Execute Phase 4: Backend Compilation Fix (IN PROGRESS)
+1. Execute Phase 1-4: Stabilization, Features, Production, Compilation Fix (COMPLETE)
+2. Execute Phase 5: Docker & E2E (IN PROGRESS)
 
 ---
 
