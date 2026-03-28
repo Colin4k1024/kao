@@ -23,6 +23,14 @@ async fn main() -> anyhow::Result<()> {
 
     tracing::info!("Database connection pool created");
 
+    // Run database migrations
+    tracing::info!("Running database migrations...");
+    if let Err(e) = db::run_migrations(&pool).await {
+        tracing::error!("Failed to run migrations: {}", e);
+        return Err(anyhow::anyhow!("Migration failed: {}", e));
+    }
+    tracing::info!("Database migrations completed");
+
     let app = kao_backend::app::create_app(pool, settings);
 
     let addr = SocketAddr::from(([0, 0, 0, 0], 8080));
