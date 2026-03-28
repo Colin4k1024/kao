@@ -17,6 +17,12 @@ pub struct User {
     pub role_id: Option<Uuid>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
+    /// Number of consecutive failed login attempts
+    pub failed_login_attempts: i32,
+    /// Timestamp when account will be unlocked (None if not locked)
+    pub locked_until: Option<DateTime<Utc>>,
+    /// Reason for account lockout
+    pub lockout_reason: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

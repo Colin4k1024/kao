@@ -3,7 +3,7 @@ use std::sync::Arc;
 use crate::common::{
     auth::{claims::Claims, jwt::generate_jwt},
     error::AppError,
-    security::validate_password,
+    security::{validate_password, AccountLockoutService, LockoutConfig},
 };
 use uuid::Uuid;
 
@@ -17,14 +17,38 @@ use crate::config::Settings;
 
 pub struct AuthService {
     config: Arc<Settings>,
+    lockout_service: AccountLockoutService,
 }
 
 impl AuthService {
     pub fn new(config: Arc<Settings>) -> Self {
-        Self { config }
+        Self {
+            config,
+            lockout_service: AccountLockoutService::new(LockoutConfig::default()),
+        }
     }
 
     pub async fn login(&self, db: &sqlx::PgPool, req: LoginRequest) -> Result<LoginResponse, AppError> {
+        // Check if account is locked before authentication
+        match self.lockout_service.is_locked(db, &req.username).await {
+            Ok(true) => {
+                let status = self.lockout_service.get_lockout_status(db, &req.username)
+                    .await
+                    .map_err(|e| AppError::Internal(format!("Lockout service error: {}", e)))?;
+                let retry_after = status.locked_until
+                    .map(|locked| (locked - chrono::Utc::now()).num_seconds().max(0) as u64)
+                    .unwrap_or(900); // Default 15 minutes
+                return Err(AppError::Authentication(format!(
+                    "Account is locked. Please try again in {} seconds",
+                    retry_after
+                )));
+            }
+            Ok(false) => {}
+            Err(e) => {
+                tracing::warn!("Failed to check lockout status: {}", e);
+            }
+        }
+
         // Validate password complexity before hashing
         let policy = crate::common::security::PasswordPolicy::default();
         if !req.password.is_empty() {
@@ -40,7 +64,16 @@ impl AuthService {
         // Verify password
         let is_valid = verify_password(&req.password, &user.password_hash)?;
         if !is_valid {
+            // Record failed attempt
+            if let Err(e) = self.lockout_service.record_failed_attempt(db, &req.username).await {
+                tracing::warn!("Failed to record failed login attempt: {}", e);
+            }
             return Err(AppError::Authentication("Invalid username or password".to_string()));
+        }
+
+        // Reset failed attempts on successful login
+        if let Err(e) = self.lockout_service.reset_attempts(db, &req.username).await {
+            tracing::warn!("Failed to reset login attempts: {}", e);
         }
 
         // Get user permissions and roles
