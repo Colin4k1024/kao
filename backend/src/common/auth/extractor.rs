@@ -6,6 +6,7 @@ use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
+use crate::app::AppState;
 use crate::common::{auth::jwt::validate_jwt, error::AppError};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -18,13 +19,11 @@ pub struct AuthUser {
 }
 
 #[async_trait]
-impl<S> FromRequestParts<S> for AuthUser
-where
-    S: Send + Sync,
+impl FromRequestParts<AppState> for AuthUser
 {
     type Rejection = AppError;
 
-    async fn from_request_parts(parts: &mut Parts, _state: &S) -> Result<Self, Self::Rejection> {
+    async fn from_request_parts(parts: &mut Parts, state: &AppState) -> Result<Self, Self::Rejection> {
         let auth_header = parts
             .headers
             .get(AUTHORIZATION)
@@ -39,7 +38,7 @@ where
             ));
         };
 
-        let claims = validate_jwt(token, "change-me-in-development")?;
+        let claims = validate_jwt(token, &state.settings.jwt.secret)?;
 
         let user = AuthUser {
             id: Uuid::parse_str(&claims.sub)
