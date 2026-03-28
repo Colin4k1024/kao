@@ -15,7 +15,7 @@ use crate::features::notice::routes::notice_routes;
 use crate::features::auth::routes::auth_routes;
 use crate::common::middleware::load_balancer_middleware;
 
-pub async fn create_app(pool: PgPool, settings: Settings) -> Router<AppState> {
+pub fn create_app(pool: PgPool, settings: Settings) -> Router {
     let state = AppState { pool, settings };
 
     Router::new()
