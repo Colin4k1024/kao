@@ -35,6 +35,7 @@ sha2 = "0.10"
 futures = "0.3"
 async-trait = "0.1"
 validator = { version = "0.18", features = ["derive"] }
+lazy_static = "1.4"
 
 [dev-dependencies]
 tokio-test = "0.4"
