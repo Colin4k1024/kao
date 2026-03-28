@@ -9,6 +9,7 @@ use axum::{
 use serde::{Deserialize, Serialize};
 use sqlx::{PgPool, FromRow};
 use uuid::Uuid;
+use crate::AppState;
 
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 pub struct OnlineUser {
@@ -78,18 +79,18 @@ impl OnlineUserService {
     }
 
     pub async fn force_logout(&self, request: ForceLogoutRequest) -> Result<bool, sqlx::Error> {
-        let rows_affected = sqlx::query!(
+        let rows_affected = sqlx::query(
             r#"
             UPDATE sys_online_user
             SET status = $1, remark = $2, update_time = $3
             WHERE session_id = $4 AND user_id = $5
             "#,
-            1i32, // status: force logged out
-            request.reason.unwrap_or_else(|| "Force logout by admin".to_string()),
-            chrono::Utc::now().to_rfc3339(),
-            request.session_id,
-            request.user_id
         )
+        .bind(1i32)
+        .bind(request.reason.unwrap_or_else(|| "Force logout by admin".to_string()))
+        .bind(chrono::Utc::now().to_rfc3339())
+        .bind(&request.session_id)
+        .bind(&request.user_id)
         .execute(&self.pool)
         .await?
         .rows_affected();
@@ -98,16 +99,16 @@ impl OnlineUserService {
     }
 
     pub async fn update_last_activity(&self, session_id: &str) -> Result<bool, sqlx::Error> {
-        let rows_affected = sqlx::query!(
+        let rows_affected = sqlx::query(
             r#"
             UPDATE sys_online_user
             SET last_activity_time = $1, update_time = $2
             WHERE session_id = $3
             "#,
-            chrono::Utc::now().to_rfc3339(),
-            chrono::Utc::now().to_rfc3339(),
-            session_id
         )
+        .bind(chrono::Utc::now().to_rfc3339())
+        .bind(chrono::Utc::now().to_rfc3339())
+        .bind(session_id)
         .execute(&self.pool)
         .await?
         .rows_affected();
@@ -119,8 +120,8 @@ impl OnlineUserService {
 pub struct OnlineUserController;
 
 impl OnlineUserController {
-    pub async fn get_online_users_handler(State(pool): State<PgPool>) -> Response {
-        let service = OnlineUserService::new(pool);
+    pub async fn get_online_users_handler(State(state): State<AppState>) -> Response {
+        let service = OnlineUserService::new(state.pool.clone());
 
         match service.get_online_users().await {
             Ok(response) => {
@@ -134,10 +135,10 @@ impl OnlineUserController {
     }
 
     pub async fn force_logout_handler(
-        State(pool): State<PgPool>,
+        State(state): State<AppState>,
         Json(req): Json<ForceLogoutRequest>,
     ) -> Response {
-        let service = OnlineUserService::new(pool);
+        let service = OnlineUserService::new(state.pool.clone());
 
         match service.force_logout(req).await {
             Ok(true) => {

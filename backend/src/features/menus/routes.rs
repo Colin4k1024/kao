@@ -27,39 +27,11 @@ pub fn menu_routes() -> axum::Router<AppState> {
 pub async fn get_menus(
     State(state): State<AppState>,
     _auth_user: AuthUser,
-    headers: HeaderMap,
+    _headers: HeaderMap,
 ) -> Result<impl IntoResponse, crate::common::error::AppError> {
     let menu_service = MenuService::new();
     let menus = menu_service.get_menu_tree(&state.pool).await?;
-    
-    // Check If-None-Match for conditional requests
-    let if_none_match = headers.get("if-none-match");
-    
-    // Generate ETag
-    let body = serde_json::to_string(&menus)?;
-    let etag = format!("\"{}\"", hex::encode(md5::compute(&body).0));
-    let etag_str = etag.as_str();
-    
-    // Check if client has cached version
-    if let Some(header_value) = if_none_match {
-        if header_value.to_str().map(|h| h.contains(etag_str)).unwrap_or(false) {
-            return Ok((
-                StatusCode::NOT_MODIFIED,
-                [(
-                    "Cache-Control",
-                    "max-age=900, immutable",
-                )],
-                "",
-            ));
-        }
-    }
-    
-    let mut response = ApiResponse::success(menus);
-    response.headers_mut().insert(
-        HeaderName::from_static("etag"),
-        HeaderValue::from_str(&etag).expect("Valid etag"),
-    );
-    Ok(response)
+    Ok(ApiResponse::success(menus))
 }
 
 pub async fn get_menu(

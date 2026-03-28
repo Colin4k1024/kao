@@ -9,6 +9,7 @@ use axum::{
 use serde::{Deserialize, Serialize};
 use sqlx::{PgPool, FromRow};
 use uuid::Uuid;
+use crate::AppState;
 
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 pub struct OperationLog {
@@ -40,6 +41,7 @@ pub struct OperationLogListResponse {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CreateOperationLogRequest {
+    pub id: Uuid,
     pub user_id: Uuid,
     pub username: String,
     pub module: String,
@@ -88,7 +90,7 @@ impl OperationLogService {
     }
 
     pub async fn create_operation_log(&self, log: CreateOperationLogRequest) -> Result<(), sqlx::Error> {
-        sqlx::query!(
+        sqlx::query(
             r#"
             INSERT INTO sys_oper_log (
                 id, user_id, username, module, action_type, method, path,
@@ -96,23 +98,23 @@ impl OperationLogService {
                 execution_time, ip_address, user_agent, status, create_time
             ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
             "#,
-            log.id,
-            log.user_id,
-            log.username,
-            log.module,
-            log.action_type,
-            log.method,
-            log.path,
-            log.request_method,
-            log.request_params,
-            log.response_code,
-            log.response_message,
-            log.execution_time,
-            log.ip_address,
-            log.user_agent,
-            log.status,
-            chrono::Utc::now()
         )
+        .bind(&log.id)
+        .bind(&log.user_id)
+        .bind(&log.username)
+        .bind(&log.module)
+        .bind(&log.action_type)
+        .bind(&log.method)
+        .bind(&log.path)
+        .bind(&log.request_method)
+        .bind(&log.request_params)
+        .bind(log.response_code)
+        .bind(&log.response_message)
+        .bind(log.execution_time)
+        .bind(&log.ip_address)
+        .bind(&log.user_agent)
+        .bind(log.status)
+        .bind(chrono::Utc::now().to_rfc3339())
         .execute(&self.pool)
         .await?;
 
@@ -223,10 +225,10 @@ impl OperationLogService {
     }
 
     pub async fn delete_operation_log(&self, id: Uuid) -> Result<bool, sqlx::Error> {
-        let rows_affected = sqlx::query!(
+        let rows_affected = sqlx::query(
             "DELETE FROM sys_oper_log WHERE id = $1",
-            id
         )
+        .bind(id)
         .execute(&self.pool)
         .await?
         .rows_affected();
@@ -239,10 +241,10 @@ pub struct OperationLogController;
 
 impl OperationLogController {
     pub async fn create_operation_log_handler(
-        State(pool): State<PgPool>,
+        State(state): State<AppState>,
         Json(req): Json<CreateOperationLogRequest>,
     ) -> Response {
-        let service = OperationLogService::new(pool);
+        let service = OperationLogService::new(state.pool.clone());
 
         match service.create_operation_log(req).await {
             Ok(_) => {
@@ -256,10 +258,10 @@ impl OperationLogController {
     }
 
     pub async fn get_operation_logs_handler(
-        State(pool): State<PgPool>,
+        State(state): State<AppState>,
         query: axum::extract::Query<OperationLogQueryParams>,
     ) -> Response {
-        let service = OperationLogService::new(pool);
+        let service = OperationLogService::new(state.pool.clone());
 
         match service.get_operation_logs(query.0).await {
             Ok(response) => {
@@ -273,26 +275,30 @@ impl OperationLogController {
     }
 
     pub async fn get_operation_log_handler(
-        State(pool): State<PgPool>,
+        State(state): State<AppState>,
         axum::extract::Path(id): axum::extract::Path<Uuid>,
     ) -> Response {
-        let service = OperationLogService::new(pool);
+        let service = OperationLogService::new(state.pool.clone());
 
-        match service.get_operation_log_by_id(id).await? {
-            Some(log) => {
+        match service.get_operation_log_by_id(id).await {
+            Ok(Some(log)) => {
                 ApiResponse::success(log)
             }
-            None => {
+            Ok(None) => {
                 ApiResponse::error(404, "Operation log not found".to_string())
+            }
+            Err(e) => {
+                log::error!("Failed to get operation log: {}", e);
+                ApiResponse::error(500, format!("Failed to get operation log: {}", e))
             }
         }
     }
 
     pub async fn delete_operation_log_handler(
-        State(pool): State<PgPool>,
+        State(state): State<AppState>,
         axum::extract::Path(id): axum::extract::Path<Uuid>,
     ) -> Response {
-        let service = OperationLogService::new(pool);
+        let service = OperationLogService::new(state.pool.clone());
 
         match service.delete_operation_log(id).await {
             Ok(true) => {

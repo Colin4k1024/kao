@@ -1,5 +1,5 @@
 use axum::{Router, routing::get};
-use sqlx::PgPool;
+use crate::AppState;
 
 use super::health;
 use super::login_log;
@@ -7,7 +7,7 @@ use super::metrics;
 use super::online_user;
 use super::operation_log;
 
-pub fn monitoring_router() -> Router<PgPool> {
+pub fn monitoring_router() -> Router<AppState> {
     Router::new()
         .route("/metrics", get(metrics::get_metrics))
         .route("/health", get(health::check_health))
@@ -25,7 +25,7 @@ async fn get_alerts() -> &'static str {
 }
 
 // Security router
-pub fn security_router() -> Router<PgPool> {
+pub fn security_router() -> Router<AppState> {
     Router::new()
         .route("/scan", get(security_scan))
         .route("/scan/configuration", get(config_scan))

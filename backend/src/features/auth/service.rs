@@ -88,16 +88,16 @@ impl AuthService {
         let password_hash = hash_password(&password)?;
 
         // Create user in database
-        sqlx::query!(
+        let _ = sqlx::query(
             r#"
             INSERT INTO sys_users (username, password_hash, email, display_name, status, created_at)
             VALUES ($1, $2, $3, $4, 'ACTIVE', NOW())
             "#,
-            username,
-            password_hash,
-            email,
-            display_name
         )
+        .bind(&username)
+        .bind(&password_hash)
+        .bind(&email)
+        .bind(&display_name)
         .execute(db)
         .await
         .map_err(|e| AppError::Internal(format!("Failed to create user: {}", e)))?;
@@ -111,20 +111,20 @@ impl AuthService {
         user_id: Uuid,
     ) -> Result<UserProfile, AppError> {
         // Get user details
-        let user = sqlx::query!(
+        let user = sqlx::query_as::<_, (Uuid, String, String, Option<String>, Option<Uuid>, Option<String>)>(
             r#"
-            SELECT 
+            SELECT
                 id,
                 username,
                 display_name,
                 email,
                 dept_id,
                 avatar_url
-            FROM sys_users 
+            FROM sys_users
             WHERE id = $1
             "#,
-            user_id
         )
+        .bind(user_id)
         .fetch_one(db)
         .await
         .map_err(|_| AppError::Authentication("User not found".to_string()))?;
@@ -134,12 +134,12 @@ impl AuthService {
         let roles = get_user_roles(db, user_id).await?;
 
         Ok(UserProfile {
-            id: user.id,
-            username: user.username,
-            display_name: user.display_name,
-            email: user.email,
-            dept_id: user.dept_id,
-            avatar_url: user.avatar_url,
+            id: user.0,
+            username: user.1,
+            display_name: user.2,
+            email: user.3,
+            dept_id: user.4,
+            avatar_url: user.5,
             permissions,
             roles,
         })
@@ -158,32 +158,32 @@ impl AuthService {
             .map_err(|_| AppError::Validation("New password does not meet complexity requirements".to_string()))?;
 
         // Get user
-        let user = sqlx::query!(
+        let user = sqlx::query_as::<_, (Uuid, String, String)>(
             r#"
             SELECT id, username, password_hash
             FROM sys_users
             WHERE id = $1
             "#,
-            user_id
         )
+        .bind(user_id)
         .fetch_one(db)
         .await
         .map_err(|_| AppError::Authentication("User not found".to_string()))?;
 
         // Verify old password
-        let is_valid = verify_password(&old_password, &user.password_hash)?;
+        let is_valid = verify_password(&old_password, &user.2)?;
         if !is_valid {
             return Err(AppError::Authentication("Current password is incorrect".to_string()));
         }
 
         // Check username is not in new password
-        if new_password.to_lowercase().contains(&user.username.to_lowercase()) {
+        if new_password.to_lowercase().contains(&user.1.to_lowercase()) {
             return Err(AppError::Validation("New password must not contain username".to_string()));
         }
 
         // Update password
         let new_hash = hash_password(&new_password)?;
-        sqlx::query!(
+        let _ = sqlx::query(
             r#"
             UPDATE sys_users
             SET password_hash = $1,
@@ -191,9 +191,9 @@ impl AuthService {
                 password_expires_at = NOW() + INTERVAL '90 days'
             WHERE id = $2
             "#,
-            new_hash,
-            user_id
         )
+        .bind(&new_hash)
+        .bind(user_id)
         .execute(db)
         .await
         .map_err(|e| AppError::Internal(format!("Failed to change password: {}", e)))?;

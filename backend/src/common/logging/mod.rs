@@ -71,7 +71,6 @@ impl LoggingConfig {
 }
 
 // Global logger state
-#[derive(Debug, Clone)]
 pub struct GlobalLoggerState {
     pub config: LoggingConfig,
     pub aggregator: LogAggregator,
@@ -81,6 +80,11 @@ impl GlobalLoggerState {
     pub fn new(config: LoggingConfig) -> Self {
         let aggregator = LogAggregator::new(LogAggregatorConfig::default());
         GlobalLoggerState { config, aggregator }
+    }
+
+    pub fn with_aggregator(mut self, aggregator: LogAggregator) -> Self {
+        self.aggregator = aggregator;
+        self
     }
 
     pub fn info(&mut self, message: impl Into<String>) {

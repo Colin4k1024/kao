@@ -4,10 +4,11 @@ use axum::{
     response::IntoResponse,
 };
 use serde_json::json;
+use std::sync::Arc;
 
 use crate::{
-    app::state::AppState,
-    common::{auth::extractor::AuthUser, response::ApiResponse},
+    AppState,
+    common::{auth::extractor::AuthUser, error::AppError, response::ApiResponse},
 };
 
 use super::{
@@ -30,8 +31,8 @@ pub async fn login(
     State(state): State<AppState>,
     Json(request): Json<LoginRequest>,
 ) -> Result<impl IntoResponse, crate::common::error::AppError> {
-    let auth_service = AuthService::new(state.config.clone());
-    let response = auth_service.login(&state.db, request).await?;
+    let auth_service = AuthService::new(Arc::new(state.settings.clone()));
+    let response = auth_service.login(&state.pool, request).await?;
     Ok(ApiResponse::success(response))
 }
 
@@ -62,8 +63,8 @@ pub async fn register(
         .map(|s| s.to_string())
         .unwrap_or_else(|| username.clone());
 
-    let auth_service = AuthService::new(state.config.clone());
-    auth_service.register(&state.db, username, password, email, display_name).await?;
+    let auth_service = AuthService::new(Arc::new(state.settings.clone()));
+    auth_service.register(&state.pool, username, password, email, display_name).await?;
 
     Ok(ApiResponse::success(json!({
         "message": "Registration successful"
@@ -74,9 +75,9 @@ pub async fn get_profile(
     State(state): State<AppState>,
     auth_user: AuthUser,
 ) -> Result<impl IntoResponse, crate::common::error::AppError> {
-    let auth_service = AuthService::new(state.config.clone());
+    let auth_service = AuthService::new(Arc::new(state.settings.clone()));
     let profile = auth_service
-        .get_current_user_profile(&state.db, auth_user.id)
+        .get_current_user_profile(&state.pool, auth_user.id)
         .await?;
     Ok(ApiResponse::success(profile))
 }
@@ -86,13 +87,13 @@ pub async fn get_session(
     auth_user: AuthUser,
 ) -> Result<impl IntoResponse, crate::common::error::AppError> {
     // Get user profile
-    let auth_service = AuthService::new(state.config.clone());
+    let auth_service = AuthService::new(Arc::new(state.settings.clone()));
     let profile = auth_service
-        .get_current_user_profile(&state.db, auth_user.id)
+        .get_current_user_profile(&state.pool, auth_user.id)
         .await?;
 
     // Get user menu tree
-    let menu_tree = super::repo::get_user_menu_tree(&state.db, auth_user.id).await?;
+    let menu_tree = super::repo::get_user_menu_tree(&state.pool, auth_user.id).await?;
 
     let session_response = CurrentSessionResponse {
         user: profile,
@@ -117,7 +118,7 @@ pub async fn get_menus(
     State(state): State<AppState>,
     auth_user: AuthUser,
 ) -> Result<impl IntoResponse, crate::common::error::AppError> {
-    let menu_tree = super::repo::get_user_menu_tree(&state.db, auth_user.id).await?;
+    let menu_tree = super::repo::get_user_menu_tree(&state.pool, auth_user.id).await?;
     Ok(ApiResponse::success(serde_json::json!({
         "menus": menu_tree
     })))
@@ -140,9 +141,9 @@ pub async fn change_password(
         .ok_or_else(|| AppError::Validation("New password is required".to_string()))?
         .to_string();
 
-    let auth_service = AuthService::new(state.config.clone());
+    let auth_service = AuthService::new(Arc::new(state.settings.clone()));
     auth_service
-        .change_password(&state.db, auth_user.id, old_password, new_password)
+        .change_password(&state.pool, auth_user.id, old_password, new_password)
         .await?;
 
     Ok(ApiResponse::success(json!({

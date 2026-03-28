@@ -9,6 +9,7 @@ use axum::{
 use serde::{Deserialize, Serialize};
 use sqlx::{PgPool, FromRow};
 use uuid::Uuid;
+use crate::AppState;
 
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 pub struct LoginLog {
@@ -33,6 +34,7 @@ pub struct LoginLogListResponse {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CreateLoginLogRequest {
+    pub id: Uuid,
     pub user_id: Uuid,
     pub username: String,
     pub ip_address: String,
@@ -69,21 +71,21 @@ impl LoginLogService {
     }
 
     pub async fn create_login_log(&self, log: CreateLoginLogRequest) -> Result<(), sqlx::Error> {
-        sqlx::query!(
+        sqlx::query(
             r#"
             INSERT INTO sys_login_log (
                 id, user_id, username, ip_address, user_agent, status, message, create_time
             ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
             "#,
-            log.id,
-            log.user_id,
-            log.username,
-            log.ip_address,
-            log.user_agent,
-            log.status,
-            log.message,
-            chrono::Utc::now().to_rfc3339()
         )
+        .bind(&log.id)
+        .bind(&log.user_id)
+        .bind(&log.username)
+        .bind(&log.ip_address)
+        .bind(&log.user_agent)
+        .bind(&log.status)
+        .bind(&log.message)
+        .bind(chrono::Utc::now().to_rfc3339())
         .execute(&self.pool)
         .await?;
 
@@ -141,10 +143,10 @@ pub struct LoginLogController;
 
 impl LoginLogController {
     pub async fn create_login_log_handler(
-        State(pool): State<PgPool>,
+        State(state): State<AppState>,
         Json(req): Json<CreateLoginLogRequest>,
     ) -> Response {
-        let service = LoginLogService::new(pool);
+        let service = LoginLogService::new(state.pool.clone());
 
         match service.create_login_log(req).await {
             Ok(_) => {
@@ -158,10 +160,10 @@ impl LoginLogController {
     }
 
     pub async fn get_login_logs_handler(
-        State(pool): State<PgPool>,
+        State(state): State<AppState>,
         query: axum::extract::Query<LoginLogQueryParams>,
     ) -> Response {
-        let service = LoginLogService::new(pool);
+        let service = LoginLogService::new(state.pool.clone());
 
         match service.get_login_logs(query.0).await {
             Ok(response) => {
@@ -175,17 +177,21 @@ impl LoginLogController {
     }
 
     pub async fn get_login_log_handler(
-        State(pool): State<PgPool>,
+        State(state): State<AppState>,
         axum::extract::Path(id): axum::extract::Path<Uuid>,
     ) -> Response {
-        let service = LoginLogService::new(pool);
+        let service = LoginLogService::new(state.pool.clone());
 
-        match service.get_login_log_by_id(id).await? {
-            Some(log) => {
+        match service.get_login_log_by_id(id).await {
+            Ok(Some(log)) => {
                 ApiResponse::success(log)
             }
-            None => {
+            Ok(None) => {
                 ApiResponse::error(404, "Login log not found".to_string())
+            }
+            Err(e) => {
+                log::error!("Failed to get login log: {}", e);
+                ApiResponse::error(500, format!("Failed to get login log: {}", e))
             }
         }
     }

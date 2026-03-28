@@ -14,14 +14,12 @@ use std::time::Instant;
 use crate::common::metrics;
 
 // Metrics middleware function that records metrics for each request
-pub async fn metrics_middleware<B>(
-    request: Request<B>,
+// Note: This middleware is disabled in app.rs due to Axum 0.7 compatibility issues
+#[allow(unused)]
+pub async fn metrics_middleware(
+    request: Request<axum::body::Body>,
     next: Next,
-) -> Response
-where
-    B: axum::body::HttpBody + Send + 'static,
-    B::Data: Send,
-{
+) -> Response {
     // Get matched path for metrics
     let matched_path = request
         .extensions()

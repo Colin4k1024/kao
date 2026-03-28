@@ -2,11 +2,11 @@ use axum::{
     routing::{delete, get, post},
     Router,
 };
-use sqlx::PgPool;
+use crate::AppState;
 
 use crate::features::monitoring::operation_log::OperationLogController;
 
-pub fn operation_log_router() -> axum::Router<PgPool> {
+pub fn operation_log_router() -> axum::Router<AppState> {
     Router::new()
         .route(
             "/",
