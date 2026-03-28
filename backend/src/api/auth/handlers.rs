@@ -2,6 +2,8 @@ use axum::{extract::State, Json};
 use bcrypt::{verify, DEFAULT_COST};
 use serde::{Deserialize, Serialize};
 use crate::app::AppState;
+use std::net::SocketAddr;
+use axum::http::Request;
 
 #[derive(Debug, Deserialize)]
 pub struct LoginRequest {
@@ -42,6 +44,8 @@ pub async fn login(
     State(state): State<AppState>,
     Json(req): Json<LoginRequest>,
 ) -> Json<serde_json::Value> {
+    let username = req.username.clone();
+
     // 查询用户，包括密码哈希用于bcrypt验证
     let user_result = sqlx::query_as::<_, (String, String, String, Option<String>, Option<String>, Option<String>, Option<String>, i32)>(
         "SELECT id, username, password, nickname, email, phone, avatar, status FROM sys_user WHERE username = $1 AND deleted_at IS NULL"
@@ -57,6 +61,15 @@ pub async fn login(
                 Ok(true) => {
                     // 生成JWT token
                     let token = format!("token_{}", uuid::Uuid::new_v4());
+
+                    // Log successful login with structured logging
+                    tracing::info!(
+                        username = %username,
+                        user_id = %user.0,
+                        action = "login",
+                        success = true,
+                        "Login successful"
+                    );
 
                     Json(serde_json::json!({
                         "code": 200,
@@ -81,13 +94,31 @@ pub async fn login(
                     }))
                 }
                 Ok(false) => {
+                    // Log failed login attempt
+                    tracing::warn!(
+                        username = %username,
+                        action = "login",
+                        success = false,
+                        reason = "invalid_password",
+                        "Login failed - invalid password"
+                    );
+
                     Json(serde_json::json!({
                         "code": 401,
                         "message": "密码错误",
                         "data": serde_json::Value::Null
                     }))
                 }
-                Err(_) => {
+                Err(e) => {
+                    // Log authentication error
+                    tracing::error!(
+                        username = %username,
+                        action = "login",
+                        success = false,
+                        error = %e,
+                        "Authentication error during password verification"
+                    );
+
                     Json(serde_json::json!({
                         "code": 500,
                         "message": "密码验证失败",
@@ -97,6 +128,15 @@ pub async fn login(
             }
         }
         Ok(None) => {
+            // Log user not found
+            tracing::warn!(
+                username = %username,
+                action = "login",
+                success = false,
+                reason = "user_not_found",
+                "Login failed - user not found"
+            );
+
             Json(serde_json::json!({
                 "code": 401,
                 "message": "用户不存在",
@@ -104,6 +144,15 @@ pub async fn login(
             }))
         }
         Err(e) => {
+            // Log database error
+            tracing::error!(
+                username = %username,
+                action = "login",
+                success = false,
+                error = %e,
+                "Login failed - database error"
+            );
+
             Json(serde_json::json!({
                 "code": 500,
                 "message": format!("数据库错误: {}", e),
