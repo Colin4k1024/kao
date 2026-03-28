@@ -3,7 +3,7 @@ import {
   SettingOutlined,
   UserOutlined,
 } from '@ant-design/icons';
-import { history, useModel } from '@umijs/max';
+import { history, useModel } from '@/lib/umi-max-stub';
 import type { MenuProps } from 'antd';
 import { Spin } from 'antd';
 import { createStyles } from 'antd-style';
@@ -18,8 +18,8 @@ export type GlobalHeaderRightProps = {
 };
 
 export const AvatarName = () => {
-  const { initialState } = useModel('@@initialState');
-  const { currentUser } = initialState || {};
+  const { initialState } = useModel('@@initialState') as { initialState: { currentUser?: { name?: string } } | null };
+  const currentUser = initialState?.currentUser;
   return <span className="anticon">{currentUser?.name}</span>;
 };
 
@@ -97,7 +97,7 @@ export const AvatarDropdown: React.FC<GlobalHeaderRightProps> = ({
     return loading;
   }
 
-  const { currentUser } = initialState;
+  const currentUser = initialState?.currentUser;
 
   if (!currentUser || !currentUser.name) {
     return loading;

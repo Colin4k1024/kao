@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Table, Button, Space, Input, Tag, Modal, Form, Select, TextArea, InputNumber, message } from 'antd';
+import { Table, Button, Space, Input, Tag, Modal, Form, Select, InputNumber, message } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, ReloadOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { dictionaryDataApi, dictionaryTypeApi } from '@/services/api/dictionary';
@@ -243,7 +243,7 @@ const DictionaryDataList: React.FC = () => {
             </Select>
           </Form.Item>
           <Form.Item name="remark" label="备注">
-            <TextArea autoSize={{ minRows: 4, maxRows: 6 }} />
+            <Input.TextArea autoSize={{ minRows: 4, maxRows: 6 }} />
           </Form.Item>
         </Form>
       </Modal>

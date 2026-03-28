@@ -29,14 +29,8 @@ export default defineConfig({
             'antd',
             '@ant-design/icons',
           ],
-          // Charts
-          'charts': ['ant-design-charts', '@antv/g2', '@antv/dataset'],
           // Utils
           'utils': ['axios', 'zod', 'lodash-es'],
-          // Services
-          'services': [
-            '@/services/api/*',
-          ],
         },
       },
     },

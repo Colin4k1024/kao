@@ -21,11 +21,11 @@ import { Select } from 'antd';
 import type { ColumnType, ColumnsType } from 'antd/es/table';
 import request from '@/lib/api';
 import type { PageParams } from '@/types/api';
-import { logApi, Log } from '@/services/api/job';
+import { jobApi, JobLog } from '@/services/api/job';
 
-// Log Page Component
+// JobLog Page Component
 export const JobLogPage: React.FC = () => {
-  const [logs, setLogs] = useState<Log[]>([]);
+  const [logs, setJobLogs] = useState<JobLog[]>([]);
   const [loading, setLoading] = useState(false);
   const [pagination, setPagination] = useState({
     current: 1,
@@ -33,21 +33,21 @@ export const JobLogPage: React.FC = () => {
     total: 0,
   });
   const [isDetailModalVisible, setIsDetailModalVisible] = useState(false);
-  const [selectedLog, setSelectedLog] = useState<Log | null>(null);
+  const [selectedJobLog, setSelectedJobLog] = useState<JobLog | null>(null);
   const [searchForm] = Form.useForm();
 
-  const fetchLogs = async () => {
+  const fetchJobLogs = async () => {
     setLoading(true);
     try {
       const values = searchForm.getFieldsValue();
-      const params: PageParams = {
+      const params = {
         page: pagination.current,
         pageSize: pagination.pageSize,
-        keyword: values.job_name,
+        job_name: values.job_name,
         execute_status: values.execute_status,
       };
-      const data = await logApi.list(params);
-      setLogs(data.list);
+      const data = await jobApi.logs(params);
+      setJobLogs(data.list);
       setPagination({ ...pagination, total: data.total });
     } catch (error) {
       message.error('获取任务日志列表失败');
@@ -57,46 +57,36 @@ export const JobLogPage: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchLogs();
+    fetchJobLogs();
   }, [pagination.current, pagination.pageSize]);
 
   const handleSearch = () => {
     setPagination({ ...pagination, current: 1 });
-    fetchLogs();
+    fetchJobLogs();
   };
 
   const handleReset = () => {
     searchForm.resetFields();
     setPagination({ ...pagination, current: 1 });
-    fetchLogs();
+    fetchJobLogs();
   };
 
-  const handleViewDetail = (record: Log) => {
-    setSelectedLog(record);
+  const handleViewDetail = (record: JobLog) => {
+    setSelectedJobLog(record);
     setIsDetailModalVisible(true);
   };
 
-  const handleClearLogs = async () => {
+  const handleClearJobLogs = async (jobId?: number) => {
     try {
-      await logApi.clear();
-      message.success('日志清除成功');
-      fetchLogs();
+      await jobApi.clearLog(jobId);
+      message.success(jobId ? '任务日志清除成功' : '日志清除成功');
+      fetchJobLogs();
     } catch (error) {
-      message.error('日志清除失败');
+      message.error(jobId ? '任务日志清除失败' : '日志清除失败');
     }
   };
 
-  const handleClearJobLogs = async (jobId: number) => {
-    try {
-      await logApi.clear(jobId);
-      message.success('任务日志清除成功');
-      fetchLogs();
-    } catch (error) {
-      message.error('任务日志清除失败');
-    }
-  };
-
-  const columns: ColumnsType<Log> = [
+  const columns: ColumnsType<JobLog> = [
     {
       title: '日志ID',
       dataIndex: 'id',
@@ -155,7 +145,7 @@ export const JobLogPage: React.FC = () => {
       key: 'action',
       width: 150,
       fixed: 'right',
-      render: (_a: any, record: Log) => (
+      render: (_a: any, record: JobLog) => (
         <Space size="small">
           <Button
             type="link"
@@ -204,10 +194,10 @@ export const JobLogPage: React.FC = () => {
           </Form.Item>
         </Form>
         <div>
-          <Button danger icon={<ReloadOutlined />} onClick={handleClearLogs}>
+          <Button danger icon={<ReloadOutlined />} onClick={() => handleClearJobLogs()}>
             清除所有日志
           </Button>
-          <Button icon={<ReloadOutlined />} onClick={fetchLogs} style={{ marginLeft: 8 }}>
+          <Button icon={<ReloadOutlined />} onClick={fetchJobLogs} style={{ marginLeft: 8 }}>
             刷新
           </Button>
         </div>
@@ -238,26 +228,26 @@ export const JobLogPage: React.FC = () => {
           </Button>,
         ]}
       >
-        {selectedLog && (
+        {selectedJobLog && (
           <div style={{ padding: 16 }}>
             <div style={{ marginBottom: 16 }}>
               <h4>任务信息</h4>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                 <div>
                   <label>任务ID：</label>
-                  <span>{selectedLog.job_id}</span>
+                  <span>{selectedJobLog.job_id}</span>
                 </div>
                 <div>
                   <label>任务名称：</label>
-                  <span>{selectedLog.job_name}</span>
+                  <span>{selectedJobLog.job_name}</span>
                 </div>
                 <div>
                   <label>任务编码：</label>
-                  <span>{selectedLog.job_code}</span>
+                  <span>{selectedJobLog.job_code}</span>
                 </div>
                 <div>
                   <label>任务组：</label>
-                  <span>{selectedLog.job_group}</span>
+                  <span>{selectedJobLog.job_group}</span>
                 </div>
               </div>
             </div>
@@ -267,16 +257,16 @@ export const JobLogPage: React.FC = () => {
                 <div>
                   <label>执行状态：</label>
                   <span>
-                    {selectedLog.execute_status === 1
+                    {selectedJobLog.execute_status === 1
                       ? <Tag color="green">成功</Tag>
-                      : selectedLog.execute_status === 2
+                      : selectedJobLog.execute_status === 2
                       ? <Tag color="orange">执行中</Tag>
                       : <Tag color="red">失败</Tag>}
                   </span>
                 </div>
                 <div>
                   <label>执行时间：</label>
-                  <span>{selectedLog.execute_time}</span>
+                  <span>{selectedJobLog.execute_time}</span>
                 </div>
                 <div style={{ gridColumn: '1 / -1' }}>
                   <label>执行消息：</label>
@@ -291,7 +281,7 @@ export const JobLogPage: React.FC = () => {
                       wordBreak: 'break-all',
                     }}
                   >
-                    {selectedLog.execute_message || '无'}
+                    {selectedJobLog.execute_message || '无'}
                   </div>
                 </div>
               </div>
@@ -300,7 +290,7 @@ export const JobLogPage: React.FC = () => {
               <h4>创建信息</h4>
               <div>
                 <label>创建时间：</label>
-                <span>{selectedLog.created_at}</span>
+                <span>{selectedJobLog.created_at}</span>
               </div>
             </div>
           </div>

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Table, Button, Space, Input, Tag, Modal, Form, Select, message } from 'antd';
+import { Table, Button, Space, Input, Tag, Modal, Form, Select, InputNumber, message } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, ReloadOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { noticeApi } from '@/services/api/dictionary';
@@ -210,7 +210,7 @@ const NoticeList: React.FC = () => {
             label="内容"
             rules={[{ required: true, message: '请输入内容' }]}
           >
-            <TextArea rows={10} />
+            <Input.TextArea rows={10} />
           </Form.Item>
           <Form.Item name="noticeStatus" label="状态" initialValue="0">
             <Select>

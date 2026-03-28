@@ -1,4 +1,4 @@
-import React, { useEffect, useState, lazy, Suspense } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Table,
   Button,
@@ -10,6 +10,9 @@ import {
   message,
   Popconfirm,
   Select,
+  Switch,
+  InputNumber,
+  Typography,
 } from 'antd';
 import {
   PlusOutlined,
@@ -19,7 +22,6 @@ import {
   SearchOutlined,
 } from '@ant-design/icons';
 import type { ColumnType, ColumnsType } from 'antd/es/table';
-import { Switch, Modal, Text, InputNumber } from 'antd';
 import request from '@/lib/api';
 import type { PageParams } from '@/types/api';
 import { jobApi, Job, cronValidator } from '@/services/api/job';
@@ -359,7 +361,7 @@ export const JobPage: React.FC = () => {
                 </div>
               ) : (
                 <div style={{ marginTop: '8px' }}>
-                  <Text type="secondary">支持标准Cron表达式，例如：0 0 12 * * ? (每天中午12点触发)</Text>
+                  <Typography.Text type="secondary">支持标准Cron表达式，例如：0 0 12 * * ? (每天中午12点触发)</Typography.Text>
                 </div>
               )
             }
