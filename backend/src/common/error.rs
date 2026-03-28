@@ -136,7 +136,8 @@ impl IntoResponse for AppError {
         if let AppError::RateLimit { retry_after } = &self {
             headers.insert(
                 axum::http::header::RETRY_AFTER,
-                axum::http::HeaderValue::from(retry_after.to_string()),
+                axum::http::HeaderValue::from_str(&retry_after.to_string())
+                    .unwrap_or_else(|_| axum::http::HeaderValue::from_static("900"))
             );
         }
 

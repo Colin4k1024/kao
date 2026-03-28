@@ -25,7 +25,7 @@ async fn main() -> anyhow::Result<()> {
 
     // Run database migrations
     tracing::info!("Running database migrations...");
-    if let Err(e) = db::run_migrations(&pool).await {
+    if let Err(e) = kao_backend::common::db::run_migrations(&pool).await {
         tracing::error!("Failed to run migrations: {}", e);
         return Err(anyhow::anyhow!("Migration failed: {}", e));
     }

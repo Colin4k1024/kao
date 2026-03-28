@@ -101,9 +101,7 @@ impl DepartmentService {
         req: CreateDepartmentRequest,
     ) -> Result<DepartmentResponse, AppError> {
         if get_department_by_code(db, &req.code).await?.is_some() {
-            return Err(AppError::Validation(
-                "Department code already exists".to_string(),
-            ));
+            return Err(AppError::Validation { field: "code".to_string(), message: "Department code already exists".to_string() });
         }
 
         let dept = create_department(

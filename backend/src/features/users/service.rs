@@ -77,10 +77,10 @@ impl UserService {
         // Validate password
         let policy = PasswordPolicy::default();
         validate_password(&req.password, &policy)
-            .map_err(|e| AppError::Validation(format!("Password validation failed: {}", e)))?;
+            .map_err(|e| AppError::Validation { field: "password".to_string(), message: format!("Password validation failed: {}", e) })?;
         
         check_username_in_password(&req.password, &req.username)
-            .map_err(|_| AppError::Validation("Password must not contain username".to_string()))?;
+            .map_err(|_| AppError::Validation { field: "password".to_string(), message: "Password must not contain username".to_string() })?;
 
         let password_hash = hash_password(&req.password)?;
         
@@ -123,15 +123,15 @@ impl UserService {
         if let Some(ref password) = req.password {
             let policy = PasswordPolicy::default();
             validate_password(password, &policy)
-                .map_err(|e| AppError::Validation(format!("Password validation failed: {}", e)))?;
+                .map_err(|e| AppError::Validation { field: "password".to_string(), message: format!("Password validation failed: {}", e) })?;
 
             // Get username for username check
             let user = get_user_by_id(db, user_id)
                 .await?
-                .ok_or_else(|| AppError::Validation("User not found".to_string()))?;
+                .ok_or_else(|| AppError::Validation { field: "user_id".to_string(), message: "User not found".to_string() })?;
 
             check_username_in_password(password, &user.username)
-                .map_err(|_| AppError::Validation("Password must not contain username".to_string()))?;
+                .map_err(|_| AppError::Validation { field: "password".to_string(), message: "Password must not contain username".to_string() })?;
         }
 
         let user = update_user(
@@ -172,17 +172,17 @@ impl UserService {
     ) -> Result<(), AppError> {
         let user = get_user_by_id(db, user_id)
             .await?
-            .ok_or_else(|| AppError::Validation("User not found".to_string()))?;
+            .ok_or_else(|| AppError::Validation { field: "user_id".to_string(), message: "User not found".to_string() })?;
 
         verify_password(&old_password, &user.password_hash)?;
 
         // Validate new password
         let policy = PasswordPolicy::default();
         validate_password(&new_password, &policy)
-            .map_err(|e| AppError::Validation(format!("Password validation failed: {}", e)))?;
+            .map_err(|e| AppError::Validation { field: "new_password".to_string(), message: format!("Password validation failed: {}", e) })?;
 
         check_username_in_password(&new_password, &user.username)
-            .map_err(|_| AppError::Validation("Password must not contain username".to_string()))?;
+            .map_err(|_| AppError::Validation { field: "new_password".to_string(), message: "Password must not contain username".to_string() })?;
 
         let new_hash = hash_password(&new_password)?;
         update_user_password(db, user_id, new_hash).await?;

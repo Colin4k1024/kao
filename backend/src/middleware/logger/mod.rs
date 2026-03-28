@@ -1,14 +1,11 @@
 // Logger middleware for request logging with request tracking
 
 use axum::{
-    body::Body,
     extract::Request,
-    http::{HeaderName, HeaderValue, StatusCode},
+    http::{HeaderName, HeaderValue},
     middleware::Next,
     response::Response,
 };
-use std::task::{Context, Poll};
-use tower_http::classify::ServerErrorsFailureClass;
 use uuid::Uuid;
 
 /// Header name for request tracking
@@ -48,10 +45,9 @@ pub async fn request_logger(request: Request, next: Next) -> Response {
     let mut response = next.run(request).await;
 
     // Add X-Request-ID header to response
-    response.headers_mut().insert(
-        X_REQUEST_ID.as_str(),
-        HeaderValue::from_str(&request_id).unwrap_or_else(|_| HeaderValue::from_static("unknown")),
-    );
+    let header_value = HeaderValue::from_str(&request_id)
+        .unwrap_or_else(|_| HeaderValue::from_static("unknown"));
+    response.headers_mut().insert(X_REQUEST_ID, header_value);
 
     // Log response
     let status = response.status();
@@ -69,9 +65,8 @@ pub async fn request_logger(request: Request, next: Next) -> Response {
 /// Response extension for adding request ID to responses
 pub fn add_request_id_to_response(response: Response, request_id: &str) -> Response {
     let mut resp = response;
-    resp.headers_mut().insert(
-        X_REQUEST_ID.as_str(),
-        HeaderValue::from_str(request_id).unwrap_or_else(|_| HeaderValue::from_static("unknown")),
-    );
+    let header_value = HeaderValue::from_str(request_id)
+        .unwrap_or_else(|_| HeaderValue::from_static("unknown"));
+    resp.headers_mut().insert(X_REQUEST_ID, header_value);
     resp
 }

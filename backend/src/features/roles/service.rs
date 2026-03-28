@@ -61,7 +61,7 @@ impl RoleService {
     ) -> Result<RoleResponse, AppError> {
         // Check if role code already exists
         if get_role_by_code(db, &req.code).await?.is_some() {
-            return Err(AppError::Validation("Role code already exists".to_string()));
+            return Err(AppError::Validation { field: "code".to_string(), message: "Role code already exists".to_string() });
         }
 
         let role = create_role(

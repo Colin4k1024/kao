@@ -70,7 +70,7 @@ pub async fn create_department(
     let (ancestors, path) = if let Some(pid) = parent_id {
         let parent = get_department_by_id(db, pid)
             .await?
-            .ok_or_else(|| AppError::Validation("Parent department not found".to_string()))?;
+            .ok_or_else(|| AppError::Validation { field: "parent_id".to_string(), message: "Parent department not found".to_string() })?;
         
         let ancestors = if parent.ancestors.is_empty() {
             pid.to_string()
@@ -167,7 +167,7 @@ pub async fn delete_department(db: &PgPool, dept_id: Uuid) -> Result<(), AppErro
     let child_count: i64 = child_count_row.get(0);
 
     if child_count > 0 {
-        return Err(AppError::Validation("Cannot delete department with children".to_string()));
+        return Err(AppError::Validation { field: "dept_id".to_string(), message: "Cannot delete department with children".to_string() });
     }
 
     let user_count_row = sqlx::query("SELECT COUNT(*) FROM sys_users WHERE dept_id = $1")
@@ -177,7 +177,7 @@ pub async fn delete_department(db: &PgPool, dept_id: Uuid) -> Result<(), AppErro
     let user_count: i64 = user_count_row.get(0);
 
     if user_count > 0 {
-        return Err(AppError::Validation("Cannot delete department with users".to_string()));
+        return Err(AppError::Validation { field: "dept_id".to_string(), message: "Cannot delete department with users".to_string() });
     }
 
     sqlx::query("DELETE FROM sys_departments WHERE id = $1")

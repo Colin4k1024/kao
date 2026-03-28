@@ -161,7 +161,7 @@ pub async fn delete_menu(db: &PgPool, menu_id: Uuid) -> Result<(), AppError> {
     let child_count: i64 = count_row.get(0);
 
     if child_count > 0 {
-        return Err(AppError::Validation("Cannot delete menu with children".to_string()));
+        return Err(AppError::Validation { field: "menu_id".to_string(), message: "Cannot delete menu with children".to_string() });
     }
 
     sqlx::query("DELETE FROM sys_menus WHERE id = $1")

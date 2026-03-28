@@ -42,13 +42,13 @@ pub async fn register(
     let username = request
         .get("username")
         .and_then(|v| v.as_str())
-        .ok_or_else(|| AppError::Validation("Username is required".to_string()))?
+        .ok_or_else(|| AppError::Validation { field: "username".to_string(), message: "Username is required".to_string() })?
         .to_string();
 
     let password = request
         .get("password")
         .and_then(|v| v.as_str())
-        .ok_or_else(|| AppError::Validation("Password is required".to_string()))?
+        .ok_or_else(|| AppError::Validation { field: "password".to_string(), message: "Password is required".to_string() })?
         .to_string();
 
     let email = request
@@ -131,13 +131,13 @@ pub async fn change_password(
     let old_password = request
         .get("oldPassword")
         .and_then(|v| v.as_str())
-        .ok_or_else(|| AppError::Validation("Old password is required".to_string()))?
+        .ok_or_else(|| AppError::Validation { field: "oldPassword".to_string(), message: "Old password is required".to_string() })?
         .to_string();
 
     let new_password = request
         .get("newPassword")
         .and_then(|v| v.as_str())
-        .ok_or_else(|| AppError::Validation("New password is required".to_string()))?
+        .ok_or_else(|| AppError::Validation { field: "newPassword".to_string(), message: "New password is required".to_string() })?
         .to_string();
 
     let auth_service = AuthService::new(Arc::new(state.settings.clone()));
