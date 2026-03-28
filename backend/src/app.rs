@@ -4,6 +4,7 @@ use serde::Serialize;
 use crate::config::Settings;
 use crate::features::monitoring::routes::monitoring_router;
 use crate::features::monitoring::metrics as monitoring_metrics;
+use crate::middleware::logger::request_logger;
 
 pub fn create_app(pool: PgPool, settings: Settings) -> Router {
     let state = AppState { pool, settings };
@@ -15,6 +16,8 @@ pub fn create_app(pool: PgPool, settings: Settings) -> Router {
         .route("/metrics", get(monitoring_metrics::get_metrics))
         // Monitoring routes under /api/monitoring
         .nest("/api/monitoring", monitoring_router())
+        // Apply request logging middleware to all routes
+        .layer(axum::middleware::from_fn(request_logger))
         .with_state(state)
 }
 
@@ -196,6 +199,7 @@ pub struct AppState {
 
 /// Health check endpoint with dependency status
 async fn health_check(State(state): State<AppState>) -> Response {
+    let request_id = uuid::Uuid::new_v4().to_string();
     let mut db_status = "ok".to_string();
     let mut overall_status = "healthy".to_string();
 
@@ -231,6 +235,10 @@ async fn health_check(State(state): State<AppState>) -> Response {
     headers.insert(
         HeaderName::from_static("content-type"),
         HeaderValue::from_static("application/json"),
+    );
+    headers.insert(
+        HeaderName::from_static("x-request-id"),
+        HeaderValue::from_str(&request_id).unwrap_or_else(|_| HeaderValue::from_static("unknown")),
     );
 
     (status_code, headers, body).into_response()
