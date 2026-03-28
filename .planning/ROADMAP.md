@@ -25,6 +25,7 @@ Build a highly scalable, security-first admin management system that provides a 
 - Phase 1: Security vulnerabilities fixed, authentication consolidated, tests coverage > 50%
 - Phase 2: All planned features implemented, documentation complete
 - Phase 3: Performance optimized, production-ready, scalable deployment
+- Phase 4: Backend compiles without errors, Docker image builds
 
 ---
 
@@ -357,19 +358,54 @@ Plans:
 
 ---
 
+## Phase 4: Backend Compilation Fix
+
+**Timeline:** 1 week
+
+**Goal:** Fix 57 Rust compilation errors preventing cargo build, cargo test, and Docker image
+
+**Status:** Planning
+
+### Deliverables
+
+1. **Fix AppError::Validation field initialization (23 errors)**
+   - Fix E0533 errors where AppError::Validation is used as value instead of struct with fields
+   - Files: auth/service.rs, auth/routes.rs, departments/repo.rs, config/routes.rs, dictionary/*/routes.rs, notice/routes.rs
+
+2. **Fix mismatched types (31 errors)**
+   - Fix E0308 mismatched type errors across features
+   - Ensure Router type consistency
+
+3. **Fix temporary value lifetime (2 errors)**
+   - Fix E0716 in middleware/logger/mod.rs
+   - Fix HeaderValue lifetime issues
+
+4. **Fix HeaderValue trait bound (1 error)**
+   - Fix E0277 in middleware/logger/mod.rs
+
+### Success Metrics
+
+- `cargo check` passes with 0 errors
+- `cargo build` succeeds
+- `cargo test` runs (may have test failures but no compile errors)
+
+### Dependencies
+
+- Phase 1, 2, 3 complete
+
+### Plans
+
+Plans:
+- [x] 04-01-PLAN.md — Backend Compilation Fix (57 errors across AppError, Router, middleware)
+
+---
+
 ## Next Steps
 
 1. Start Phase 1: Stabilization & Security (COMPLETE)
 2. Execute Phase 2: Feature Completeness (COMPLETE)
-3. Execute Phase 3: Production Readiness
-   - [x] 03-01: Performance Optimization (blocked by pre-existing errors)
-   - [x] 03-02: Horizontal Scaling (blocked by pre-existing errors)
-   - [x] 03-03: Deployment Hardening (Task 1 complete, 2-5 blocked)
-   - [x] 03-04: Security Audit ✅ COMPLETE
-   - [x] 03-05: Monitoring & Alerting
-4. Daily standups to track progress
-5. Weekly reviews to evaluate completion criteria
-6. Adjust timeline as needed
+3. Execute Phase 3: Production Readiness (COMPLETE)
+4. Execute Phase 4: Backend Compilation Fix (IN PROGRESS)
 
 ---
 
