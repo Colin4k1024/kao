@@ -1,11 +1,17 @@
-use axum::{extract::State, Json, Router};
+use axum::{extract::State, Json, Router, routing::get};
 use sqlx::PgPool;
 use crate::config::Settings;
+use crate::features::monitoring::routes::monitoring_router;
+use crate::features::monitoring::metrics as monitoring_metrics;
 
 pub fn create_app(pool: PgPool, settings: Settings) -> Router {
     let state = AppState { pool, settings };
 
     Router::new()
+        // Prometheus metrics endpoint at root for easy scraping
+        .route("/metrics", get(monitoring_metrics::get_metrics))
+        // Monitoring routes under /api/monitoring
+        .nest("/api/monitoring", monitoring_router())
         .with_state(state)
 }
 
