@@ -1,3 +1,17 @@
+---
+gsd_state_version: 1.0
+milestone: v1.0
+milestone_name: milestone
+current_phase: 01
+status: in_progress
+last_updated: "2026-03-28T07:15:00.000Z"
+progress:
+  total_phases: 3
+  completed_phases: 0
+  total_plans: 16
+  completed_plans: 23
+---
+
 # Project State
 
 **Project:** Kao - Enterprise Admin Management System
@@ -6,7 +20,7 @@
 
 **Version:** 0.1.0
 
-**Status:** Phase 3 - Production Readiness (Plan 03-04 Complete, Plan 03-01 Execution Complete)
+**Status:** Milestone complete
 
 ---
 
@@ -25,6 +39,7 @@ Kao is an enterprise-grade admin management system inspired by RuoYi, built with
 **Status:** Plan 03-04 Security Audit Complete, Plan 03-01 Implementation Complete
 
 **Plans Completed:**
+
 - 03-01: Performance Optimization ✅ Implementation Complete
 - 03-02: Horizontal Scaling (blocked by pre-existing errors)
 - 03-03: Deployment Hardening (1 task complete, 4 blocked)
@@ -34,6 +49,7 @@ Kao is an enterprise-grade admin management system inspired by RuoYi, built with
 - 03-08: TypeScript Fix ✅ COMPLETE
 
 **Plans Planned:**
+
 - 03-01: **Performance Optimization** ✅ Implementation Complete (database connection pool, Redis caching, frontend code splitting, API caching, database indexes) — Wave 1
 - 03-02: **Horizontal Scaling** (stateless auth, load balancer compatibility, sticky session support, scaling guide, load testing) — Wave 1
 - 03-03: **Deployment Hardening** (production Docker image, multi-stage builds, health check endpoint, graceful shutdown, environment config, CI/CD pipeline) — Wave 2
@@ -43,8 +59,10 @@ Kao is an enterprise-grade admin management system inspired by RuoYi, built with
 - 03-08: **TypeScript Fix** (9 errors) ✅ COMPLETE
 
 **Planning Complete:**
+
 - [x] Phase 03-01: Performance Optimization (5 tasks, 11 files, Wave 1)
 - [x] Phase 03-02: Horizontal Scaling (5 tasks, 7 files, Wave 1)
+
 | Plan | Status | Details |
 |------|--------|---------|
 | 03-01 | ✅ Implementation Complete | All 5 tasks complete, build blocked by pre-existing errors |
@@ -55,6 +73,7 @@ Kao is an enterprise-grade admin management system inspired by RuoYi, built with
 | 03-06 | ⚠️ Error Fix Required | 50+ compilation errors blocking Phase 3 |
 
 **Requirements Coverage:**
+
 - NFR2 (Performance): 03-01, 03-02
 - NFR3 (Reliability): 03-03, 03-05
 - NFR5 (Scalability): 03-02, 03-03
@@ -72,6 +91,7 @@ Kao is an enterprise-grade admin management system inspired by RuoYi, built with
 **Status:** Complete - All Features Delivered
 
 **Plans Completed:**
+
 - 02-01: ✅ Dynamic Configuration Module (dictionary type, data, config, notice CRUD)
 - 02-02: ✅ Scheduled Job Management (job scheduler, API, log tracking, cron validation)
 - 02-03: ✅ System Monitoring (metrics endpoint, health check, logging, monitoring)
@@ -79,6 +99,7 @@ Kao is an enterprise-grade admin management system inspired by RuoYi, built with
 - 02-05: ✅ Documentation (API docs, deployment guide, development guide, architecture docs)
 
 **Completed Tasks:**
+
 - Task 1: Dictionary Type/Data CRUD UI ✅
 - Task 2: Parameter Configuration CRUD UI ✅
 - Task 3: Notice/Announcement CRUD UI ✅
@@ -89,6 +110,7 @@ Kao is an enterprise-grade admin management system inspired by RuoYi, built with
 - Task 8: Loading States & Error Boundaries ✅
 
 **Deliverables:**
+
 - [x] Dynamic Configuration Module ✅
 - [x] Scheduled Job Management ✅
 - [x] System Monitoring ✅
@@ -152,6 +174,7 @@ Kao is an enterprise-grade admin management system inspired by RuoYi, built with
 ### Files Created/Modified
 
 **Created (8 files):**
+
 - backend/src/common/security/password_policy.rs
 - backend/src/common/security/password_expiration.rs
 - backend/src/common/security/audit_logger.rs
@@ -165,6 +188,7 @@ Kao is an enterprise-grade admin management system inspired by RuoYi, built with
 - docs/security/penetration-testing.md
 
 **Modified (3 files):**
+
 - backend/src/common/security/mod.rs (exports)
 - backend/src/features/auth/service.rs (password validation)
 - backend/src/features/auth/routes.rs (new endpoints)
@@ -193,6 +217,7 @@ Kao is an enterprise-grade admin management system inspired by RuoYi, built with
 ### Issues Encountered
 
 **Pre-existing Compilation Errors:**
+
 - Multiple SQLx query errors during validation
 - Missing type annotations
 - Redis API mismatch
@@ -275,6 +300,7 @@ Create a separate task plan to fix pre-existing compilation errors before comple
 | 5 | CI/CD Pipeline Setup | ⚠️ CI/CD YAML complete, blocked by pre-existing errors |
 
 **Key Issues:**
+
 - Pre-existing compilation errors block Docker build
 - Health check endpoint structure implemented but cannot fully verify database connection
 - Pre-existing SQLx query and JWT issues must be fixed before Tasks 3-5
@@ -288,6 +314,7 @@ Create a separate task plan to fix pre-existing compilation errors before comple
 **Task 1: Production Docker Image Optimization ✅**
 
 Files Created/Modified:
+
 - `backend/Dockerfile` - Multi-stage build with alpine base
 - `backend/Cargo.toml` - Optimized release profile
 - `backend/.dockerignore` - Minimized build context
@@ -295,6 +322,7 @@ Files Created/Modified:
 - `backend/migrate.sh` - Database migration script
 
 Achievements:
+
 - Multi-stage Dockerfile (builder → runtime)
 - Non-root user (`appuser`) for security
 - Optimized release profile with LTO
@@ -303,6 +331,7 @@ Achievements:
 **Task 2: Health Check Endpoint ⚠️**
 
 Files Modified:
+
 - `backend/src/features/monitoring/health.rs`
 - `backend/src/common/db.rs`
 
@@ -313,10 +342,12 @@ Status: Structure implemented but database connection check returns "degraded" a
 **Task 1: Password Policy Enforcement ✅**
 
 Files Created:
+
 - `backend/src/common/security/password_policy.rs`
 - `backend/src/common/security/tests.rs`
 
 Features:
+
 - PasswordPolicy with complexity checks (8+ chars, lowercase, uppercase, digits, special)
 - validate_password function
 - Common password list (30+ entries)
@@ -325,10 +356,12 @@ Features:
 **Task 2: Password Expiration Policy ✅**
 
 Files Created:
+
 - `backend/src/common/security/password_expiration.rs`
 - `backend/migrations/20260326_add_password_expiration.sql`
 
 Features:
+
 - PasswordExpiration with configurable expiry
 - 90-day default with 7-day grace period
 - PasswordStatus enum (Valid, ExpiringSoon, Expired, ForceChange)
@@ -336,10 +369,12 @@ Features:
 **Task 3: Audit Logging Enhancement ✅**
 
 Files Created:
+
 - `backend/src/common/security/audit_logger.rs`
 - `backend/migrations/20260326_create_audit_log.sql`
 
 Features:
+
 - AuditLogger for security event logging
 - AuditLogEventType enum (11 event types)
 - Structured logging format
@@ -348,11 +383,13 @@ Features:
 **Task 4: Security Scanning Integration ✅**
 
 Files Created:
+
 - `scripts/security/scan.sh`
 - `scripts/security/owasp-config.yaml`
 - `.github/workflows/ci-cd.yml`
 
 Features:
+
 - SAST scanning for hardcoded credentials, SQL injection, XSS
 - OWASP ZAP baseline scan integration
 - CI/CD pipeline for automated security scanning
@@ -360,10 +397,12 @@ Features:
 **Task 5: Penetration Testing ✅**
 
 Files Created:
+
 - `scripts/security/penetration-test.sh`
 - `docs/security/penetration-testing.md`
 
 Features:
+
 - OWASP ZAP baseline scan
 - Manual testing scenarios (10 test categories)
 - Complete penetration testing documentation
@@ -392,6 +431,7 @@ Features:
 - [ ] Production deployment successful
 
 **Current Phase 3-04 Progress (COMPLETE):**
+
 - [x] Task 1: Password Policy Enforcement ✅
 - [x] Task 2: Password Expiration Policy ✅
 - [x] Task 3: Audit Logging Enhancement ✅
@@ -442,9 +482,11 @@ Features:
 Phase 3 Plan 08 (TypeScript Fix) execution completed successfully:
 
 **Completed Tasks (1/1):**
+
 - ✅ TypeScript Fix: Resolved 9 TypeScript errors enabling npm run build
 
 **Deliverables:**
+
 - Fixed AvatarDropdown currentUser type inference
 - Fixed Text -> Typography.Text in job/index.tsx
 - Fixed onClick handler type mismatch in job/log
@@ -456,11 +498,43 @@ Phase 3 Plan 08 (TypeScript Fix) execution completed successfully:
 
 **Status:** Plan 03-08 is COMPLETE and ready for verification.
 
+---
+
+## Phase 01-02: Security Hardening - COMPLETE
+
+**Date:** 2026-03-28
+
+**Completed Tasks (4/4):**
+
+1. ✅ **CORS Restrictions:** Replaced allow_origin(Any) with specific origins from CORS_ALLOWED_ORIGINS env var
+2. ✅ **Input Validation Middleware:** Created validation.rs with validator crate integration
+3. ✅ **Rate Limiting:** Implemented rate_limiter.rs with in-memory rate limiting (login: 5/min, register: 3/hr, refresh: 10/hr)
+4. ✅ **Account Lockout:** Created account_lockout.rs with 5-attempt threshold and 15-min auto-expiry
+
+**Deliverables:**
+
+- backend/src/middleware/cors.rs - CORS with specific origins, explicit methods/headers
+- backend/src/common/middleware/validation.rs - validate_request middleware
+- backend/src/common/middleware/rate_limiter.rs - In-memory rate limiting per IP
+- backend/src/common/security/account_lockout.rs - AccountLockoutService
+- backend/migrations/0020_add_account_lockout.sql - Lockout fields migration
+- backend/src/features/auth/model.rs - LoginRequest with validation derives
+- backend/src/features/auth/service.rs - Lockout integration in login flow
+- backend/src/models/user.rs - Added lockout fields
+
+**Commits:**
+- ff882f4: feat(01-02): restrict CORS to specific origins
+- c2f1fa8: feat(01-02): add input validation middleware
+- 854c8ef: feat(01-02): implement rate limiting for auth endpoints
+- fa4e818: feat(01-02): implement account lockout mechanism
+
+**Status:** Plan 01-02 COMPLETE
+
 **Next Plan:** 03-02 (Horizontal Scaling) - blocked until backend build errors fixed
 **Next:** Execute Phase 3-05 (Monitoring & Alerting) - Ready for execution
 
 ---
 
 **Last Updated:** 2026-03-28
-**Current Phase:** 03 - Production Readiness (Plan 03-05 Complete, Plan 03-04 Complete, Plan 03-01 Complete)
+**Current Phase:** 03
 **Next:** Plan 03-06 (Error Fix Required) or continue with remaining Phase 3 plans
