@@ -1,5 +1,6 @@
-use axum::{extract::State, routing::get, Json, Router};
+use axum::{extract::State, routing::get, Json, Router, response::{IntoResponse, Response}, http::HeaderMap as AxumHeaderMap, http::HeaderName, http::HeaderValue};
 use sqlx::PgPool;
+use serde::Serialize;
 use crate::config::Settings;
 use crate::features::monitoring::routes::monitoring_router;
 use crate::features::monitoring::metrics as monitoring_metrics;
@@ -8,6 +9,8 @@ pub fn create_app(pool: PgPool, settings: Settings) -> Router {
     let state = AppState { pool, settings };
 
     Router::new()
+        // Health check endpoint
+        .route("/health", get(health_check))
         // Prometheus metrics endpoint at root for easy scraping
         .route("/metrics", get(monitoring_metrics::get_metrics))
         // Monitoring routes under /api/monitoring
@@ -172,15 +175,65 @@ async fn openapi_spec() -> Json<serde_json::Value> {
     }))
 }
 
+/// Health check response structure
+#[derive(Serialize)]
+struct HealthResponse {
+    status: String,
+    checks: HealthChecks,
+    timestamp: String,
+}
+
+#[derive(Serialize)]
+struct HealthChecks {
+    database: String,
+}
+
 #[derive(Clone)]
 pub struct AppState {
     pub pool: PgPool,
     pub settings: Settings,
 }
 
-#[allow(dead_code)]
-async fn health_check() -> &'static str {
-    "OK"
+/// Health check endpoint with dependency status
+async fn health_check(State(state): State<AppState>) -> Response {
+    let mut db_status = "ok".to_string();
+    let mut overall_status = "healthy".to_string();
+
+    // Check database connection
+    match sqlx::query("SELECT 1").execute(&state.pool).await {
+        Ok(_) => {
+            db_status = "ok".to_string();
+        }
+        Err(e) => {
+            tracing::error!("Health check database error: {}", e);
+            db_status = "error".to_string();
+            overall_status = "unhealthy".to_string();
+        }
+    }
+
+    let response = HealthResponse {
+        status: overall_status.clone(),
+        checks: HealthChecks {
+            database: db_status,
+        },
+        timestamp: chrono::Utc::now().to_rfc3339(),
+    };
+
+    let body = serde_json::to_string(&response).unwrap_or_else(|_| r#"{"status":"error"}"#.to_string());
+
+    let status_code = if overall_status == "healthy" {
+        axum::http::StatusCode::OK
+    } else {
+        axum::http::StatusCode::SERVICE_UNAVAILABLE
+    };
+
+    let mut headers = AxumHeaderMap::new();
+    headers.insert(
+        HeaderName::from_static("content-type"),
+        HeaderValue::from_static("application/json"),
+    );
+
+    (status_code, headers, body).into_response()
 }
 
 // Login handler moved to backend/src/api/auth/handlers.rs
