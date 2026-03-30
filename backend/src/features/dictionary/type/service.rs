@@ -1,3 +1,4 @@
+use crate::common::cache::redis::RedisCache;
 use crate::common::error::AppError;
 use uuid::Uuid;
 
@@ -12,6 +13,28 @@ pub struct TypeService;
 impl TypeService {
     pub fn new() -> Self {
         Self {}
+    }
+
+    /// List dictionary types with caching (TTL: 1 hour)
+    pub async fn list_types_cached(
+        &self,
+        db: &sqlx::PgPool,
+        cache: &RedisCache,
+    ) -> Result<Vec<TypeResponse>, AppError> {
+        // Try to get from cache first
+        if let Some(cached) = cache.get::<Vec<TypeResponse>>("dict:type:list").await? {
+            tracing::debug!("Dictionary type list cache hit");
+            return Ok(cached);
+        }
+
+        // Cache miss - query database
+        tracing::debug!("Dictionary type list cache miss, querying database");
+        let types = self.list_types(db).await?;
+
+        // Store in cache with 1 hour TTL
+        cache.set("dict:type:list", &types).await?;
+
+        Ok(types)
     }
 
     pub async fn list_types(&self, db: &sqlx::PgPool) -> Result<Vec<TypeResponse>, AppError> {
@@ -55,6 +78,7 @@ impl TypeService {
     pub async fn create_type(
         &self,
         db: &sqlx::PgPool,
+        cache: &RedisCache,
         req: CreateTypeRequest,
     ) -> Result<TypeResponse, AppError> {
         let t = TypeRepository::create_type(
@@ -65,6 +89,10 @@ impl TypeService {
             req.remark,
         )
         .await?;
+
+        // Invalidate dictionary type list cache after successful creation
+        cache.invalidate("dict:type:list").await;
+
         Ok(TypeResponse {
             id: t.id,
             dict_name: t.dict_name,
@@ -81,6 +109,7 @@ impl TypeService {
     pub async fn update_type(
         &self,
         db: &sqlx::PgPool,
+        cache: &RedisCache,
         type_id: Uuid,
         req: UpdateTypeRequest,
     ) -> Result<TypeResponse, AppError> {
@@ -93,6 +122,10 @@ impl TypeService {
             req.remark,
         )
         .await?;
+
+        // Invalidate dictionary type list cache after successful update
+        cache.invalidate("dict:type:list").await;
+
         Ok(TypeResponse {
             id: t.id,
             dict_name: t.dict_name,
@@ -106,7 +139,18 @@ impl TypeService {
         })
     }
 
-    pub async fn delete_type(&self, db: &sqlx::PgPool, type_id: Uuid) -> Result<(), AppError> {
-        TypeRepository::delete_type(db, type_id).await
+    pub async fn delete_type(
+        &self,
+        db: &sqlx::PgPool,
+        cache: &RedisCache,
+        type_id: Uuid,
+    ) -> Result<(), AppError> {
+        // Delete from database first - only invalidate cache on success
+        TypeRepository::delete_type(db, type_id).await?;
+
+        // Invalidate dictionary type list cache after successful deletion
+        cache.invalidate("dict:type:list").await;
+
+        Ok(())
     }
 }

@@ -1,3 +1,4 @@
+use crate::common::cache::redis::RedisCache;
 use crate::common::error::AppError;
 use uuid::Uuid;
 
@@ -15,6 +16,28 @@ pub struct DepartmentService;
 impl DepartmentService {
     pub fn new() -> Self {
         Self {}
+    }
+
+    /// Get department tree with caching (TTL: 30 minutes)
+    pub async fn get_department_tree_cached(
+        &self,
+        db: &sqlx::PgPool,
+        cache: &RedisCache,
+    ) -> Result<Vec<DepartmentTreeItem>, AppError> {
+        // Try to get from cache first
+        if let Some(cached) = cache.get::<Vec<DepartmentTreeItem>>("department:tree").await? {
+            tracing::debug!("Department tree cache hit");
+            return Ok(cached);
+        }
+
+        // Cache miss - query database
+        tracing::debug!("Department tree cache miss, querying database");
+        let tree = self.get_department_tree(db).await?;
+
+        // Store in cache with 30 minute TTL
+        cache.set("department:tree", &tree).await?;
+
+        Ok(tree)
     }
 
     pub async fn get_department_tree(
@@ -98,6 +121,7 @@ impl DepartmentService {
     pub async fn create_department(
         &self,
         db: &sqlx::PgPool,
+        cache: &RedisCache,
         req: CreateDepartmentRequest,
     ) -> Result<DepartmentResponse, AppError> {
         if get_department_by_code(db, &req.code).await?.is_some() {
@@ -115,6 +139,9 @@ impl DepartmentService {
             req.email,
         )
         .await?;
+
+        // Invalidate department tree cache after successful creation
+        cache.invalidate("department:tree").await;
 
         Ok(DepartmentResponse {
             id: dept.id,
@@ -136,6 +163,7 @@ impl DepartmentService {
     pub async fn update_department(
         &self,
         db: &sqlx::PgPool,
+        cache: &RedisCache,
         dept_id: Uuid,
         req: UpdateDepartmentRequest,
     ) -> Result<DepartmentResponse, AppError> {
@@ -152,6 +180,9 @@ impl DepartmentService {
             req.status,
         )
         .await?;
+
+        // Invalidate department tree cache after successful update
+        cache.invalidate("department:tree").await;
 
         Ok(DepartmentResponse {
             id: dept.id,
@@ -170,7 +201,17 @@ impl DepartmentService {
         })
     }
 
-    pub async fn delete_department(&self, db: &sqlx::PgPool, dept_id: Uuid) -> Result<(), AppError> {
-        delete_department(db, dept_id).await
+    pub async fn delete_department(
+        &self,
+        db: &sqlx::PgPool,
+        cache: &RedisCache,
+        dept_id: Uuid,
+    ) -> Result<(), AppError> {
+        let result = delete_department(db, dept_id).await?;
+
+        // Invalidate department tree cache after successful deletion
+        cache.invalidate("department:tree").await;
+
+        Ok(result)
     }
 }

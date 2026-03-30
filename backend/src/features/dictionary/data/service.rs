@@ -1,3 +1,4 @@
+use crate::common::cache::redis::RedisCache;
 use crate::common::error::AppError;
 use uuid::Uuid;
 
@@ -12,6 +13,31 @@ pub struct DataService;
 impl DataService {
     pub fn new() -> Self {
         Self {}
+    }
+
+    /// List dictionary data by type with caching (TTL: 1 hour)
+    pub async fn list_data_by_type_cached(
+        &self,
+        db: &sqlx::PgPool,
+        cache: &RedisCache,
+        dict_type: &str,
+    ) -> Result<Vec<DataResponse>, AppError> {
+        let cache_key = format!("dict:data:{}", dict_type);
+
+        // Try to get from cache first
+        if let Some(cached) = cache.get::<Vec<DataResponse>>(&cache_key).await? {
+            tracing::debug!("Dictionary data cache hit for type: {}", dict_type);
+            return Ok(cached);
+        }
+
+        // Cache miss - query database
+        tracing::debug!("Dictionary data cache miss for type: {}, querying database", dict_type);
+        let data = self.list_data_by_type(db, dict_type).await?;
+
+        // Store in cache with 1 hour TTL
+        cache.set(&cache_key, &data).await?;
+
+        Ok(data)
     }
 
     pub async fn list_data_by_type(
@@ -69,6 +95,7 @@ impl DataService {
     pub async fn create_data(
         &self,
         db: &sqlx::PgPool,
+        cache: &RedisCache,
         req: CreateDataRequest,
     ) -> Result<DataResponse, AppError> {
         let d = DataRepository::create_data(
@@ -76,7 +103,7 @@ impl DataService {
             req.dict_sort,
             req.dict_label,
             req.dict_value,
-            req.dict_type,
+            req.dict_type.clone(),
             req.css_class,
             req.list_class,
             req.is_default,
@@ -84,6 +111,11 @@ impl DataService {
             req.remark,
         )
         .await?;
+
+        // Invalidate dictionary data cache for this type after successful creation
+        let cache_key = format!("dict:data:{}", req.dict_type);
+        cache.invalidate(&cache_key).await;
+
         Ok(DataResponse {
             id: d.id,
             dict_sort: d.dict_sort,
@@ -105,6 +137,7 @@ impl DataService {
     pub async fn update_data(
         &self,
         db: &sqlx::PgPool,
+        cache: &RedisCache,
         data_id: Uuid,
         req: UpdateDataRequest,
     ) -> Result<DataResponse, AppError> {
@@ -114,7 +147,7 @@ impl DataService {
             req.dict_sort,
             req.dict_label,
             req.dict_value,
-            req.dict_type,
+            req.dict_type.clone(),
             req.css_class,
             req.list_class,
             req.is_default,
@@ -122,6 +155,11 @@ impl DataService {
             req.remark,
         )
         .await?;
+
+        // Invalidate dictionary data cache for this type after successful update
+        let cache_key = format!("dict:data:{}", d.dict_type);
+        cache.invalidate(&cache_key).await;
+
         Ok(DataResponse {
             id: d.id,
             dict_sort: d.dict_sort,
@@ -140,7 +178,25 @@ impl DataService {
         })
     }
 
-    pub async fn delete_data(&self, db: &sqlx::PgPool, data_id: Uuid) -> Result<(), AppError> {
-        DataRepository::delete_data(db, data_id).await
+    pub async fn delete_data(
+        &self,
+        db: &sqlx::PgPool,
+        cache: &RedisCache,
+        data_id: Uuid,
+    ) -> Result<(), AppError> {
+        // First get the data to know its type for cache invalidation
+        let data = DataRepository::get_data_by_id(db, data_id).await?;
+        let dict_type = data.map(|d| d.dict_type);
+
+        // Delete from database - only invalidate cache on success
+        DataRepository::delete_data(db, data_id).await?;
+
+        // Invalidate dictionary data cache for this type after successful deletion
+        if let Some(t) = dict_type {
+            let cache_key = format!("dict:data:{}", t);
+            cache.invalidate(&cache_key).await;
+        }
+
+        Ok(())
     }
 }

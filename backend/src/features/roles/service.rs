@@ -1,3 +1,4 @@
+use crate::common::cache::redis::RedisCache;
 use crate::common::error::AppError;
 use uuid::Uuid;
 
@@ -15,6 +16,28 @@ pub struct RoleService;
 impl RoleService {
     pub fn new() -> Self {
         Self {}
+    }
+
+    /// List roles with caching (TTL: 15 minutes)
+    pub async fn list_roles_cached(
+        &self,
+        db: &sqlx::PgPool,
+        cache: &RedisCache,
+    ) -> Result<Vec<RoleResponse>, AppError> {
+        // Try to get from cache first
+        if let Some(cached) = cache.get::<Vec<RoleResponse>>("role:list").await? {
+            tracing::debug!("Role list cache hit");
+            return Ok(cached);
+        }
+
+        // Cache miss - query database
+        tracing::debug!("Role list cache miss, querying database");
+        let roles = self.list_roles(db).await?;
+
+        // Store in cache with 15 minute TTL
+        cache.set("role:list", &roles).await?;
+
+        Ok(roles)
     }
 
     pub async fn list_roles(&self, db: &sqlx::PgPool) -> Result<Vec<RoleResponse>, AppError> {
@@ -57,6 +80,7 @@ impl RoleService {
     pub async fn create_role(
         &self,
         db: &sqlx::PgPool,
+        cache: &RedisCache,
         req: CreateRoleRequest,
     ) -> Result<RoleResponse, AppError> {
         // Check if role code already exists
@@ -83,6 +107,9 @@ impl RoleService {
             assign_role_departments(db, role.id, &dept_ids).await?;
         }
 
+        // Invalidate role list cache after successful creation
+        cache.invalidate("role:list").await;
+
         Ok(RoleResponse {
             id: role.id,
             code: role.code,
@@ -99,6 +126,7 @@ impl RoleService {
     pub async fn update_role(
         &self,
         db: &sqlx::PgPool,
+        cache: &RedisCache,
         role_id: Uuid,
         req: UpdateRoleRequest,
     ) -> Result<RoleResponse, AppError> {
@@ -122,6 +150,9 @@ impl RoleService {
             assign_role_departments(db, role_id, &dept_ids).await?;
         }
 
+        // Invalidate role list cache after successful update
+        cache.invalidate("role:list").await;
+
         Ok(RoleResponse {
             id: role.id,
             code: role.code,
@@ -135,8 +166,18 @@ impl RoleService {
         })
     }
 
-    pub async fn delete_role(&self, db: &sqlx::PgPool, role_id: Uuid) -> Result<(), AppError> {
-        delete_role(db, role_id).await
+    pub async fn delete_role(
+        &self,
+        db: &sqlx::PgPool,
+        cache: &RedisCache,
+        role_id: Uuid,
+    ) -> Result<(), AppError> {
+        let result = delete_role(db, role_id).await?;
+
+        // Invalidate role list cache after successful deletion
+        cache.invalidate("role:list").await;
+
+        Ok(result)
     }
 
     pub async fn get_role_permissions(

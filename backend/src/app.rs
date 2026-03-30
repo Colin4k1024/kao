@@ -8,6 +8,7 @@ use crate::middleware::logger::request_logger;
 use crate::middleware::cors::init_cors;
 use crate::middleware::activity_tracker::track_activity;
 use crate::common::middleware::openapi::setup_openapi_middleware;
+use crate::common::cache::redis::RedisCache;
 use crate::features::auth::routes::auth_routes;
 use crate::features::users::routes::user_routes;
 use crate::features::departments::routes::department_routes;
@@ -20,8 +21,8 @@ use crate::features::dictionary::data::routes::data_routes;
 use crate::features::job;
 use crate::features::posts::routes::post_routes;
 
-pub fn create_app(pool: PgPool, settings: Settings) -> Router {
-    let state = AppState { pool, settings };
+pub fn create_app(pool: PgPool, settings: Settings, cache: RedisCache) -> Router {
+    let state = AppState { pool, settings, cache };
 
     // System routes under /api/system (config, notice, dictionary)
     let system_router = Router::new()
@@ -245,6 +246,7 @@ struct HealthChecks {
 pub struct AppState {
     pub pool: PgPool,
     pub settings: Settings,
+    pub cache: RedisCache,
 }
 
 /// Health check endpoint with dependency status

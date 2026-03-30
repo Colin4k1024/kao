@@ -1,3 +1,4 @@
+use crate::common::cache::redis::RedisCache;
 use crate::common::error::AppError;
 use uuid::Uuid;
 
@@ -14,9 +15,31 @@ impl MenuService {
         Self {}
     }
 
+    /// Get menu tree with caching (TTL: 30 minutes)
+    pub async fn get_menu_tree_cached(
+        &self,
+        db: &sqlx::PgPool,
+        cache: &RedisCache,
+    ) -> Result<Vec<MenuTreeItem>, AppError> {
+        // Try to get from cache first
+        if let Some(cached) = cache.get_menu_tree::<Vec<MenuTreeItem>>().await? {
+            tracing::debug!("Menu tree cache hit");
+            return Ok(cached);
+        }
+
+        // Cache miss - query database
+        tracing::debug!("Menu tree cache miss, querying database");
+        let tree = self.get_menu_tree(db).await?;
+
+        // Store in cache with 30 minute TTL
+        cache.cache_menu_tree(&tree).await?;
+
+        Ok(tree)
+    }
+
     pub async fn get_menu_tree(&self, db: &sqlx::PgPool) -> Result<Vec<MenuTreeItem>, AppError> {
         let menus = get_menu_tree(db).await?;
-        
+
         let mut menu_map: std::collections::HashMap<uuid::Uuid, MenuTreeItem> = std::collections::HashMap::new();
         let mut menu_children: std::collections::HashMap<uuid::Uuid, Vec<MenuTreeItem>> = std::collections::HashMap::new();
 
@@ -90,6 +113,7 @@ impl MenuService {
     pub async fn create_menu(
         &self,
         db: &sqlx::PgPool,
+        cache: &RedisCache,
         req: CreateMenuRequest,
     ) -> Result<MenuResponse, AppError> {
         let menu = create_menu(
@@ -105,6 +129,9 @@ impl MenuService {
             req.visible.unwrap_or(true),
         )
         .await?;
+
+        // Invalidate menu tree cache after successful creation
+        cache.invalidate_menu_tree().await;
 
         Ok(MenuResponse {
             id: menu.id,
@@ -126,6 +153,7 @@ impl MenuService {
     pub async fn update_menu(
         &self,
         db: &sqlx::PgPool,
+        cache: &RedisCache,
         menu_id: Uuid,
         req: CreateMenuRequest,
     ) -> Result<MenuResponse, AppError> {
@@ -144,6 +172,9 @@ impl MenuService {
         )
         .await?;
 
+        // Invalidate menu tree cache after successful update
+        cache.invalidate_menu_tree().await;
+
         Ok(MenuResponse {
             id: menu.id,
             parent_id: menu.parent_id,
@@ -161,7 +192,17 @@ impl MenuService {
         })
     }
 
-    pub async fn delete_menu(&self, db: &sqlx::PgPool, menu_id: Uuid) -> Result<(), AppError> {
-        delete_menu(db, menu_id).await
+    pub async fn delete_menu(
+        &self,
+        db: &sqlx::PgPool,
+        cache: &RedisCache,
+        menu_id: Uuid,
+    ) -> Result<(), AppError> {
+        let result = delete_menu(db, menu_id).await?;
+
+        // Invalidate menu tree cache after successful deletion
+        cache.invalidate_menu_tree().await;
+
+        Ok(result)
     }
 }

@@ -1,6 +1,7 @@
 use kao_backend::config;
 use kao_backend::db;
 use kao_backend::common::logging::init_logger_with_level;
+use kao_backend::common::cache::redis::RedisCache;
 use std::net::SocketAddr;
 
 #[tokio::main]
@@ -31,7 +32,16 @@ async fn main() -> anyhow::Result<()> {
     }
     tracing::info!("Database migrations completed");
 
-    let app = kao_backend::app::create_app(pool, settings);
+    // Create Redis cache instance
+    let cache = if let Some(redis_url) = &settings.redis.url {
+        tracing::info!("Initializing Redis cache...");
+        RedisCache::from_url(redis_url, settings.redis.cache_ttl)
+    } else {
+        tracing::info!("Redis URL not configured, running without cache");
+        RedisCache::new(None, kao_backend::common::cache::redis::CacheConfig::default())
+    };
+
+    let app = kao_backend::app::create_app(pool, settings, cache);
 
     let addr = SocketAddr::from(([0, 0, 0, 0], 8080));
     tracing::info!("Server listening on {}", addr);
