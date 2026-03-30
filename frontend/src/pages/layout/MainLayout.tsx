@@ -9,6 +9,7 @@ import {
   LogoutOutlined,
   DatabaseOutlined,
   NotificationOutlined,
+  SafetyOutlined,
 } from '@ant-design/icons';
 
 const { Header, Sider, Content } = Layout;
@@ -62,6 +63,23 @@ const MainLayout: React.FC = () => {
           key: '/system/notice',
           icon: <NotificationOutlined />,
           label: <Link to="/system/notice">通知公告</Link>,
+        },
+      ],
+    },
+    {
+      key: '/monitoring',
+      icon: <SafetyOutlined />,
+      label: '系统监控',
+      children: [
+        {
+          key: '/monitoring/security',
+          icon: <SafetyOutlined />,
+          label: <Link to="/monitoring/security">安全监控</Link>,
+        },
+        {
+          key: '/monitoring/online-user',
+          icon: <UserOutlined />,
+          label: <Link to="/monitoring/online-user">在线用户</Link>,
         },
       ],
     },

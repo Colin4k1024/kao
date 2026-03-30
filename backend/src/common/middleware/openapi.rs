@@ -1,11 +1,4 @@
-use axum::{
-    extract::Path,
-    http::Request,
-    response::Response,
-    routing::{get, MethodRouter},
-    Router,
-};
-use std::sync::Arc;
+use axum::Router;
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
 
@@ -36,11 +29,14 @@ use utoipa_swagger_ui::SwaggerUi;
         (name = "config", description = "Configuration management"),
         (name = "jobs", description = "Scheduled job management"),
         (name = "monitoring", description = "System monitoring"),
+        (name = "health", description = "Health check endpoints")
     )
 )]
 pub struct ApiDoc;
 
 /// Middleware for serving OpenAPI/Swagger documentation
 pub fn setup_openapi_middleware(app: Router) -> Router {
-    app.nest("/api-docs", SwaggerUi::new("/swagger-ui").url("/api-docs/openapi.yaml", ApiDoc::openapi()))
+    let swagger_ui = SwaggerUi::new("/swagger-ui")
+        .url("/api-docs/openapi.yaml", ApiDoc::openapi());
+    app.merge(swagger_ui)
 }

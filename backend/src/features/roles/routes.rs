@@ -24,6 +24,19 @@ pub fn role_routes() -> axum::Router<AppState> {
         .route("/roles/:id", axum::routing::delete(delete_role))
 }
 
+/// GET /api/v1/roles - List all roles
+#[utoipa::path(
+    get,
+    path = "/api/v1/roles",
+    tag = "roles",
+    security (
+        ("bearer_auth" = [])
+    ),
+    responses(
+        (status = 200, description = "List roles successfully", body = ApiResponse),
+        (status = 401, description = "Not authenticated")
+    )
+)]
 pub async fn list_roles(
     State(state): State<AppState>,
     _auth_user: AuthUser,
@@ -34,6 +47,23 @@ pub async fn list_roles(
     Ok(ApiResponse::success(roles))
 }
 
+/// GET /api/v1/roles/{id} - Get role by ID
+#[utoipa::path(
+    get,
+    path = "/api/v1/roles/{id}",
+    tag = "roles",
+    security (
+        ("bearer_auth" = [])
+    ),
+    params(
+        ("id" = Uuid, Path, description = "Role ID")
+    ),
+    responses(
+        (status = 200, description = "Role found", body = ApiResponse),
+        (status = 404, description = "Role not found"),
+        (status = 401, description = "Not authenticated")
+    )
+)]
 pub async fn get_role(
     State(state): State<AppState>,
     _auth_user: AuthUser,
@@ -46,6 +76,21 @@ pub async fn get_role(
     }
 }
 
+/// POST /api/v1/roles - Create new role
+#[utoipa::path(
+    post,
+    path = "/api/v1/roles",
+    tag = "roles",
+    security (
+        ("bearer_auth" = [])
+    ),
+    request_body = CreateRoleRequest,
+    responses(
+        (status = 200, description = "Role created successfully", body = ApiResponse),
+        (status = 400, description = "Validation error"),
+        (status = 401, description = "Not authenticated")
+    )
+)]
 pub async fn create_role(
     State(state): State<AppState>,
     _auth_user: AuthUser,
@@ -56,6 +101,24 @@ pub async fn create_role(
     Ok(ApiResponse::success(role))
 }
 
+/// PUT /api/v1/roles/{id} - Update role
+#[utoipa::path(
+    put,
+    path = "/api/v1/roles/{id}",
+    tag = "roles",
+    security (
+        ("bearer_auth" = [])
+    ),
+    params(
+        ("id" = Uuid, Path, description = "Role ID")
+    ),
+    request_body = UpdateRoleRequest,
+    responses(
+        (status = 200, description = "Role updated successfully", body = ApiResponse),
+        (status = 404, description = "Role not found"),
+        (status = 401, description = "Not authenticated")
+    )
+)]
 pub async fn update_role(
     State(state): State<AppState>,
     _auth_user: AuthUser,
@@ -67,6 +130,23 @@ pub async fn update_role(
     Ok(ApiResponse::success(role))
 }
 
+/// DELETE /api/v1/roles/{id} - Delete role
+#[utoipa::path(
+    delete,
+    path = "/api/v1/roles/{id}",
+    tag = "roles",
+    security (
+        ("bearer_auth" = [])
+    ),
+    params(
+        ("id" = Uuid, Path, description = "Role ID")
+    ),
+    responses(
+        (status = 200, description = "Role deleted successfully", body = ApiResponse),
+        (status = 404, description = "Role not found"),
+        (status = 401, description = "Not authenticated")
+    )
+)]
 pub async fn delete_role(
     State(state): State<AppState>,
     _auth_user: AuthUser,

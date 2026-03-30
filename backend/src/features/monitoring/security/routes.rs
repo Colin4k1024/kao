@@ -25,6 +25,18 @@ pub fn security_router() -> Router<AppState> {
 }
 
 /// GET /api/monitoring/security/scan - Full security scan
+#[utoipa::path(
+    get,
+    path = "/api/monitoring/security/scan",
+    tag = "monitoring",
+    security (
+        ("bearer_auth" = [])
+    ),
+    responses(
+        (status = 200, description = "Security scan completed", body = ApiResponse),
+        (status = 500, description = "Security scan failed")
+    )
+)]
 pub async fn security_scan(State(state): State<AppState>) -> Response {
     let service = SecurityScanService::new(state.pool.clone());
 
@@ -38,6 +50,18 @@ pub async fn security_scan(State(state): State<AppState>) -> Response {
 }
 
 /// GET /api/monitoring/security/scan/configuration - Configuration scan
+#[utoipa::path(
+    get,
+    path = "/api/monitoring/security/scan/configuration",
+    tag = "monitoring",
+    security (
+        ("bearer_auth" = [])
+    ),
+    responses(
+        (status = 200, description = "Configuration scan completed", body = ApiResponse),
+        (status = 500, description = "Configuration scan failed")
+    )
+)]
 pub async fn config_scan(State(state): State<AppState>) -> Response {
     let service = SecurityScanService::new(state.pool.clone());
 
@@ -76,6 +100,18 @@ pub async fn config_scan(State(state): State<AppState>) -> Response {
 }
 
 /// GET /api/monitoring/security/scan/input-validation - Input validation scan
+#[utoipa::path(
+    get,
+    path = "/api/monitoring/security/scan/input-validation",
+    tag = "monitoring",
+    security (
+        ("bearer_auth" = [])
+    ),
+    responses(
+        (status = 200, description = "Input validation scan completed", body = ApiResponse),
+        (status = 500, description = "Input validation scan failed")
+    )
+)]
 pub async fn input_scan(State(state): State<AppState>) -> Response {
     let service = SecurityScanService::new(state.pool.clone());
 
@@ -114,6 +150,18 @@ pub async fn input_scan(State(state): State<AppState>) -> Response {
 }
 
 /// GET /api/monitoring/security/scan/authentication - Authentication scan
+#[utoipa::path(
+    get,
+    path = "/api/monitoring/security/scan/authentication",
+    tag = "monitoring",
+    security (
+        ("bearer_auth" = [])
+    ),
+    responses(
+        (status = 200, description = "Authentication scan completed", body = ApiResponse),
+        (status = 500, description = "Authentication scan failed")
+    )
+)]
 pub async fn auth_scan(State(state): State<AppState>) -> Response {
     let service = SecurityScanService::new(state.pool.clone());
 
@@ -156,6 +204,18 @@ pub async fn auth_scan(State(state): State<AppState>) -> Response {
 }
 
 /// GET /api/monitoring/security/scan/authorization - Authorization scan
+#[utoipa::path(
+    get,
+    path = "/api/monitoring/security/scan/authorization",
+    tag = "monitoring",
+    security (
+        ("bearer_auth" = [])
+    ),
+    responses(
+        (status = 200, description = "Authorization scan completed", body = ApiResponse),
+        (status = 500, description = "Authorization scan failed")
+    )
+)]
 pub async fn authz_scan(State(state): State<AppState>) -> Response {
     let service = SecurityScanService::new(state.pool.clone());
 
@@ -200,6 +260,18 @@ pub async fn authz_scan(State(state): State<AppState>) -> Response {
 }
 
 /// GET /api/monitoring/security/events - Get security events
+#[utoipa::path(
+    get,
+    path = "/api/monitoring/security/events",
+    tag = "monitoring",
+    security (
+        ("bearer_auth" = [])
+    ),
+    responses(
+        (status = 200, description = "Security events retrieved", body = ApiResponse),
+        (status = 500, description = "Failed to get security events")
+    )
+)]
 pub async fn security_events(State(state): State<AppState>) -> Response {
     let service = SecurityScanService::new(state.pool.clone());
 
@@ -240,7 +312,23 @@ pub async fn security_events(State(state): State<AppState>) -> Response {
     ApiResponse::success(response)
 }
 
-/// GET /api/monitoring/security/password-health/:user_id - Get password health for user
+/// GET /api/monitoring/security/password-health/{user_id} - Get password health for user
+#[utoipa::path(
+    get,
+    path = "/api/monitoring/security/password-health/{user_id}",
+    tag = "monitoring",
+    security (
+        ("bearer_auth" = [])
+    ),
+    params(
+        ("user_id" = Uuid, Path, description = "User ID")
+    ),
+    responses(
+        (status = 200, description = "Password health retrieved", body = ApiResponse),
+        (status = 404, description = "User not found"),
+        (status = 500, description = "Failed to get password health")
+    )
+)]
 pub async fn password_health(
     State(state): State<AppState>,
     Path(user_id): Path<Uuid>,

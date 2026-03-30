@@ -23,6 +23,19 @@ pub fn menu_routes() -> axum::Router<AppState> {
         .route("/menus/:id", axum::routing::delete(delete_menu))
 }
 
+/// GET /api/v1/menus - Get menu tree
+#[utoipa::path(
+    get,
+    path = "/api/v1/menus",
+    tag = "menus",
+    security (
+        ("bearer_auth" = [])
+    ),
+    responses(
+        (status = 200, description = "Menu tree retrieved successfully", body = ApiResponse),
+        (status = 401, description = "Not authenticated")
+    )
+)]
 pub async fn get_menus(
     State(state): State<AppState>,
     _auth_user: AuthUser,
@@ -33,6 +46,23 @@ pub async fn get_menus(
     Ok(ApiResponse::success(menus))
 }
 
+/// GET /api/v1/menus/{id} - Get menu by ID
+#[utoipa::path(
+    get,
+    path = "/api/v1/menus/{id}",
+    tag = "menus",
+    security (
+        ("bearer_auth" = [])
+    ),
+    params(
+        ("id" = uuid::Uuid, Path, description = "Menu ID")
+    ),
+    responses(
+        (status = 200, description = "Menu found", body = ApiResponse),
+        (status = 404, description = "Menu not found"),
+        (status = 401, description = "Not authenticated")
+    )
+)]
 pub async fn get_menu(
     State(state): State<AppState>,
     _auth_user: AuthUser,
@@ -45,6 +75,21 @@ pub async fn get_menu(
     }
 }
 
+/// POST /api/v1/menus - Create new menu
+#[utoipa::path(
+    post,
+    path = "/api/v1/menus",
+    tag = "menus",
+    security (
+        ("bearer_auth" = [])
+    ),
+    request_body = CreateMenuRequest,
+    responses(
+        (status = 200, description = "Menu created successfully", body = ApiResponse),
+        (status = 400, description = "Validation error"),
+        (status = 401, description = "Not authenticated")
+    )
+)]
 pub async fn create_menu(
     State(state): State<AppState>,
     _auth_user: AuthUser,
@@ -55,6 +100,24 @@ pub async fn create_menu(
     Ok(ApiResponse::success(menu))
 }
 
+/// PUT /api/v1/menus/{id} - Update menu
+#[utoipa::path(
+    put,
+    path = "/api/v1/menus/{id}",
+    tag = "menus",
+    security (
+        ("bearer_auth" = [])
+    ),
+    params(
+        ("id" = uuid::Uuid, Path, description = "Menu ID")
+    ),
+    request_body = CreateMenuRequest,
+    responses(
+        (status = 200, description = "Menu updated successfully", body = ApiResponse),
+        (status = 404, description = "Menu not found"),
+        (status = 401, description = "Not authenticated")
+    )
+)]
 pub async fn update_menu(
     State(state): State<AppState>,
     _auth_user: AuthUser,
@@ -66,6 +129,23 @@ pub async fn update_menu(
     Ok(ApiResponse::success(menu))
 }
 
+/// DELETE /api/v1/menus/{id} - Delete menu
+#[utoipa::path(
+    delete,
+    path = "/api/v1/menus/{id}",
+    tag = "menus",
+    security (
+        ("bearer_auth" = [])
+    ),
+    params(
+        ("id" = uuid::Uuid, Path, description = "Menu ID")
+    ),
+    responses(
+        (status = 200, description = "Menu deleted successfully", body = ApiResponse),
+        (status = 404, description = "Menu not found"),
+        (status = 401, description = "Not authenticated")
+    )
+)]
 pub async fn delete_menu(
     State(state): State<AppState>,
     _auth_user: AuthUser,

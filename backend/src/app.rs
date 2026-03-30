@@ -6,6 +6,8 @@ use crate::features::monitoring::routes::monitoring_router;
 use crate::features::monitoring::metrics as monitoring_metrics;
 use crate::middleware::logger::request_logger;
 use crate::middleware::cors::init_cors;
+use crate::middleware::activity_tracker::track_activity;
+use crate::common::middleware::openapi::setup_openapi_middleware;
 use crate::features::auth::routes::auth_routes;
 use crate::features::users::routes::user_routes;
 use crate::features::departments::routes::department_routes;
@@ -16,7 +18,6 @@ use crate::features::notice::routes::notice_routes;
 use crate::features::dictionary::r#type::routes::type_routes;
 use crate::features::dictionary::data::routes::data_routes;
 use crate::features::job;
-use crate::features::job::routes::job_routes;
 use crate::features::posts::routes::post_routes;
 
 pub fn create_app(pool: PgPool, settings: Settings) -> Router {
@@ -29,7 +30,7 @@ pub fn create_app(pool: PgPool, settings: Settings) -> Router {
         .nest("/", type_routes())
         .nest("/", data_routes());
 
-    Router::new()
+    let app = Router::new()
         // Health check endpoint
         .route("/health", get(health_check))
         // Prometheus metrics endpoint at root for easy scraping
@@ -62,7 +63,12 @@ pub fn create_app(pool: PgPool, settings: Settings) -> Router {
         .layer(init_cors())
         // Apply request logging middleware to all routes
         .layer(axum::middleware::from_fn(request_logger))
-        .with_state(state)
+        // Apply activity tracking middleware for online user updates
+        .layer(axum::middleware::from_fn(track_activity))
+        .with_state(state);
+
+    // Apply OpenAPI/Swagger UI middleware (after state is set)
+    setup_openapi_middleware(app)
 }
 
 /// Redirect to Swagger UI

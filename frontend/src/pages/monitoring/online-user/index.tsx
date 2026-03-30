@@ -17,7 +17,7 @@ import {
   DownloadOutlined,
   ReloadOutlined,
 } from '@ant-design/icons';
-import type { TableRowSelection } from 'antd/es/table/interface';
+import type { TableRowSelection, ColumnsType } from 'antd/es/table/interface';
 
 import {
   fetchOnlineUsers,
@@ -122,7 +122,7 @@ const OnlineUserList = () => {
     }
   };
 
-  const columns: Table<OnlineUser>['columns'] = [
+  const columns: ColumnsType<OnlineUser> = [
     {
       title: 'Session ID',
       dataIndex: 'session_id',

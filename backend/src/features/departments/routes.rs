@@ -24,6 +24,19 @@ pub fn department_routes() -> axum::Router<AppState> {
     .route("/departments/:id", axum::routing::delete(delete_department))
 }
 
+/// GET /api/v1/departments - Get department tree
+#[utoipa::path(
+    get,
+    path = "/api/v1/departments",
+    tag = "departments",
+    security (
+        ("bearer_auth" = [])
+    ),
+    responses(
+        (status = 200, description = "Department tree retrieved successfully", body = ApiResponse),
+        (status = 401, description = "Not authenticated")
+    )
+)]
 pub async fn list_departments(
   State(state): State<AppState>,
   _auth_user: AuthUser,
@@ -33,6 +46,23 @@ pub async fn list_departments(
   Ok(ApiResponse::success(departments))
 }
 
+/// GET /api/v1/departments/{id} - Get department by ID
+#[utoipa::path(
+    get,
+    path = "/api/v1/departments/{id}",
+    tag = "departments",
+    security (
+        ("bearer_auth" = [])
+    ),
+    params(
+        ("id" = Uuid, Path, description = "Department ID")
+    ),
+    responses(
+        (status = 200, description = "Department found", body = ApiResponse),
+        (status = 404, description = "Department not found"),
+        (status = 401, description = "Not authenticated")
+    )
+)]
 pub async fn get_department(
   State(state): State<AppState>,
   _auth_user: AuthUser,
@@ -45,6 +75,21 @@ pub async fn get_department(
   }
 }
 
+/// POST /api/v1/departments - Create new department
+#[utoipa::path(
+    post,
+    path = "/api/v1/departments",
+    tag = "departments",
+    security (
+        ("bearer_auth" = [])
+    ),
+    request_body = CreateDepartmentRequest,
+    responses(
+        (status = 200, description = "Department created successfully", body = ApiResponse),
+        (status = 400, description = "Validation error"),
+        (status = 401, description = "Not authenticated")
+    )
+)]
 pub async fn create_department(
   State(state): State<AppState>,
   _auth_user: AuthUser,
@@ -55,6 +100,24 @@ pub async fn create_department(
   Ok(ApiResponse::success(dept))
 }
 
+/// PUT /api/v1/departments/{id} - Update department
+#[utoipa::path(
+    put,
+    path = "/api/v1/departments/{id}",
+    tag = "departments",
+    security (
+        ("bearer_auth" = [])
+    ),
+    params(
+        ("id" = Uuid, Path, description = "Department ID")
+    ),
+    request_body = UpdateDepartmentRequest,
+    responses(
+        (status = 200, description = "Department updated successfully", body = ApiResponse),
+        (status = 404, description = "Department not found"),
+        (status = 401, description = "Not authenticated")
+    )
+)]
 pub async fn update_department(
   State(state): State<AppState>,
   _auth_user: AuthUser,
@@ -66,6 +129,23 @@ pub async fn update_department(
   Ok(ApiResponse::success(dept))
 }
 
+/// DELETE /api/v1/departments/{id} - Delete department
+#[utoipa::path(
+    delete,
+    path = "/api/v1/departments/{id}",
+    tag = "departments",
+    security (
+        ("bearer_auth" = [])
+    ),
+    params(
+        ("id" = Uuid, Path, description = "Department ID")
+    ),
+    responses(
+        (status = 200, description = "Department deleted successfully", body = ApiResponse),
+        (status = 404, description = "Department not found"),
+        (status = 401, description = "Not authenticated")
+    )
+)]
 pub async fn delete_department(
   State(state): State<AppState>,
   _auth_user: AuthUser,
