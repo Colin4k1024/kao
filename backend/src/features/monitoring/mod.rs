@@ -12,6 +12,7 @@ pub mod health;
 pub mod operation_log;
 pub mod login_log;
 pub mod online_user;
+pub mod security;
 pub mod routes;
 
 // Re-export for convenience
@@ -21,4 +22,12 @@ pub use health::{check_health, HealthStatus, HealthCheckResponse};
 pub use operation_log::{OperationLogController, OperationLogService, OperationLog, CreateOperationLogRequest, OperationLogQueryParams};
 pub use login_log::{LoginLogController, LoginLogService, LoginLog, CreateLoginLogRequest, LoginLogQueryParams};
 pub use online_user::{OnlineUserController, OnlineUserService, OnlineUser, OnlineUsersResponse, ForceLogoutRequest};
+pub use security::{
+    SecurityController, SecurityService, SecurityScanService,
+    AuditLog, AuditLogQueryParams, AuditLogListResponse, PasswordHealthResponse,
+    SecurityScanResult, SecurityCheck, SecurityScanSummary,
+    PasswordHealth, LockedAccount, FailedLoginAttempt, SuspiciousInput,
+    PermissionDeniedEvent, SecurityEventSummary, SecurityConfigItem,
+    BruteForceDetection, JwtConfig, PasswordPolicyConfig,
+};
 pub use routes::monitoring_router;
