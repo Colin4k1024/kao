@@ -3,8 +3,8 @@ import { test, expect } from '@playwright/test';
 test.describe('首页测试', () => {
   test('首页应该显示系统概览', async ({ page }) => {
     await page.goto('/login');
-    await page.getByPlaceholder(/用户名|username/i).fill('admin');
-    await page.getByPlaceholder(/密码|password/i).fill('admin123');
+    await page.getByPlaceholder(/用户名|username/i).fill('testuser');
+    await page.getByPlaceholder(/密码|password/i).fill('NewTest@123456');
     await page.getByRole('button', { name: /登录|Login/i }).click();
     
     await page.waitForURL(/\/(dashboard|system)/);

@@ -4,150 +4,150 @@ import type { User, Role, Department, Menu, Post, UserQueryParams, RoleQueryPara
 
 export const userApi = {
   list: (params: ListParams & UserQueryParams) => {
-    return request.get<PageResult<User>>('/system/users', { params })
+    return request.get<PageResult<User>>('/api/v1/users', { params })
   },
 
   getById: (id: number) => {
-    return request.get<User>(`/system/users/${id}`)
+    return request.get<User>(`/api/v1/users/${id}`)
   },
 
   create: (data: Partial<User>) => {
-    return request.post<User>('/system/users', data)
+    return request.post<User>('/api/v1/users', data)
   },
 
   update: (id: number, data: Partial<User>) => {
-    return request.put<User>(`/system/users/${id}`, data)
+    return request.put<User>(`/api/v1/users/${id}`, data)
   },
 
   delete: (id: number) => {
-    return request.delete(`/system/users/${id}`)
+    return request.delete(`/api/v1/users/${id}`)
   },
 
   batchDelete: (ids: number[]) => {
-    return request.post('/system/users/batch-delete', { ids })
+    return request.post('/api/v1/users/batch-delete', { ids })
   },
 
   updateStatus: (id: number, status: number) => {
-    return request.post(`/system/users/${id}/status`, { status })
+    return request.post(`/api/v1/users/${id}/status`, { status })
   },
 
   resetPassword: (id: number) => {
-    return request.post(`/system/users/${id}/reset-password`)
+    return request.post(`/api/v1/users/${id}/reset-password`)
   },
 }
 
 export const roleApi = {
   list: (params: ListParams & RoleQueryParams) => {
-    return request.get<PageResult<Role>>('/system/roles', { params })
+    return request.get<PageResult<Role>>('/api/v1/roles', { params })
   },
 
   getById: (id: number) => {
-    return request.get<Role>(`/system/roles/${id}`)
+    return request.get<Role>(`/api/v1/roles/${id}`)
   },
 
   create: (data: Partial<Role>) => {
-    return request.post<Role>('/system/roles', data)
+    return request.post<Role>('/api/v1/roles', data)
   },
 
   update: (id: number, data: Partial<Role>) => {
-    return request.put<Role>(`/system/roles/${id}`, data)
+    return request.put<Role>(`/api/v1/roles/${id}`, data)
   },
 
   delete: (id: number) => {
-    return request.delete(`/system/roles/${id}`)
+    return request.delete(`/api/v1/roles/${id}`)
   },
 
   updateStatus: (id: number, status: number) => {
-    return request.post(`/system/roles/${id}/status`, { status })
+    return request.post(`/api/v1/roles/${id}/status`, { status })
   },
 
   getMenuTree: (id: number) => {
-    return request.get<Menu[]>(`/system/roles/${id}/menus`)
+    return request.get<Menu[]>(`/api/v1/roles/${id}/menus`)
   },
 
   assignMenus: (id: number, menuIds: number[]) => {
-    return request.post(`/system/roles/${id}/menus`, { menuIds })
+    return request.post(`/api/v1/roles/${id}/menus`, { menuIds })
   },
 }
 
 export const deptApi = {
   list: (params: DeptQueryParams) => {
-    return request.get<Department[]>('/system/departments', { params })
+    return request.get<Department[]>('/api/v1/departments', { params })
   },
 
   getById: (id: number) => {
-    return request.get<Department>(`/system/departments/${id}`)
+    return request.get<Department>(`/api/v1/departments/${id}`)
   },
 
   create: (data: Partial<Department>) => {
-    return request.post<Department>('/system/departments', data)
+    return request.post<Department>('/api/v1/departments', data)
   },
 
   update: (id: number, data: Partial<Department>) => {
-    return request.put<Department>(`/system/departments/${id}`, data)
+    return request.put<Department>(`/api/v1/departments/${id}`, data)
   },
 
   delete: (id: number) => {
-    return request.delete(`/system/departments/${id}`)
+    return request.delete(`/api/v1/departments/${id}`)
   },
 
   updateStatus: (id: number, status: number) => {
-    return request.post(`/system/departments/${id}/status`, { status })
+    return request.post(`/api/v1/departments/${id}/status`, { status })
   },
 }
 
 export const menuApi = {
   list: (params: MenuQueryParams) => {
-    return request.get<Menu[]>('/system/menus', { params })
+    return request.get<Menu[]>('/api/v1/menus', { params })
   },
 
   getById: (id: number) => {
-    return request.get<Menu>(`/system/menus/${id}`)
+    return request.get<Menu>(`/api/v1/menus/${id}`)
   },
 
   create: (data: Partial<Menu>) => {
-    return request.post<Menu>('/system/menus', data)
+    return request.post<Menu>('/api/v1/menus', data)
   },
 
   update: (id: number, data: Partial<Menu>) => {
-    return request.put<Menu>(`/system/menus/${id}`, data)
+    return request.put<Menu>(`/api/v1/menus/${id}`, data)
   },
 
   delete: (id: number) => {
-    return request.delete(`/system/menus/${id}`)
+    return request.delete(`/api/v1/menus/${id}`)
   },
 
   updateStatus: (id: number, status: number) => {
-    return request.post(`/system/menus/${id}/status`, { status })
+    return request.post(`/api/v1/menus/${id}/status`, { status })
   },
 
   getMenuTree: () => {
-    return request.get<Menu[]>('/system/menus/tree')
+    return request.get<Menu[]>('/api/v1/menus/tree')
   },
 }
 
 export const postApi = {
   list: (params: ListParams) => {
-    return request.get<PageResult<Post>>('/system/posts', { params })
+    return request.get<PageResult<Post>>('/api/v1/posts', { params })
   },
 
   getById: (id: number) => {
-    return request.get<Post>(`/system/posts/${id}`)
+    return request.get<Post>(`/api/v1/posts/${id}`)
   },
 
   create: (data: Partial<Post>) => {
-    return request.post<Post>('/system/posts', data)
+    return request.post<Post>('/api/v1/posts', data)
   },
 
   update: (id: number, data: Partial<Post>) => {
-    return request.put<Post>(`/system/posts/${id}`, data)
+    return request.put<Post>(`/api/v1/posts/${id}`, data)
   },
 
   delete: (id: number) => {
-    return request.delete(`/system/posts/${id}`)
+    return request.delete(`/api/v1/posts/${id}`)
   },
 
   updateStatus: (id: number, status: number) => {
-    return request.post(`/system/posts/${id}/status`, { status })
+    return request.post(`/api/v1/posts/${id}/status`, { status })
   },
 }

@@ -1,14 +1,27 @@
 # Build stage
-FROM rust:1.70-alpine AS builder
+FROM rust:1.94 AS builder
 
 WORKDIR /app
 
 # Install build dependencies
-RUN apk add --no-cache \
-    postgresql-dev \
-    openssl-dev \
-    pkgconfig \
-    cargo
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    pkg-config \
+    libpq-dev \
+    libssl-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Configure cargo rsproxy mirror for reliable downloads in Docker
+ENV CARGO_HOME=/app/.cargo
+RUN mkdir -p /app/.cargo && \
+    echo '[source.crates-io]' > /app/.cargo/config.toml && \
+    echo 'replace-with = "ustc"' >> /app/.cargo/config.toml && \
+    echo '' >> /app/.cargo/config.toml && \
+    echo '[source.ustc]' >> /app/.cargo/config.toml && \
+    echo 'registry = "sparse+https://mirrors.ustc.edu.cn/crates.io-index/"' >> /app/.cargo/config.toml && \
+    echo '' >> /app/.cargo/config.toml && \
+    echo '[net]' >> /app/.cargo/config.toml && \
+    echo 'git-fetch-with-cli = true' >> /app/.cargo/config.toml && \
+    echo 'retry = 5' >> /app/.cargo/config.toml
 
 # Copy only Cargo.toml and lockfile for caching
 COPY Cargo.toml .
@@ -30,33 +43,26 @@ COPY src/ src/
 RUN cargo build --release --bin kao-backend
 
 # Runtime stage
-FROM alpine:latest AS runtime
+FROM ubuntu:22.04 AS runtime
 
 WORKDIR /app
 
 # Install runtime dependencies
-RUN apk add --no-cache \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
-    postgresql-libs \
-    openssl
-
-# Create non-root user
-RUN addgroup -g 1000 app && \
-    adduser -u 1000 -G app -s /bin/sh -D appuser
+    libpq5 \
+    wget \
+    && rm -rf /var/lib/apt/lists/* \
+    && useradd -m -u 1000 appuser
 
 # Copy binary from builder
 COPY --from=builder /app/target/release/kao-backend /usr/local/bin/kao-backend
 
-# Copy .env.example
-COPY --from=builder /app/.env.example /app/.env.example
-
 # Copy entrypoint and migrate script
-COPY --from=builder /app/entrypoint.sh /app/entrypoint.sh
-COPY --from=builder /app/migrate.sh /app/migrate.sh
+COPY entrypoint.sh /app/entrypoint.sh
+COPY migrate.sh /app/migrate.sh
+COPY .env.example /app/.env.example
 RUN chmod +x /app/entrypoint.sh /app/migrate.sh
-
-# Update ownership
-RUN chown -R appuser:app /app
 
 # Switch to non-root user
 USER appuser
@@ -65,8 +71,8 @@ USER appuser
 EXPOSE 8080
 
 # Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD wget --no-verbose --tries=1 --spider http://localhost:8080/api/health || exit 1
+HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
+    CMD wget --no-verbose --tries=1 --spider http://localhost:8080/health || exit 1
 
 # Entry point
 ENTRYPOINT ["/app/entrypoint.sh"]

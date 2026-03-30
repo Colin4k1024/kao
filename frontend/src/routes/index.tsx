@@ -5,6 +5,9 @@ import MainLayout from '@/pages/layout/MainLayout';
 import Dashboard from '@/pages/Dashboard';
 import UserList from '@/pages/system/users/UserList';
 import DepartmentList from '@/pages/system/departments/DepartmentList';
+import RoleList from '@/pages/system/roles/RoleList';
+import MenuList from '@/pages/system/menus/MenuList';
+import PostList from '@/pages/system/posts/PostList';
 import DictionaryTypePage from '@/pages/system/dictionary/type/index';
 import DictionaryDataPage from '@/pages/system/dictionary/data/index';
 import ConfigPage from '@/pages/system/config/index';
@@ -28,6 +31,9 @@ const AppRoutes: React.FC = () => {
           <Route path="system">
             <Route path="users" element={<UserList />} />
             <Route path="departments" element={<DepartmentList />} />
+            <Route path="roles" element={<RoleList />} />
+            <Route path="menus" element={<MenuList />} />
+            <Route path="posts" element={<PostList />} />
           </Route>
           <Route path="dictionary">
             <Route path="type" element={<DictionaryTypePage />} />

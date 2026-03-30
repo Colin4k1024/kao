@@ -20,7 +20,7 @@ pub struct ApiResponse<T> {
 impl<T: Serialize> ApiResponse<T> {
     pub fn success(data: T) -> Response {
         let body = serde_json::to_string(&ApiResponse {
-            code: 0,
+            code: 200,
             message: "ok".to_string(),
             data: Some(data),
             request_id: None,
@@ -36,7 +36,7 @@ impl<T: Serialize> ApiResponse<T> {
 
     pub fn success_with_request_id(data: T, request_id: String) -> Response {
         let body = serde_json::to_string(&ApiResponse {
-            code: 0,
+            code: 200,
             message: "ok".to_string(),
             data: Some(data),
             request_id: Some(request_id),
@@ -54,7 +54,7 @@ impl<T: Serialize> ApiResponse<T> {
 impl ApiResponse<()> {
     pub fn success_no_data() -> Response {
         let body = serde_json::to_string(&ApiResponse::<()> {
-            code: 0,
+            code: 200,
             message: "ok".to_string(),
             data: None,
             request_id: None,
@@ -70,7 +70,7 @@ impl ApiResponse<()> {
 
     pub fn success_no_data_with_request_id(request_id: String) -> Response {
         let body = serde_json::to_string(&ApiResponse::<()> {
-            code: 0,
+            code: 200,
             message: "ok".to_string(),
             data: None,
             request_id: Some(request_id),

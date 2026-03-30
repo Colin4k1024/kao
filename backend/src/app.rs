@@ -5,17 +5,45 @@ use crate::config::Settings;
 use crate::features::monitoring::routes::monitoring_router;
 use crate::features::monitoring::metrics as monitoring_metrics;
 use crate::middleware::logger::request_logger;
+use crate::middleware::cors::init_cors;
+use crate::features::auth::routes::auth_routes;
+use crate::features::users::routes::user_routes;
+use crate::features::departments::routes::department_routes;
+use crate::features::roles::routes::role_routes;
+use crate::features::menus::routes::menu_routes;
+use crate::features::config::routes::config_routes;
+use crate::features::notice::routes::notice_routes;
+use crate::features::dictionary::r#type::routes::type_routes;
+use crate::features::dictionary::data::routes::data_routes;
 
 pub fn create_app(pool: PgPool, settings: Settings) -> Router {
     let state = AppState { pool, settings };
+
+    // System routes under /api/system (config, notice, dictionary)
+    let system_router = Router::new()
+        .nest("/", config_routes())
+        .nest("/", notice_routes())
+        .nest("/", type_routes())
+        .nest("/", data_routes());
 
     Router::new()
         // Health check endpoint
         .route("/health", get(health_check))
         // Prometheus metrics endpoint at root for easy scraping
         .route("/metrics", get(monitoring_metrics::get_metrics))
+        // Auth routes at /api/v1 (login, register, profile, session)
+        .nest("/api/v1", auth_routes())
+        // API v1 routes (users, departments, roles, menus)
+        .nest("/api/v1", user_routes())
+        .nest("/api/v1", department_routes())
+        .nest("/api/v1", role_routes())
+        .nest("/api/v1", menu_routes())
+        // System management routes
+        .nest("/api/system", system_router)
         // Monitoring routes under /api/monitoring
         .nest("/api/monitoring", monitoring_router())
+        // Apply CORS middleware
+        .layer(init_cors())
         // Apply request logging middleware to all routes
         .layer(axum::middleware::from_fn(request_logger))
         .with_state(state)

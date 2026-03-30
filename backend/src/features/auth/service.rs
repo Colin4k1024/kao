@@ -80,22 +80,30 @@ impl AuthService {
         let permissions = get_user_permissions(db, user.id).await?;
         let roles = get_user_roles(db, user.id).await?;
 
-        // Create JWT claims
+        // Create JWT claims (clone for claims since they consume the values)
         let claims = Claims::new(
             user.id,
             user.username.clone(),
-            permissions,
+            permissions.clone(),
             user.dept_id,
-            roles,
+            roles.clone(),
         );
 
         // Generate JWT token
         let token = generate_jwt(claims, &self.config.jwt.secret)?;
 
         Ok(LoginResponse {
-            access_token: token,
-            token_type: "Bearer".to_string(),
-            expires_in: 24 * 60 * 60, // 24 hours
+            token,
+            userInfo: UserProfile {
+                id: user.id,
+                username: user.username,
+                display_name: user.display_name,
+                email: user.email,
+                dept_id: user.dept_id,
+                avatar_url: user.avatar_url,
+                permissions,
+                roles,
+            },
         })
     }
 

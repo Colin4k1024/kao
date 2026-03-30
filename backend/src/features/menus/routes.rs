@@ -16,11 +16,11 @@ use super::{
 
 pub fn menu_routes() -> axum::Router<AppState> {
     axum::Router::new()
-        .route("/api/v1/menus", axum::routing::get(get_menus))
-        .route("/api/v1/menus", axum::routing::post(create_menu))
-        .route("/api/v1/menus/{id}", axum::routing::get(get_menu))
-        .route("/api/v1/menus/{id}", axum::routing::put(update_menu))
-        .route("/api/v1/menus/{id}", axum::routing::delete(delete_menu))
+        .route("/menus", axum::routing::get(get_menus))
+        .route("/menus", axum::routing::post(create_menu))
+        .route("/menus/{id}", axum::routing::get(get_menu))
+        .route("/menus/{id}", axum::routing::put(update_menu))
+        .route("/menus/{id}", axum::routing::delete(delete_menu))
 }
 
 pub async fn get_menus(

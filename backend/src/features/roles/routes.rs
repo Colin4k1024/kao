@@ -17,11 +17,11 @@ use super::{
 
 pub fn role_routes() -> axum::Router<AppState> {
     axum::Router::new()
-        .route("/api/v1/roles", axum::routing::get(list_roles))
-        .route("/api/v1/roles", axum::routing::post(create_role))
-        .route("/api/v1/roles/{id}", axum::routing::get(get_role))
-        .route("/api/v1/roles/{id}", axum::routing::put(update_role))
-        .route("/api/v1/roles/{id}", axum::routing::delete(delete_role))
+        .route("/roles", axum::routing::get(list_roles))
+        .route("/roles", axum::routing::post(create_role))
+        .route("/roles/{id}", axum::routing::get(get_role))
+        .route("/roles/{id}", axum::routing::put(update_role))
+        .route("/roles/{id}", axum::routing::delete(delete_role))
 }
 
 pub async fn list_roles(

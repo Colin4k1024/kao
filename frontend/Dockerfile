@@ -1,32 +1,32 @@
-# 构建阶段
-FROM node:18-alpine as builder
+# Build stage
+FROM node:22-alpine AS builder
 
 WORKDIR /app
 
-# 复制package文件
+# Copy package files
 COPY package*.json ./
 
-# 安装依赖
-RUN npm ci --only=production
+# Install dependencies (including dev for building)
+RUN npm install
 
-# 复制源代码
+# Copy source code
 COPY . .
 
-# 构建应用
+# Build application
 ENV NODE_ENV=production
 RUN npm run build
 
-# 运行阶段 - 使用nginx
+# Runtime stage - nginx
 FROM nginx:alpine
 
-# 复制构建产物
+# Copy build artifacts
 COPY --from=builder /app/dist /usr/share/nginx/html
 
-# 复制nginx配置
+# Copy nginx config
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-# 暴露端口
+# Expose port
 EXPOSE 80
 
-# 启动nginx
+# Start nginx
 CMD ["nginx", "-g", "daemon off;"]

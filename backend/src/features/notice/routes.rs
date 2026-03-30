@@ -14,12 +14,12 @@ use super::{
 
 pub fn notice_routes() -> axum::Router<crate::AppState> {
   axum::Router::new()
-    .route("/api/system/notice", axum::routing::get(list_notices))
-    .route("/api/system/notice", axum::routing::post(create_notice))
-    .route("/api/system/notice/{id}", axum::routing::get(get_notice))
-    .route("/api/system/notice/{id}", axum::routing::put(update_notice))
-    .route("/api/system/notice/{id}", axum::routing::delete(delete_notice))
-    .route("/api/system/notice/{id}/view", axum::routing::post(increment_view))
+    .route("/notice", axum::routing::get(list_notices))
+    .route("/notice", axum::routing::post(create_notice))
+    .route("/notice/{id}", axum::routing::get(get_notice))
+    .route("/notice/{id}", axum::routing::put(update_notice))
+    .route("/notice/{id}", axum::routing::delete(delete_notice))
+    .route("/notice/{id}/view", axum::routing::post(increment_view))
 }
 
 pub async fn list_notices(

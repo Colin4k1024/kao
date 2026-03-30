@@ -13,11 +13,11 @@ use super::{
 
 pub fn config_routes() -> axum::Router<crate::AppState> {
     axum::Router::new()
-        .route("/api/system/config", axum::routing::get(list_configs))
-        .route("/api/system/config", axum::routing::post(create_config))
-        .route("/api/system/config/{key}", axum::routing::get(get_config))
-        .route("/api/system/config/{key}", axum::routing::put(update_config))
-        .route("/api/system/config/{key}", axum::routing::delete(delete_config))
+        .route("/config", axum::routing::get(list_configs))
+        .route("/config", axum::routing::post(create_config))
+        .route("/config/{key}", axum::routing::get(get_config))
+        .route("/config/{key}", axum::routing::put(update_config))
+        .route("/config/{key}", axum::routing::delete(delete_config))
 }
 
 pub async fn list_configs(

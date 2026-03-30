@@ -17,11 +17,11 @@ use super::{
 
 pub fn department_routes() -> axum::Router<AppState> {
   axum::Router::new()
-    .route("/api/v1/departments", axum::routing::get(list_departments))
-    .route("/api/v1/departments", axum::routing::post(create_department))
-    .route("/api/v1/departments/{id}", axum::routing::get(get_department))
-    .route("/api/v1/departments/{id}", axum::routing::put(update_department))
-    .route("/api/v1/departments/{id}", axum::routing::delete(delete_department))
+    .route("/departments", axum::routing::get(list_departments))
+    .route("/departments", axum::routing::post(create_department))
+    .route("/departments/{id}", axum::routing::get(get_department))
+    .route("/departments/{id}", axum::routing::put(update_department))
+    .route("/departments/{id}", axum::routing::delete(delete_department))
 }
 
 pub async fn list_departments(

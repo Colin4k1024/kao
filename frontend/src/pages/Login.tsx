@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -8,7 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Loader2, Lock, User } from 'lucide-react'
-import request from '@/lib/api'
+import { authApi } from '@/services/api/authService'
 
 const loginSchema = z.object({
   username: z.string().min(2, '用户名至少2个字符'),
@@ -20,8 +19,7 @@ type LoginFormData = z.infer<typeof loginSchema>
 export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
-  const navigate = useNavigate()
-  
+
   const {
     register,
     handleSubmit,
@@ -34,16 +32,15 @@ export default function LoginPage() {
     setIsLoading(true)
     setError('')
     try {
-      const response = await request.post('/api/auth/login', {
+      const response = await authApi.login({
         username: data.username,
         password: data.password,
       })
-      
+
       if (response.code === 200) {
-        localStorage.setItem('access_token', response.data.access_token)
-        localStorage.setItem('refresh_token', response.data.refresh_token)
-        localStorage.setItem('user', JSON.stringify(response.data.user))
-        navigate('/dashboard')
+        localStorage.setItem('access_token', response.data.token)
+        localStorage.setItem('user', JSON.stringify(response.data.userInfo))
+        window.location.href = '/'
       } else {
         setError(response.message || '登录失败')
       }

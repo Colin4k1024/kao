@@ -17,13 +17,13 @@ use super::{
 
 pub fn auth_routes() -> axum::Router<AppState> {
     axum::Router::new()
-        .route("/api/v1/auth/login", axum::routing::post(login))
-        .route("/api/v1/auth/register", axum::routing::post(register))
-        .route("/api/v1/auth/profile", axum::routing::get(get_profile))
-        .route("/api/v1/auth/session", axum::routing::get(get_session))
-        .route("/api/v1/auth/permissions", axum::routing::get(get_permissions))
-        .route("/api/v1/auth/menus", axum::routing::get(get_menus))
-        .route("/api/v1/auth/change-password", axum::routing::post(change_password))
+        .route("/login", axum::routing::post(login))
+        .route("/register", axum::routing::post(register))
+        .route("/logout", axum::routing::post(logout))
+        .route("/profile", axum::routing::get(get_profile))
+        .route("/session", axum::routing::get(get_session))
+        .route("/permissions", axum::routing::get(get_permissions))
+        .route("/change-password", axum::routing::post(change_password))
 }
 
 pub async fn login(
@@ -110,6 +110,16 @@ pub async fn get_permissions(
 ) -> Result<impl IntoResponse, crate::common::error::AppError> {
     Ok(ApiResponse::success(serde_json::json!({
         "permissions": auth_user.permissions
+    })))
+}
+
+pub async fn logout(
+    State(_state): State<AppState>,
+    auth_user: AuthUser,
+) -> Result<impl IntoResponse, crate::common::error::AppError> {
+    tracing::info!("User {} logged out", auth_user.id);
+    Ok(ApiResponse::success(json!({
+        "message": "Logout successful"
     })))
 }
 

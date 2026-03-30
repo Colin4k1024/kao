@@ -14,12 +14,12 @@ use super::{
 
 pub fn data_routes() -> axum::Router<crate::AppState> {
     axum::Router::new()
-        .route("/api/system/dictionary/data", axum::routing::get(list_data))
-        .route("/api/system/dictionary/data", axum::routing::post(create_data))
-        .route("/api/system/dictionary/data/{id}", axum::routing::get(get_data))
-        .route("/api/system/dictionary/data/{id}", axum::routing::put(update_data))
-        .route("/api/system/dictionary/data/{id}", axum::routing::delete(delete_data))
-        .route("/api/system/dictionary/data/type/{dict_type}", axum::routing::get(list_data_by_type))
+        .route("/dictionary/data", axum::routing::get(list_data))
+        .route("/dictionary/data", axum::routing::post(create_data))
+        .route("/dictionary/data/{id}", axum::routing::get(get_data))
+        .route("/dictionary/data/{id}", axum::routing::put(update_data))
+        .route("/dictionary/data/{id}", axum::routing::delete(delete_data))
+        .route("/dictionary/data/type/{dict_type}", axum::routing::get(list_data_by_type))
 }
 
 pub async fn list_data(

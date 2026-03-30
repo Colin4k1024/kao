@@ -12,6 +12,9 @@ release/
 .env.*
 !.env.example
 
+# Cargo config (mirror settings are local-specific)
+.cargo/
+
 # Documentation
 *.md
 !.env.example

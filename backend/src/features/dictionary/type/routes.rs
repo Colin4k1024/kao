@@ -14,11 +14,11 @@ use super::{
 
 pub fn type_routes() -> axum::Router<crate::AppState> {
     axum::Router::new()
-        .route("/api/system/dictionary/types", axum::routing::get(list_types))
-        .route("/api/system/dictionary/types", axum::routing::post(create_type))
-        .route("/api/system/dictionary/types/{id}", axum::routing::get(get_type))
-        .route("/api/system/dictionary/types/{id}", axum::routing::put(update_type))
-        .route("/api/system/dictionary/types/{id}", axum::routing::delete(delete_type))
+        .route("/dictionary/types", axum::routing::get(list_types))
+        .route("/dictionary/types", axum::routing::post(create_type))
+        .route("/dictionary/types/{id}", axum::routing::get(get_type))
+        .route("/dictionary/types/{id}", axum::routing::put(update_type))
+        .route("/dictionary/types/{id}", axum::routing::delete(delete_type))
 }
 
 pub async fn list_types(
