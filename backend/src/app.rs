@@ -17,6 +17,7 @@ use crate::features::dictionary::r#type::routes::type_routes;
 use crate::features::dictionary::data::routes::data_routes;
 use crate::features::job;
 use crate::features::job::routes::job_routes;
+use crate::features::posts::routes::post_routes;
 
 pub fn create_app(pool: PgPool, settings: Settings) -> Router {
     let state = AppState { pool, settings };
@@ -35,11 +36,12 @@ pub fn create_app(pool: PgPool, settings: Settings) -> Router {
         .route("/metrics", get(monitoring_metrics::get_metrics))
         // Auth routes at /api/v1 (login, register, profile, session)
         .nest("/api/v1", auth_routes())
-        // API v1 routes (users, departments, roles, menus)
+        // API v1 routes (users, departments, roles, menus, posts)
         .nest("/api/v1", user_routes())
         .nest("/api/v1", department_routes())
         .nest("/api/v1", role_routes())
         .nest("/api/v1", menu_routes())
+        .nest("/api/v1", post_routes())
         // System management routes
         .nest("/api/system", system_router)
         // Job routes - registered directly to avoid nested router issue
