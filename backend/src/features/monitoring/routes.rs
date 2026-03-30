@@ -33,7 +33,7 @@ pub fn security_router() -> Router<AppState> {
         .route("/scan/authentication", get(auth_scan))
         .route("/scan/authorization", get(authz_scan))
         .route("/events", get(security_events))
-        .route("/password-health/{user_id}", get(password_health))
+        .route("/password-health/:user_id", get(password_health))
 }
 
 // Security scan

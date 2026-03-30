@@ -18,9 +18,9 @@ pub fn menu_routes() -> axum::Router<AppState> {
     axum::Router::new()
         .route("/menus", axum::routing::get(get_menus))
         .route("/menus", axum::routing::post(create_menu))
-        .route("/menus/{id}", axum::routing::get(get_menu))
-        .route("/menus/{id}", axum::routing::put(update_menu))
-        .route("/menus/{id}", axum::routing::delete(delete_menu))
+        .route("/menus/:id", axum::routing::get(get_menu))
+        .route("/menus/:id", axum::routing::put(update_menu))
+        .route("/menus/:id", axum::routing::delete(delete_menu))
 }
 
 pub async fn get_menus(

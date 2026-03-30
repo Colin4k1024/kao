@@ -1,4 +1,4 @@
-use axum::{extract::State, routing::get, Json, Router, response::{IntoResponse, Response}, http::HeaderMap as AxumHeaderMap, http::HeaderName, http::HeaderValue};
+use axum::{extract::State, routing::{get, post, put, delete}, Json, Router, response::{IntoResponse, Response}, http::HeaderMap as AxumHeaderMap, http::HeaderName, http::HeaderValue};
 use sqlx::PgPool;
 use serde::Serialize;
 use crate::config::Settings;
@@ -15,6 +15,8 @@ use crate::features::config::routes::config_routes;
 use crate::features::notice::routes::notice_routes;
 use crate::features::dictionary::r#type::routes::type_routes;
 use crate::features::dictionary::data::routes::data_routes;
+use crate::features::job;
+use crate::features::job::routes::job_routes;
 
 pub fn create_app(pool: PgPool, settings: Settings) -> Router {
     let state = AppState { pool, settings };
@@ -40,6 +42,18 @@ pub fn create_app(pool: PgPool, settings: Settings) -> Router {
         .nest("/api/v1", menu_routes())
         // System management routes
         .nest("/api/system", system_router)
+        // Job routes - registered directly to avoid nested router issue
+        .route("/api/jobs", get(job::routes::list_jobs))
+        .route("/api/jobs", post(job::routes::create_job))
+        .route("/api/jobs/:id", get(job::routes::get_job))
+        .route("/api/jobs/:id", put(job::routes::update_job))
+        .route("/api/jobs/:id", delete(job::routes::delete_job))
+        .route("/api/jobs/:id/schedule", put(job::routes::schedule_job))
+        .route("/api/jobs/:id/unschedule", put(job::routes::unschedule_job))
+        .route("/api/jobs/:id/run", post(job::routes::run_job))
+        .route("/api/jobs/logs", get(job::routes::list_job_logs))
+        .route("/api/jobs/logs/clear", delete(job::routes::clear_job_logs))
+        .route("/api/jobs/logs/:id", get(job::routes::get_job_log))
         // Monitoring routes under /api/monitoring
         .nest("/api/monitoring", monitoring_router())
         // Apply CORS middleware

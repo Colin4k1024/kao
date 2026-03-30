@@ -27,9 +27,9 @@ pub fn user_routes() -> axum::Router<AppState> {
   axum::Router::new()
     .route("/users", axum::routing::get(list_users))
     .route("/users", axum::routing::post(create_user))
-    .route("/users/{id}", axum::routing::get(get_user))
-    .route("/users/{id}", axum::routing::put(update_user))
-    .route("/users/{id}", axum::routing::delete(delete_user))
+    .route("/users/:id", axum::routing::get(get_user))
+    .route("/users/:id", axum::routing::put(update_user))
+    .route("/users/:id", axum::routing::delete(delete_user))
 }
 
 pub async fn list_users(
