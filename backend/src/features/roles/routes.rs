@@ -43,8 +43,20 @@ pub async fn list_roles(
     _headers: HeaderMap,
 ) -> Result<impl IntoResponse, crate::common::error::AppError> {
     let role_service = RoleService::new();
-    let roles = role_service.list_roles(&state.pool).await?;
-    Ok(ApiResponse::success(roles))
+    let roles = role_service.list_roles_cached(&state.pool, &state.cache).await?;
+
+    // Add cache headers for client-side caching
+    let response = ApiResponse::success(serde_json::json!({
+        "items": roles,
+        "total": roles.len()
+    }));
+    let mut axum_response = response.into_response();
+    let headers = axum_response.headers_mut();
+    headers.insert(
+        axum::http::HeaderName::from_static("cache-control"),
+        axum::http::HeaderValue::from_static("public, max-age=300"),
+    );
+    Ok(axum_response)
 }
 
 /// GET /api/v1/roles/{id} - Get role by ID
@@ -97,7 +109,7 @@ pub async fn create_role(
     Json(request): Json<CreateRoleRequest>,
 ) -> Result<impl IntoResponse, crate::common::error::AppError> {
     let role_service = RoleService::new();
-    let role = role_service.create_role(&state.pool, request).await?;
+    let role = role_service.create_role(&state.pool, &state.cache, request).await?;
     Ok(ApiResponse::success(role))
 }
 
@@ -126,7 +138,7 @@ pub async fn update_role(
     Json(request): Json<UpdateRoleRequest>,
 ) -> Result<impl IntoResponse, crate::common::error::AppError> {
     let role_service = RoleService::new();
-    let role = role_service.update_role(&state.pool, role_id, request).await?;
+    let role = role_service.update_role(&state.pool, &state.cache, role_id, request).await?;
     Ok(ApiResponse::success(role))
 }
 
@@ -153,6 +165,6 @@ pub async fn delete_role(
     Path(role_id): Path<Uuid>,
 ) -> Result<impl IntoResponse, crate::common::error::AppError> {
     let role_service = RoleService::new();
-    role_service.delete_role(&state.pool, role_id).await?;
+    role_service.delete_role(&state.pool, &state.cache, role_id).await?;
     Ok(ApiResponse::success_no_data())
 }

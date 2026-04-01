@@ -1,11 +1,12 @@
 use axum::{
-    extract::Path,
+    extract::{Path, State},
     response::IntoResponse,
     Json,
 };
 use uuid::Uuid;
 
-use crate::common::{db::get_pool, auth::extractor::AuthUser, error::AppError, response::ApiResponse};
+use crate::common::{auth::extractor::AuthUser, error::AppError, response::ApiResponse};
+use crate::AppState;
 
 use super::{
     model::{CreateTypeRequest, UpdateTypeRequest},
@@ -22,58 +23,65 @@ pub fn type_routes() -> axum::Router<crate::AppState> {
 }
 
 pub async fn list_types(
+    State(state): State<AppState>,
     _auth_user: AuthUser,
 ) -> Result<impl IntoResponse, AppError> {
     let service = TypeService::new();
-    let db = get_pool()
-        .ok_or_else(|| AppError::Internal(Some("Database pool not initialized".to_string())))?;
-    let types = service.list_types(db).await?;
-    Ok(ApiResponse::success(types))
+    let types = service.list_types_cached(&state.pool, &state.cache).await?;
+
+    // Add cache headers for client-side caching
+    let response = ApiResponse::success(serde_json::json!({
+        "items": types,
+        "total": types.len()
+    }));
+    let mut axum_response = response.into_response();
+    let headers = axum_response.headers_mut();
+    headers.insert(
+        axum::http::HeaderName::from_static("cache-control"),
+        axum::http::HeaderValue::from_static("public, max-age=300"),
+    );
+    Ok(axum_response)
 }
 
 pub async fn get_type(
+    State(state): State<AppState>,
     _auth_user: AuthUser,
     Path(type_id): Path<Uuid>,
 ) -> Result<impl IntoResponse, AppError> {
     let service = TypeService::new();
-    let db = get_pool()
-        .ok_or_else(|| AppError::Internal(Some("Database pool not initialized".to_string())))?;
-    match service.get_type_by_id(db, type_id).await? {
+    match service.get_type_by_id(&state.pool, type_id).await? {
         Some(t) => Ok(ApiResponse::success(t)),
         None => Ok(ApiResponse::error(404, "Type not found".to_string())),
     }
 }
 
 pub async fn create_type(
+    State(state): State<AppState>,
     _auth_user: AuthUser,
     Json(request): Json<CreateTypeRequest>,
 ) -> Result<impl IntoResponse, AppError> {
     let service = TypeService::new();
-    let db = get_pool()
-        .ok_or_else(|| AppError::Internal(Some("Database pool not initialized".to_string())))?;
-    let t = service.create_type(db, request).await?;
+    let t = service.create_type(&state.pool, &state.cache, request).await?;
     Ok(ApiResponse::success(t))
 }
 
 pub async fn update_type(
+    State(state): State<AppState>,
     _auth_user: AuthUser,
     Path(type_id): Path<Uuid>,
     Json(request): Json<UpdateTypeRequest>,
 ) -> Result<impl IntoResponse, AppError> {
     let service = TypeService::new();
-    let db = get_pool()
-        .ok_or_else(|| AppError::Internal(Some("Database pool not initialized".to_string())))?;
-    let t = service.update_type(db, type_id, request).await?;
+    let t = service.update_type(&state.pool, &state.cache, type_id, request).await?;
     Ok(ApiResponse::success(t))
 }
 
 pub async fn delete_type(
+    State(state): State<AppState>,
     _auth_user: AuthUser,
     Path(type_id): Path<Uuid>,
 ) -> Result<impl IntoResponse, AppError> {
     let service = TypeService::new();
-    let db = get_pool()
-        .ok_or_else(|| AppError::Internal(Some("Database pool not initialized".to_string())))?;
-    service.delete_type(db, type_id).await?;
+    service.delete_type(&state.pool, &state.cache, type_id).await?;
     Ok(ApiResponse::success_no_data())
 }

@@ -1,10 +1,10 @@
 use axum::{
-    extract::Path,
+    extract::{Path, State},
     response::IntoResponse,
     Json,
 };
 
-use crate::common::{auth::extractor::AuthUser, db::get_pool, error::AppError, response::ApiResponse};
+use crate::{AppState, common::{auth::extractor::AuthUser, error::AppError, response::ApiResponse}};
 
 use super::{
     model::{CreateConfigRequest, UpdateConfigRequest},
@@ -21,58 +21,56 @@ pub fn config_routes() -> axum::Router<crate::AppState> {
 }
 
 pub async fn list_configs(
+    State(state): State<AppState>,
     _auth_user: AuthUser,
 ) -> Result<impl IntoResponse, AppError> {
     let service = ConfigService::new();
-    let db = get_pool()
-        .ok_or_else(|| AppError::Internal(Some("Database pool not initialized".to_string())))?;
-    let configs = service.list_configs(db, None, None).await?;
-    Ok(ApiResponse::success(configs))
+    let configs = service.list_configs(&state.pool, None, None).await?;
+    Ok(ApiResponse::success(serde_json::json!({
+        "items": configs,
+        "total": configs.len()
+    })))
 }
 
 pub async fn get_config(
+    State(state): State<AppState>,
     _auth_user: AuthUser,
     Path(key): Path<String>,
 ) -> Result<impl IntoResponse, AppError> {
     let service = ConfigService::new();
-    let db = get_pool()
-        .ok_or_else(|| AppError::Internal(Some("Database pool not initialized".to_string())))?;
-    match service.get_config_by_key(db, &key).await? {
+    match service.get_config_by_key(&state.pool, &key).await? {
         Some(c) => Ok(ApiResponse::success(c)),
         None => Ok(ApiResponse::error(404, "Config not found".to_string())),
     }
 }
 
 pub async fn create_config(
+    State(state): State<AppState>,
     _auth_user: AuthUser,
     Json(request): Json<CreateConfigRequest>,
 ) -> Result<impl IntoResponse, AppError> {
     let service = ConfigService::new();
-    let db = get_pool()
-        .ok_or_else(|| AppError::Internal(Some("Database pool not initialized".to_string())))?;
-    let c = service.create_config(db, request).await?;
+    let c = service.create_config(&state.pool, request).await?;
     Ok(ApiResponse::success(c))
 }
 
 pub async fn update_config(
+    State(state): State<AppState>,
     _auth_user: AuthUser,
     Path(key): Path<String>,
     Json(request): Json<UpdateConfigRequest>,
 ) -> Result<impl IntoResponse, AppError> {
     let service = ConfigService::new();
-    let db = get_pool()
-        .ok_or_else(|| AppError::Internal(Some("Database pool not initialized".to_string())))?;
-    let c = service.update_config(db, &key, request).await?;
+    let c = service.update_config(&state.pool, &key, request).await?;
     Ok(ApiResponse::success(c))
 }
 
 pub async fn delete_config(
+    State(state): State<AppState>,
     _auth_user: AuthUser,
     Path(key): Path<String>,
 ) -> Result<impl IntoResponse, AppError> {
     let service = ConfigService::new();
-    let db = get_pool()
-        .ok_or_else(|| AppError::Internal(Some("Database pool not initialized".to_string())))?;
-    service.delete_config(db, &key).await?;
+    service.delete_config(&state.pool, &key).await?;
     Ok(ApiResponse::success_no_data())
 }

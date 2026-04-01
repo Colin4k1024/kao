@@ -3,6 +3,7 @@ use axum::{
     http::HeaderMap,
     response::IntoResponse,
 };
+use uuid::Uuid;
 
 use crate::{
     AppState,
@@ -30,13 +31,16 @@ pub async fn list_posts(
 ) -> Result<impl IntoResponse, crate::common::error::AppError> {
     let post_service = PostService::new();
     let posts = post_service.list_posts(&state.pool).await?;
-    Ok(ApiResponse::success(posts))
+    Ok(ApiResponse::success(serde_json::json!({
+        "items": posts,
+        "total": posts.len()
+    })))
 }
 
 pub async fn get_post(
     State(state): State<AppState>,
     _auth_user: AuthUser,
-    Path(post_id): Path<i64>,
+    Path(post_id): Path<Uuid>,
 ) -> Result<impl IntoResponse, crate::common::error::AppError> {
     let post_service = PostService::new();
     match post_service.get_post_by_id(&state.pool, post_id).await? {
@@ -60,7 +64,7 @@ pub async fn create_post(
 pub async fn update_post(
     State(state): State<AppState>,
     _auth_user: AuthUser,
-    Path(post_id): Path<i64>,
+    Path(post_id): Path<Uuid>,
     Json(request): Json<UpdatePostRequest>,
 ) -> Result<impl IntoResponse, crate::common::error::AppError> {
     let post_service = PostService::new();
@@ -73,7 +77,7 @@ pub async fn update_post(
 pub async fn delete_post(
     State(state): State<AppState>,
     _auth_user: AuthUser,
-    Path(post_id): Path<i64>,
+    Path(post_id): Path<Uuid>,
 ) -> Result<impl IntoResponse, crate::common::error::AppError> {
     let post_service = PostService::new();
     post_service.delete_post(&state.pool, post_id).await?;

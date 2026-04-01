@@ -42,8 +42,20 @@ pub async fn get_menus(
     _headers: HeaderMap,
 ) -> Result<impl IntoResponse, crate::common::error::AppError> {
     let menu_service = MenuService::new();
-    let menus = menu_service.get_menu_tree(&state.pool).await?;
-    Ok(ApiResponse::success(menus))
+    let menus = menu_service.get_menu_tree_cached(&state.pool, &state.cache).await?;
+
+    // Add cache headers for client-side caching
+    let response = ApiResponse::success(serde_json::json!({
+        "items": menus,
+        "total": menus.len()
+    }));
+    let mut axum_response = response.into_response();
+    let headers = axum_response.headers_mut();
+    headers.insert(
+        axum::http::HeaderName::from_static("cache-control"),
+        axum::http::HeaderValue::from_static("public, max-age=300"),
+    );
+    Ok(axum_response)
 }
 
 /// GET /api/v1/menus/{id} - Get menu by ID
@@ -96,7 +108,7 @@ pub async fn create_menu(
     Json(request): Json<CreateMenuRequest>,
 ) -> Result<impl IntoResponse, crate::common::error::AppError> {
     let menu_service = MenuService::new();
-    let menu = menu_service.create_menu(&state.pool, request).await?;
+    let menu = menu_service.create_menu(&state.pool, &state.cache, request).await?;
     Ok(ApiResponse::success(menu))
 }
 
@@ -125,7 +137,7 @@ pub async fn update_menu(
     Json(request): Json<CreateMenuRequest>,
 ) -> Result<impl IntoResponse, crate::common::error::AppError> {
     let menu_service = MenuService::new();
-    let menu = menu_service.update_menu(&state.pool, menu_id, request).await?;
+    let menu = menu_service.update_menu(&state.pool, &state.cache, menu_id, request).await?;
     Ok(ApiResponse::success(menu))
 }
 
@@ -152,6 +164,6 @@ pub async fn delete_menu(
     Path(menu_id): Path<uuid::Uuid>,
 ) -> Result<impl IntoResponse, crate::common::error::AppError> {
     let menu_service = MenuService::new();
-    menu_service.delete_menu(&state.pool, menu_id).await?;
+    menu_service.delete_menu(&state.pool, &state.cache, menu_id).await?;
     Ok(ApiResponse::success_no_data())
 }

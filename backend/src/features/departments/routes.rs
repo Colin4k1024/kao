@@ -42,8 +42,20 @@ pub async fn list_departments(
   _auth_user: AuthUser,
 ) -> Result<impl IntoResponse, crate::common::error::AppError> {
   let dept_service = DepartmentService::new();
-  let departments = dept_service.get_department_tree(&state.pool).await?;
-  Ok(ApiResponse::success(departments))
+  let departments = dept_service.get_department_tree_cached(&state.pool, &state.cache).await?;
+
+  // Add cache headers for client-side caching
+  let response = ApiResponse::success(serde_json::json!({
+    "items": departments,
+    "total": departments.len()
+  }));
+  let mut axum_response = response.into_response();
+  let headers = axum_response.headers_mut();
+  headers.insert(
+    axum::http::HeaderName::from_static("cache-control"),
+    axum::http::HeaderValue::from_static("public, max-age=300"),
+  );
+  Ok(axum_response)
 }
 
 /// GET /api/v1/departments/{id} - Get department by ID
@@ -96,7 +108,7 @@ pub async fn create_department(
   Json(request): Json<CreateDepartmentRequest>,
 ) -> Result<impl IntoResponse, crate::common::error::AppError> {
   let dept_service = DepartmentService::new();
-  let dept = dept_service.create_department(&state.pool, request).await?;
+  let dept = dept_service.create_department(&state.pool, &state.cache, request).await?;
   Ok(ApiResponse::success(dept))
 }
 
@@ -125,7 +137,7 @@ pub async fn update_department(
   Json(request): Json<UpdateDepartmentRequest>,
 ) -> Result<impl IntoResponse, crate::common::error::AppError> {
   let dept_service = DepartmentService::new();
-  let dept = dept_service.update_department(&state.pool, dept_id, request).await?;
+  let dept = dept_service.update_department(&state.pool, &state.cache, dept_id, request).await?;
   Ok(ApiResponse::success(dept))
 }
 
@@ -152,6 +164,6 @@ pub async fn delete_department(
   Path(dept_id): Path<Uuid>,
 ) -> Result<impl IntoResponse, crate::common::error::AppError> {
   let dept_service = DepartmentService::new();
-  dept_service.delete_department(&state.pool, dept_id).await?;
+  dept_service.delete_department(&state.pool, &state.cache, dept_id).await?;
   Ok(ApiResponse::success_no_data())
 }

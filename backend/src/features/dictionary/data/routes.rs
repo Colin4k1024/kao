@@ -1,11 +1,12 @@
 use axum::{
-    extract::Path,
+    extract::{Path, State},
     response::IntoResponse,
     Json,
 };
 use uuid::Uuid;
 
-use crate::common::{db::get_pool, auth::extractor::AuthUser, error::AppError, response::ApiResponse};
+use crate::common::{auth::extractor::AuthUser, error::AppError, response::ApiResponse};
+use crate::AppState;
 
 use super::{
     model::{CreateDataRequest, UpdateDataRequest},
@@ -23,69 +24,76 @@ pub fn data_routes() -> axum::Router<crate::AppState> {
 }
 
 pub async fn list_data(
+    State(state): State<AppState>,
     _auth_user: AuthUser,
 ) -> Result<impl IntoResponse, AppError> {
     let service = DataService::new();
-    let db = get_pool()
-        .ok_or_else(|| AppError::Internal(Some("Database pool not initialized".to_string())))?;
-    let data = service.list_data_by_type(db, "").await?;
-    Ok(ApiResponse::success(data))
+    // Return empty list for empty type query - cached version not needed for this edge case
+    let data = service.list_data_by_type(&state.pool, "").await?;
+    Ok(ApiResponse::success(serde_json::json!({
+        "items": data,
+        "total": data.len()
+    })))
 }
 
 pub async fn list_data_by_type(
+    State(state): State<AppState>,
     _auth_user: AuthUser,
     Path(dict_type): Path<String>,
 ) -> Result<impl IntoResponse, AppError> {
     let service = DataService::new();
-    let db = get_pool()
-        .ok_or_else(|| AppError::Internal(Some("Database pool not initialized".to_string())))?;
-    let data = service.list_data_by_type(db, &dict_type).await?;
-    Ok(ApiResponse::success(data))
+    let data = service.list_data_by_type_cached(&state.pool, &state.cache, &dict_type).await?;
+
+    // Add cache headers for client-side caching
+    let response = ApiResponse::success(data);
+    let mut axum_response = response.into_response();
+    let headers = axum_response.headers_mut();
+    headers.insert(
+        axum::http::HeaderName::from_static("cache-control"),
+        axum::http::HeaderValue::from_static("public, max-age=300"),
+    );
+    Ok(axum_response)
 }
 
 pub async fn get_data(
+    State(state): State<AppState>,
     _auth_user: AuthUser,
     Path(data_id): Path<Uuid>,
 ) -> Result<impl IntoResponse, AppError> {
     let service = DataService::new();
-    let db = get_pool()
-        .ok_or_else(|| AppError::Internal(Some("Database pool not initialized".to_string())))?;
-    match service.get_data_by_id(db, data_id).await? {
+    match service.get_data_by_id(&state.pool, data_id).await? {
         Some(d) => Ok(ApiResponse::success(d)),
         None => Ok(ApiResponse::error(404, "Data not found".to_string())),
     }
 }
 
 pub async fn create_data(
+    State(state): State<AppState>,
     _auth_user: AuthUser,
     Json(request): Json<CreateDataRequest>,
 ) -> Result<impl IntoResponse, AppError> {
     let service = DataService::new();
-    let db = get_pool()
-        .ok_or_else(|| AppError::Internal(Some("Database pool not initialized".to_string())))?;
-    let d = service.create_data(db, request).await?;
+    let d = service.create_data(&state.pool, &state.cache, request).await?;
     Ok(ApiResponse::success(d))
 }
 
 pub async fn update_data(
+    State(state): State<AppState>,
     _auth_user: AuthUser,
     Path(data_id): Path<Uuid>,
     Json(request): Json<UpdateDataRequest>,
 ) -> Result<impl IntoResponse, AppError> {
     let service = DataService::new();
-    let db = get_pool()
-        .ok_or_else(|| AppError::Internal(Some("Database pool not initialized".to_string())))?;
-    let d = service.update_data(db, data_id, request).await?;
+    let d = service.update_data(&state.pool, &state.cache, data_id, request).await?;
     Ok(ApiResponse::success(d))
 }
 
 pub async fn delete_data(
+    State(state): State<AppState>,
     _auth_user: AuthUser,
     Path(data_id): Path<Uuid>,
 ) -> Result<impl IntoResponse, AppError> {
     let service = DataService::new();
-    let db = get_pool()
-        .ok_or_else(|| AppError::Internal(Some("Database pool not initialized".to_string())))?;
-    service.delete_data(db, data_id).await?;
+    service.delete_data(&state.pool, &state.cache, data_id).await?;
     Ok(ApiResponse::success_no_data())
 }
