@@ -140,10 +140,12 @@ pub async fn reset_password(
     State(_state): State<AppState>,
     Path(id): Path<String>,
 ) -> Json<serde_json::Value> {
+    // 安全修复：不返回明文密码
+    // 实际应用中应发送邮件或显示一次性密码给管理员
     Json(serde_json::json!({
         "code": 200,
-        "message": format!("重置用户 {} 密码成功", id),
-        "data": "123456"
+        "message": format!("密码重置成功，请通过安全渠道获取新密码"),  // 不再返回明文密码
+        "data": null
     }))
 }
 

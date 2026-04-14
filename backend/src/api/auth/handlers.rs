@@ -2,8 +2,7 @@ use axum::{extract::State, Json};
 use bcrypt::{verify, DEFAULT_COST};
 use serde::{Deserialize, Serialize};
 use crate::app::AppState;
-use std::net::SocketAddr;
-use axum::http::Request;
+use crate::common::auth::jwt::{generate_jwt, Claims};
 
 #[derive(Debug, Deserialize)]
 pub struct LoginRequest {
@@ -59,8 +58,22 @@ pub async fn login(
             // 使用bcrypt验证密码
             match verify(&req.password, &user.2) {
                 Ok(true) => {
-                    // 生成JWT token
-                    let token = format!("token_{}", uuid::Uuid::new_v4());
+                    // 生成真正的JWT token
+                    let jwt_secret = std::env::var("JWT_SECRET").unwrap_or_else(|_| "change-me-in-production".to_string());
+                    let now = chrono::Utc::now();
+                    let exp = now + chrono::Duration::hours(24);
+                    let claims = Claims {
+                        sub: user.0.clone(),
+                        username: user.1.clone(),
+                        exp: exp.timestamp() as usize,
+                        iat: now.timestamp() as usize,
+                        permissions: vec!["*".to_string()],
+                        dept_id: None,
+                        roles: vec!["admin".to_string()],
+                        token_version: None,
+                    };
+                    let token = generate_jwt(claims, &jwt_secret)
+                        .unwrap_or_else(|_| format!("token_{}", uuid::Uuid::new_v4()));
 
                     // Log successful login with structured logging
                     tracing::info!(
@@ -186,20 +199,50 @@ pub async fn refresh(Json(_req): Json<serde_json::Value>) -> Json<serde_json::Va
     }))
 }
 
-pub async fn get_current_user() -> Json<serde_json::Value> {
-    Json(serde_json::json!({
-        "code": 200,
-        "message": "获取用户信息成功",
-        "data": {
-            "id": "00000000-0000-0000-0000-000000000001",
-            "username": "admin",
-            "nickname": "管理员",
-            "email": "admin@example.com",
-            "phone": "13800138000",
-            "avatar": serde_json::Value::Null,
-            "status": 1,
-            "roles": ["admin"],
-            "permissions": ["*"]
+pub async fn get_current_user(
+    State(state): State<AppState>,
+    headers: axum::http::HeaderMap,
+) -> Json<serde_json::Value> {
+    // Extract token from Authorization header
+    let token = headers
+        .get("authorization")
+        .and_then(|h| h.to_str().ok())
+        .and_then(|h| h.strip_prefix("Bearer "));
+
+    if let Some(token) = token {
+        let jwt_secret = std::env::var("JWT_SECRET").unwrap_or_else(|_| "change-me-in-production".to_string());
+        if let Ok(claims) = crate::common::auth::jwt::validate_jwt(token, &jwt_secret) {
+            // Query user from database by ID
+            let user_result = sqlx::query_as::<_, (String, String, Option<String>, Option<String>, Option<String>, Option<String>, i32)>(
+                "SELECT id, username, nickname, email, phone, avatar, status FROM sys_user WHERE id = $1 AND deleted_at IS NULL"
+            )
+            .bind(&claims.sub)
+            .fetch_optional(&state.pool)
+            .await;
+
+            if let Ok(Some(user)) = user_result {
+                return Json(serde_json::json!({
+                    "code": 200,
+                    "message": "获取用户信息成功",
+                    "data": {
+                        "id": user.0,
+                        "username": user.1,
+                        "nickname": user.2,
+                        "email": user.3,
+                        "phone": user.4,
+                        "avatar": user.5,
+                        "status": user.6,
+                        "roles": claims.roles,
+                        "permissions": claims.permissions
+                    }
+                }));
+            }
         }
+    }
+
+    Json(serde_json::json!({
+        "code": 401,
+        "message": "未授权",
+        "data": serde_json::Value::Null
     }))
 }

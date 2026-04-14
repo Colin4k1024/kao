@@ -10,6 +10,10 @@ use crate::features::monitoring::metrics as monitoring_metrics;
 use crate::middleware::logger::request_logger;
 use crate::middleware::cors::init_cors;
 use crate::middleware::activity_tracker::track_activity;
+use crate::middleware::auth::auth_middleware;
+use crate::middleware::rate_limit::login_rate_limit_middleware;
+use crate::middleware::security_headers::security_headers_middleware;
+use crate::middleware::swagger_protection::swagger_protection_middleware;
 use crate::common::middleware::openapi::setup_openapi_middleware;
 use crate::common::cache::redis::RedisCache;
 use crate::features::auth::routes::auth_routes;
@@ -52,7 +56,8 @@ pub fn create_app(
         // Prometheus metrics endpoint at root for easy scraping
         .route("/metrics", get(monitoring_metrics::get_metrics))
         // Auth routes at /api/v1 (login, register, profile, session)
-        .nest("/api/v1", auth_routes())
+        // Apply rate limiting to auth routes for login protection
+        .nest("/api/v1", auth_routes().layer(axum::middleware::from_fn(login_rate_limit_middleware())))
         // API v1 routes (users, departments, roles, menus, posts)
         .nest("/api/v1", user_routes())
         .nest("/api/v1", department_routes())
@@ -79,8 +84,14 @@ pub fn create_app(
         .layer(init_cors())
         // Apply request logging middleware to all routes
         .layer(axum::middleware::from_fn(request_logger))
+        // Apply authentication middleware for JWT validation
+        .layer(axum::middleware::from_fn_with_state(state.clone(), auth_middleware))
         // Apply activity tracking middleware for online user updates
         .layer(axum::middleware::from_fn(track_activity))
+        // Apply security headers middleware
+        .layer(axum::middleware::from_fn(security_headers_middleware))
+        // Apply Swagger protection middleware
+        .layer(axum::middleware::from_fn(swagger_protection_middleware))
         .with_state(state);
 
     // Apply OpenAPI/Swagger UI middleware (after state is set)

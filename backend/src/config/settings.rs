@@ -85,8 +85,7 @@ impl Settings {
                 log_level: env::var("RUST_LOG").unwrap_or_else(|_| "info".to_string()),
             },
             jwt: JwtSettings {
-                secret: env::var("JWT_SECRET")
-                    .unwrap_or_else(|_| "your-secret-key-change-in-production".to_string()),
+                secret: env::var("JWT_SECRET").expect("JWT_SECRET must be set in environment variables"),
                 access_token_expires_in: env::var("JWT_ACCESS_TOKEN_EXPIRES_IN")
                     .unwrap_or_else(|_| "3600".to_string())
                     .parse()
