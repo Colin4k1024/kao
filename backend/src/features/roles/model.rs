@@ -22,7 +22,7 @@ pub struct UpdateRoleRequest {
     pub dept_ids: Option<Vec<Uuid>>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct RoleResponse {
     pub id: Uuid,
     pub code: String,

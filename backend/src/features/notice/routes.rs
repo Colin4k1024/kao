@@ -1,8 +1,9 @@
 use axum::{
-  extract::{Path, State},
+  extract::{Path, Query, State},
   response::IntoResponse,
   Json,
 };
+use serde::Deserialize;
 use uuid::Uuid;
 
 use crate::{AppState, common::{auth::extractor::AuthUser, error::AppError, response::ApiResponse}};
@@ -11,6 +12,15 @@ use super::{
   model::{CreateNoticeRequest, UpdateNoticeRequest},
   service::NoticeService,
 };
+
+#[derive(Debug, Deserialize)]
+pub struct ListQueryParams {
+  pub page: Option<usize>,
+  pub page_size: Option<usize>,
+  pub notice_title: Option<String>,
+  pub notice_type: Option<String>,
+  pub notice_status: Option<String>,
+}
 
 pub fn notice_routes() -> axum::Router<crate::AppState> {
   axum::Router::new()
@@ -25,12 +35,24 @@ pub fn notice_routes() -> axum::Router<crate::AppState> {
 pub async fn list_notices(
   State(state): State<AppState>,
   _auth_user: AuthUser,
+  Query(params): Query<ListQueryParams>,
 ) -> Result<impl IntoResponse, AppError> {
   let service = NoticeService::new();
-  let notices = service.list_notices(&state.pool, None, None).await?;
+  let page = params.page.unwrap_or(1);
+  let page_size = params.page_size.unwrap_or(10);
+  let notices = service.list_notices(&state.pool, params.notice_type.as_deref(), params.notice_status.as_deref()).await?;
+  
+  // Simple pagination
+  let total = notices.len();
+  let start = (page - 1) * page_size;
+  let end = start + page_size;
+  let items: Vec<_> = notices.into_iter().skip(start).take(page_size).collect();
+  
   Ok(ApiResponse::success(serde_json::json!({
-      "items": notices,
-      "total": notices.len()
+      "items": items,
+      "total": total,
+      "page": page,
+      "pageSize": page_size
   })))
 }
 

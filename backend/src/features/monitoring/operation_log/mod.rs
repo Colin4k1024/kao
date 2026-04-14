@@ -26,7 +26,7 @@ pub struct OperationLog {
     pub execution_time: i64,
     pub create_time: String,
     pub ip_address: String,
-    pub user_agent: Option<String>,
+    pub location: Option<String>,
     pub status: i32,
 }
 
@@ -182,10 +182,12 @@ impl OperationLogService {
         // For simplicity, use a basic query - this won't work with dynamic params
         // Just return all logs for now
         let logs: Vec<OperationLog> = sqlx::query_as(
-            r#"SELECT id, user_id, username, module, action_type, method, path,
-               request_method, request_params, response_code, response_message,
-               execution_time, ip_address, user_agent, status, create_time
-               FROM sys_oper_log ORDER BY create_time DESC LIMIT $1 OFFSET $2"#
+            r#"SELECT id, user_id, username, title as module, business_type as action_type,
+               method, request_url as path, request_method, request_params,
+               0 as response_code, error_msg as response_message,
+               0 as execution_time, operate_time::text as create_time, ip_address,
+               location, operate_status as status
+               FROM sys_oper_log ORDER BY operate_time DESC LIMIT $1 OFFSET $2"#
         )
         .bind(page_size)
         .bind(offset)
@@ -208,10 +210,11 @@ impl OperationLogService {
     pub async fn get_operation_log_by_id(&self, id: Uuid) -> Result<Option<OperationLog>, sqlx::Error> {
         let log = sqlx::query_as(
             r#"
-            SELECT 
-                id, user_id, username, module, action_type, method, path,
-                request_method, request_params, response_code, response_message,
-                execution_time, ip_address, user_agent, status, create_time
+            SELECT id, user_id, username, title as module, business_type as action_type,
+               method, request_url as path, request_method, request_params,
+               0 as response_code, error_msg as response_message,
+               0 as execution_time, operate_time::text as create_time, ip_address,
+               location, operate_status as status
             FROM sys_oper_log
             WHERE id = $1
             "#,

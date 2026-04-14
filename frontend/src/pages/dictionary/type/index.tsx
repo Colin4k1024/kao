@@ -11,6 +11,7 @@ import {
   Popconfirm,
   Select,
 } from 'antd';
+import type { ColumnsType } from 'antd/es/table';
 import {
   PlusOutlined,
   EditOutlined,
@@ -18,55 +19,7 @@ import {
   ReloadOutlined,
   SearchOutlined,
 } from '@ant-design/icons';
-import request from '@/lib/api';
-import type { PageParams } from '@/types/api';
-
-// Dictionary type interface
-export interface DictionaryType {
-  id: number;
-  type_name: string;
-  type_code: string;
-  status: number;
-  description?: string;
-  created_at: string;
-  updated_at: string;
-}
-
-// API service
-export const dictionaryTypeApi = {
-  list(params: PageParams & { type_name?: string; type_code?: string }) {
-    return request.get<{ list: DictionaryType[]; total: number }>(
-      '/api/system/dictionary/types',
-      { params }
-    );
-  },
-  get(id: number) {
-    return request.get<DictionaryType>(`/api/system/dictionary/types/${id}`);
-  },
-  create(data: Partial<DictionaryType>) {
-    return request.post<DictionaryType>('/api/system/dictionary/types', data);
-  },
-  update(id: number, data: Partial<DictionaryType>) {
-    return request.put<DictionaryType>(`/api/system/dictionary/types/${id}`, data);
-  },
-  delete(id: number) {
-    return request.delete(`/api/system/dictionary/types/${id}`);
-  },
-  enable(id: number) {
-    return request.put(`/api/system/dictionary/types/${id}/enable`);
-  },
-  disable(id: number) {
-    return request.put(`/api/system/dictionary/types/${id}/disable`);
-  },
-};
-
-// Form interface
-interface DictionaryTypeForm {
-  type_name: string;
-  type_code: string;
-  status: number;
-  description?: string;
-}
+import { dictionaryTypeApi, DictionaryType } from '@/services/api/dictionary';
 
 // Dictionary Type Page Component
 export const DictionaryTypePage: React.FC = () => {
@@ -86,14 +39,15 @@ export const DictionaryTypePage: React.FC = () => {
     setLoading(true);
     try {
       const values = searchForm.getFieldsValue();
-      const params: PageParams = {
+      const params = {
         page: pagination.current,
         pageSize: pagination.pageSize,
-        keyword: values.type_name || values.type_code,
+        dictName: values.dictName,
+        dictType: values.dictType,
       };
       const data = await dictionaryTypeApi.list(params);
       setTypes(data.list);
-      setPagination({ ...pagination, total: data.total });
+      setPagination((prev) => ({ ...prev, total: data.total }));
     } catch (error) {
       message.error('获取字典类型列表失败');
     } finally {
@@ -106,13 +60,13 @@ export const DictionaryTypePage: React.FC = () => {
   }, [pagination.current, pagination.pageSize]);
 
   const handleSearch = () => {
-    setPagination({ ...pagination, current: 1 });
+    setPagination((prev) => ({ ...prev, current: 1 }));
     fetchTypes();
   };
 
   const handleReset = () => {
     searchForm.resetFields();
-    setPagination({ ...pagination, current: 1 });
+    setPagination((prev) => ({ ...prev, current: 1 }));
     fetchTypes();
   };
 
@@ -129,7 +83,7 @@ export const DictionaryTypePage: React.FC = () => {
     setIsModalVisible(true);
   };
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (id: string) => {
     try {
       await dictionaryTypeApi.delete(id);
       message.success('删除成功');
@@ -139,7 +93,7 @@ export const DictionaryTypePage: React.FC = () => {
     }
   };
 
-  const handleStatusChange = async (id: number, status: number) => {
+  const handleStatusChange = async (id: string, status: number) => {
     try {
       if (status === 1) {
         await dictionaryTypeApi.enable(id);
@@ -172,21 +126,21 @@ export const DictionaryTypePage: React.FC = () => {
 
   const columns: ColumnsType<DictionaryType> = [
     {
-      title: '类型名称',
-      dataIndex: 'type_name',
-      key: 'type_name',
+      title: '字典名称',
+      dataIndex: 'dictName',
+      key: 'dictName',
       width: 150,
     },
     {
-      title: '类型编码',
-      dataIndex: 'type_code',
-      key: 'type_code',
+      title: '字典类型',
+      dataIndex: 'dictType',
+      key: 'dictType',
       width: 150,
     },
     {
       title: '描述',
-      dataIndex: 'description',
-      key: 'description',
+      dataIndex: 'remark',
+      key: 'remark',
       ellipsis: true,
     },
     {
@@ -202,8 +156,8 @@ export const DictionaryTypePage: React.FC = () => {
     },
     {
       title: '创建时间',
-      dataIndex: 'created_at',
-      key: 'created_at',
+      dataIndex: 'createdAt',
+      key: 'createdAt',
       width: 180,
       render: (date: string) => new Date(date).toLocaleString('zh-CN'),
     },
@@ -233,10 +187,7 @@ export const DictionaryTypePage: React.FC = () => {
           <Button
             type="link"
             onClick={() =>
-              handleStatusChange(
-                record.id,
-                record.status === 1 ? 0 : 1
-              )
+              handleStatusChange(record.id, record.status === 1 ? 0 : 1)
             }
           >
             {record.status === 1 ? '禁用' : '启用'}
@@ -254,13 +205,12 @@ export const DictionaryTypePage: React.FC = () => {
             form={searchForm}
             layout="inline"
             onFinish={handleSearch}
-            initialValues={{ status: undefined }}
           >
-            <Form.Item label="类型名称" name="type_name">
-              <Input placeholder="请输入类型名称" />
+            <Form.Item label="字典名称" name="dictName">
+              <Input placeholder="请输入字典名称" />
             </Form.Item>
-            <Form.Item label="类型编码" name="type_code">
-              <Input placeholder="请输入类型编码" />
+            <Form.Item label="字典类型" name="dictType">
+              <Input placeholder="请输入字典类型" />
             </Form.Item>
             <Form.Item>
               <Space>
@@ -303,7 +253,7 @@ export const DictionaryTypePage: React.FC = () => {
           showSizeChanger: true,
           showTotal: (total) => `共 ${total} 条`,
           onChange: (page, pageSize) =>
-            setPagination({ ...pagination, current: page, pageSize }),
+            setPagination((prev) => ({ ...prev, current: page, pageSize })),
         }}
       />
       <Modal
@@ -315,20 +265,20 @@ export const DictionaryTypePage: React.FC = () => {
       >
         <Form form={form} layout="vertical">
           <Form.Item
-            name="type_name"
-            label="类型名称"
-            rules={[{ required: true, message: '请输入类型名称' }]}
+            name="dictName"
+            label="字典名称"
+            rules={[{ required: true, message: '请输入字典名称' }]}
           >
-            <Input placeholder="请输入类型名称" />
+            <Input placeholder="请输入字典名称" />
           </Form.Item>
           <Form.Item
-            name="type_code"
-            label="类型编码"
-            rules={[{ required: true, message: '请输入类型编码' }]}
+            name="dictType"
+            label="字典类型"
+            rules={[{ required: true, message: '请输入字典类型' }]}
           >
-            <Input placeholder="请输入类型编码" />
+            <Input placeholder="请输入字典类型" />
           </Form.Item>
-          <Form.Item name="description" label="描述">
+          <Form.Item name="remark" label="描述">
             <Input.TextArea rows={3} placeholder="请输入描述" />
           </Form.Item>
           <Form.Item
@@ -344,74 +294,6 @@ export const DictionaryTypePage: React.FC = () => {
         </Form>
       </Modal>
     </div>
-  );
-};
-
-// Export TypeFormModal as separate component
-export const TypeFormModal: React.FC<{
-  visible: boolean;
-  onCancel: () => void;
-  onFinish: () => void;
-  initialData?: DictionaryType;
-}> = ({ visible, onCancel, onFinish, initialData }) => {
-  const [form] = Form.useForm();
-
-  useEffect(() => {
-    if (initialData) {
-      form.setFieldsValue(initialData);
-    } else {
-      form.resetFields();
-    }
-  }, [initialData, form, visible]);
-
-  const handleOk = async () => {
-    try {
-      await form.validateFields();
-      onFinish();
-      form.resetFields();
-    } catch (error) {
-      console.error('Validation failed:', error);
-    }
-  };
-
-  return (
-    <Modal
-      title={initialData ? '编辑字典类型' : '新增字典类型'}
-      open={visible}
-      onOk={handleOk}
-      onCancel={onCancel}
-      width={500}
-    >
-      <Form form={form} layout="vertical">
-        <Form.Item
-          name="type_name"
-          label="类型名称"
-          rules={[{ required: true, message: '请输入类型名称' }]}
-        >
-          <Input placeholder="请输入类型名称" />
-        </Form.Item>
-        <Form.Item
-          name="type_code"
-          label="类型编码"
-          rules={[{ required: true, message: '请输入类型编码' }]}
-        >
-          <Input placeholder="请输入类型编码" />
-        </Form.Item>
-        <Form.Item name="description" label="描述">
-          <Input.TextArea rows={3} placeholder="请输入描述" />
-        </Form.Item>
-        <Form.Item
-          name="status"
-          label="状态"
-          rules={[{ required: true, message: '请选择状态' }]}
-        >
-          <Select>
-            <Select.Option value={1}>启用</Select.Option>
-            <Select.Option value={0}>禁用</Select.Option>
-          </Select>
-        </Form.Item>
-      </Form>
-    </Modal>
   );
 };
 

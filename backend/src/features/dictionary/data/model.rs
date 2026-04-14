@@ -27,7 +27,7 @@ pub struct UpdateDataRequest {
     pub remark: Option<String>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct DataResponse {
     pub id: Uuid,
     pub dict_sort: i32,

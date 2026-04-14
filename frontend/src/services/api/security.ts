@@ -4,6 +4,27 @@ import type { AxiosResponse } from 'axios';
 // Base URL for security monitoring API
 const BASE_URL = '/api/monitoring/security';
 
+// Auth-enabled axios instance for security endpoints
+const authApi = axios.create({
+  baseURL: BASE_URL,
+  timeout: 30000,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+// Add auth interceptor
+authApi.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('access_token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
 // Security scan check result
 export interface SecurityCheck {
   name: string;
@@ -108,7 +129,7 @@ export type SecurityScanType = 'configuration' | 'input-validation' | 'authentic
  */
 export async function fetchSecurityScan(): Promise<SecurityScanResult> {
   try {
-    const response: AxiosResponse<SecurityScanResult> = await axios.get(`${BASE_URL}/scan`);
+    const response: AxiosResponse<SecurityScanResult> = await authApi.get('/scan');
     return response.data;
   } catch (error) {
     console.error('Failed to fetch security scan:', error);
@@ -123,7 +144,7 @@ export async function fetchSecurityScan(): Promise<SecurityScanResult> {
  */
 export async function fetchSecurityScanByType(type: SecurityScanType): Promise<SecurityScanResult> {
   try {
-    const response: AxiosResponse<SecurityScanResult> = await axios.get(`${BASE_URL}/scan/${type}`);
+    const response: AxiosResponse<SecurityScanResult> = await authApi.get(`/scan/${type}`);
     return response.data;
   } catch (error) {
     console.error(`Failed to fetch ${type} security scan:`, error);
@@ -137,7 +158,7 @@ export async function fetchSecurityScanByType(type: SecurityScanType): Promise<S
  */
 export async function fetchSecurityEvents(): Promise<SecurityEventsResponse> {
   try {
-    const response: AxiosResponse<SecurityEventsResponse> = await axios.get(`${BASE_URL}/events`);
+    const response: AxiosResponse<SecurityEventsResponse> = await authApi.get('/events');
     return response.data;
   } catch (error) {
     console.error('Failed to fetch security events:', error);
@@ -152,7 +173,7 @@ export async function fetchSecurityEvents(): Promise<SecurityEventsResponse> {
  */
 export async function fetchPasswordHealth(userId: string): Promise<PasswordHealth> {
   try {
-    const response: AxiosResponse<PasswordHealth> = await axios.get(`${BASE_URL}/password-health/${userId}`);
+    const response: AxiosResponse<PasswordHealth> = await authApi.get(`/password-health/${userId}`);
     return response.data;
   } catch (error) {
     console.error(`Failed to fetch password health for user ${userId}:`, error);

@@ -31,7 +31,7 @@ pub struct MenuResponse {
     pub updated_at: chrono::DateTime<chrono::Utc>,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MenuTreeItem {
     pub id: Uuid,
     pub parent_id: Option<Uuid>,

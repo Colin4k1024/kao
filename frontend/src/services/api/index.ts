@@ -164,3 +164,35 @@ export async function deleteMenu(id: string) {
   });
   return response;
 }
+
+// Config APIs
+export async function queryConfigs(params?: { page?: number; pageSize?: number; config_key?: string; config_name?: string }) {
+  const searchParams = params
+    ? `?page=${params.page || 1}&pageSize=${params.pageSize || 10}${params.config_key ? `&config_key=${params.config_key}` : ''}${params.config_name ? `&config_name=${params.config_name}` : ''}`
+    : '';
+  const response = await request<{ data: { items: any[]; total: number } }>(`/config${searchParams}`);
+  return response;
+}
+
+export async function createConfig(data: Record<string, unknown>) {
+  const response = await request<{ data: any }>('/config', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+  return response;
+}
+
+export async function updateConfig(config_key: string, data: Record<string, unknown>) {
+  const response = await request<{ data: any }>(`/config/${config_key}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  });
+  return response;
+}
+
+export async function deleteConfig(config_key: string) {
+  const response = await request<{ data: any }>(`/config/${config_key}`, {
+    method: 'DELETE',
+  });
+  return response;
+}

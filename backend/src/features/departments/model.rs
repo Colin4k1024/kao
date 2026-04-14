@@ -42,7 +42,7 @@ pub struct DepartmentResponse {
     pub updated_at: chrono::DateTime<chrono::Utc>,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DepartmentTreeItem {
     pub id: Uuid,
     pub parent_id: Option<Uuid>,

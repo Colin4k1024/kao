@@ -18,9 +18,9 @@ const RoleList: React.FC = () => {
   const fetchRoles = async () => {
     setLoading(true);
     try {
-      const data = await roleService.list({ page: pagination.current, pageSize: pagination.pageSize });
-      setRoles(data);
-      setPagination({ ...pagination, total: data.length });
+      const data = await roleService.list();
+      setRoles(data || []);
+      setPagination({ ...pagination, total: (data || []).length });
     } catch (error) {
       message.error('获取角色列表失败');
     } finally {

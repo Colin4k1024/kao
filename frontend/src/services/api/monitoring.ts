@@ -2,7 +2,28 @@ import axios from 'axios';
 import type { AxiosResponse } from 'axios';
 
 // Base URL for monitoring API
-const BASE_URL = '/api/system/monitor';
+const BASE_URL = '/api/monitoring';
+
+// Auth-enabled axios instance for monitoring endpoints that require authentication
+const authApi = axios.create({
+  baseURL: BASE_URL,
+  timeout: 30000,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+// Add auth interceptor
+authApi.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('access_token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
 
 // Metrics API
 export interface MetricsResponse {
@@ -26,8 +47,8 @@ export async function fetchMetrics(): Promise<MetricsResponse> {
         'Content-Type': 'text/plain; charset=utf-8',
       },
     });
-    
-    // Parse Prometheus format - simplified parser
+
+    const text = response.data;
     const metrics: MetricsResponse = {
       http_requests_total: 0,
       http_request_duration_seconds_sum: 0,
@@ -40,8 +61,58 @@ export async function fetchMetrics(): Promise<MetricsResponse> {
       memory_total_bytes: 0,
       timestamp: new Date().toISOString(),
     };
-    
-    // Simple mock for now
+
+    // Parse Prometheus text format
+    // Lines can be: comments (#), help lines, type lines, or metric lines
+    const lines = text.split('\n');
+
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith('#')) continue;
+
+      // Metric line format: metric_name{labels} value
+      const match = trimmed.match(/^([a-zA-Z_][a-zA-Z0-9_]*)(?:\{[^}]*\})?\s+([0-9.eE+-]+)/);
+      if (!match) continue;
+
+      const [, metricName, valueStr] = match;
+      const value = parseFloat(valueStr);
+
+      switch (metricName) {
+        case 'http_requests_total':
+          metrics.http_requests_total = value;
+          break;
+        case 'http_request_duration_seconds_sum':
+          metrics.http_request_duration_seconds_sum = value;
+          break;
+        case 'http_request_duration_seconds_bucket':
+          // Parse bucket with le (less than or equal) label
+          const leMatch = trimmed.match(/le="([^"]+)"/);
+          if (leMatch) {
+            metrics.http_request_duration_seconds_bucket.push([leMatch[1], value]);
+          }
+          break;
+        case 'database_connections_active':
+          metrics.database_connections_active = value;
+          break;
+        case 'database_connections_idle':
+          metrics.database_connections_idle = value;
+          break;
+        case 'database_connections_total':
+          metrics.database_connections_total = value;
+          break;
+        case 'process_cpu_seconds_total':
+          // Convert to percentage (assuming 1 minute window)
+          metrics.cpu_usage_percent = value * 100;
+          break;
+        case 'process_resident_memory_bytes':
+          metrics.memory_used_bytes = value;
+          break;
+        case 'node_memory_MemTotal_bytes':
+          metrics.memory_total_bytes = value;
+          break;
+      }
+    }
+
     return metrics;
   } catch (error) {
     console.error('Failed to fetch metrics:', error);
@@ -113,8 +184,8 @@ export async function fetchOperationLogs(
   params?: OperationLogQueryParams
 ): Promise<OperationLogListResponse> {
   try {
-    const response = await axios.get<OperationLogListResponse>(
-      `${BASE_URL}/oper/logs`,
+    const response = await authApi.get<OperationLogListResponse>(
+      `/oper/logs`,
       { params }
     );
     return response.data;
@@ -126,7 +197,7 @@ export async function fetchOperationLogs(
 
 export async function createOperationLog(data: Partial<OperationLog>): Promise<void> {
   try {
-    await axios.post(`${BASE_URL}/oper/logs`, data);
+    await authApi.post(`/oper/logs`, data);
   } catch (error) {
     console.error('Failed to create operation log:', error);
     throw error;
@@ -135,7 +206,7 @@ export async function createOperationLog(data: Partial<OperationLog>): Promise<v
 
 export async function getOperationLog(id: string): Promise<OperationLog> {
   try {
-    const response = await axios.get<OperationLog>(`${BASE_URL}/oper/logs/${id}`);
+    const response = await authApi.get<OperationLog>(`/oper/logs/${id}`);
     return response.data;
   } catch (error) {
     console.error('Failed to get operation log:', error);
@@ -145,7 +216,7 @@ export async function getOperationLog(id: string): Promise<OperationLog> {
 
 export async function deleteOperationLog(id: string): Promise<void> {
   try {
-    await axios.delete(`${BASE_URL}/oper/logs/${id}`);
+    await authApi.delete(`/oper/logs/${id}`);
   } catch (error) {
     console.error('Failed to delete operation log:', error);
     throw error;
@@ -186,8 +257,8 @@ export async function fetchLoginLogs(
   params?: LoginLogQueryParams
 ): Promise<LoginLogListResponse> {
   try {
-    const response = await axios.get<LoginLogListResponse>(
-      `${BASE_URL}/login/logs`,
+    const response = await authApi.get<LoginLogListResponse>(
+      `/login/logs`,
       { params }
     );
     return response.data;
@@ -199,7 +270,7 @@ export async function fetchLoginLogs(
 
 export async function getLoginLog(id: string): Promise<LoginLog> {
   try {
-    const response = await axios.get<LoginLog>(`${BASE_URL}/login/logs/${id}`);
+    const response = await authApi.get<LoginLog>(`/login/logs/${id}`);
     return response.data;
   } catch (error) {
     console.error('Failed to get login log:', error);
@@ -228,8 +299,8 @@ export interface OnlineUsersResponse {
 
 export async function fetchOnlineUsers(): Promise<OnlineUsersResponse> {
   try {
-    const response = await axios.get<OnlineUsersResponse>(
-      `${BASE_URL}/online/users`
+    const response = await authApi.get<OnlineUsersResponse>(
+      `/online/users`
     );
     return response.data;
   } catch (error) {
@@ -240,7 +311,7 @@ export async function fetchOnlineUsers(): Promise<OnlineUsersResponse> {
 
 export async function forceLogout(sessionId: string, userId: string, reason?: string): Promise<void> {
   try {
-    await axios.post(`${BASE_URL}/online/users/force-logout`, {
+    await authApi.post(`/online/users/force-logout`, {
       session_id: sessionId,
       user_id: userId,
       reason,

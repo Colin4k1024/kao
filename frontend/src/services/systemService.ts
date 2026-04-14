@@ -85,110 +85,110 @@ export interface Menu {
 // 用户服务
 export const userService = {
   list(params: PageParams & { username?: string; status?: number }) {
-    return request.get<{ list: User[]; total: number; page: number; pageSize: number }>('/api/system/users', { params });
+    return request.get<{ list: User[]; total: number; page: number; pageSize: number }>('/api/v1/users', { params });
   },
   get(id: string) {
-    return request.get<User>(`/api/system/users/${id}`);
+    return request.get<User>(`/api/v1/users/${id}`);
   },
   create(data: Partial<User>) {
-    return request.post<User>('/api/system/users', data);
+    return request.post<User>('/api/v1/users', data);
   },
   update(id: string, data: Partial<User>) {
-    return request.put<User>(`/api/system/users/${id}`, data);
+    return request.put<User>(`/api/v1/users/${id}`, data);
   },
   delete(id: string) {
-    return request.delete(`/api/system/users/${id}`);
+    return request.delete(`/api/v1/users/${id}`);
   },
   resetPassword(id: string) {
-    return request.put(`/api/system/users/${id}/reset-password`);
+    return request.put(`/api/v1/users/${id}/reset-password`);
   },
   assignRoles(id: string, roleIds: string[]) {
-    return request.put(`/api/system/users/${id}/roles`, roleIds);
+    return request.put(`/api/v1/users/${id}/roles`, roleIds);
   },
 };
 
 // 部门服务
 export const departmentService = {
   list(params?: PageParams) {
-    return request.get<Department[]>('/api/system/departments', { params });
+    return request.get<Department[]>('/api/v1/departments', { params });
   },
   tree() {
-    return request.get<Department[]>('/api/system/departments/tree');
+    return request.get<Department[]>('/api/v1/departments/tree');
   },
   get(id: string) {
-    return request.get<Department>(`/api/system/departments/${id}`);
+    return request.get<Department>(`/api/v1/departments/${id}`);
   },
   create(data: Partial<Department>) {
-    return request.post<Department>('/api/system/departments', data);
+    return request.post<Department>('/api/v1/departments', data);
   },
   update(id: string, data: Partial<Department>) {
-    return request.put<Department>(`/api/system/departments/${id}`, data);
+    return request.put<Department>(`/api/v1/departments/${id}`, data);
   },
   delete(id: string) {
-    return request.delete(`/api/system/departments/${id}`);
+    return request.delete(`/api/v1/departments/${id}`);
   },
 };
 
 // 岗位服务
 export const postService = {
   list(params?: PageParams) {
-    return request.get<Post[]>('/api/system/posts', { params });
+    return request.get<Post[]>('/api/v1/posts', { params });
   },
   get(id: string) {
-    return request.get<Post>(`/api/system/posts/${id}`);
+    return request.get<Post>(`/api/v1/posts/${id}`);
   },
   create(data: Partial<Post>) {
-    return request.post<Post>('/api/system/posts', data);
+    return request.post<Post>('/api/v1/posts', data);
   },
   update(id: string, data: Partial<Post>) {
-    return request.put<Post>(`/api/system/posts/${id}`, data);
+    return request.put<Post>(`/api/v1/posts/${id}`, data);
   },
   delete(id: string) {
-    return request.delete(`/api/system/posts/${id}`);
+    return request.delete(`/api/v1/posts/${id}`);
   },
 };
 
 // 角色服务
 export const roleService = {
   list(params?: PageParams) {
-    return request.get<Role[]>('/api/system/roles', { params });
+    return request.get<Role[]>('/api/v1/roles', { params });
   },
   get(id: string) {
-    return request.get<Role>(`/api/system/roles/${id}`);
+    return request.get<Role>(`/api/v1/roles/${id}`);
   },
   create(data: Partial<Role>) {
-    return request.post<Role>('/api/system/roles', data);
+    return request.post<Role>('/api/v1/roles', data);
   },
   update(id: string, data: Partial<Role>) {
-    return request.put<Role>(`/api/system/roles/${id}`, data);
+    return request.put<Role>(`/api/v1/roles/${id}`, data);
   },
   delete(id: string) {
-    return request.delete(`/api/system/roles/${id}`);
+    return request.delete(`/api/v1/roles/${id}`);
   },
   assignMenus(id: string, menuIds: string[]) {
-    return request.put(`/api/system/roles/${id}/menus`, menuIds);
+    return request.put(`/api/v1/roles/${id}/menus`, menuIds);
   },
 };
 
 // 菜单服务
 export const menuService = {
   list(params?: PageParams) {
-    return request.get<Menu[]>('/api/system/menus', { params });
+    return request.get<Menu[]>('/api/v1/menus', { params });
   },
   tree() {
-    return request.get<Menu[]>('/api/system/menus/tree');
+    return request.get<Menu[]>('/api/v1/menus');
   },
   get(id: string) {
-    return request.get<Menu>(`/api/system/menus/${id}`);
+    return request.get<Menu>(`/api/v1/menus/${id}`);
   },
   create(data: Partial<Menu>) {
-    return request.post<Menu>('/api/system/menus', data);
+    return request.post<Menu>('/api/v1/menus', data);
   },
   update(id: string, data: Partial<Menu>) {
-    return request.put<Menu>(`/api/system/menus/${id}`, data);
+    return request.put<Menu>(`/api/v1/menus/${id}`, data);
   },
   delete(id: string) {
-    return request.delete(`/api/system/menus/${id}`);
+    return request.delete(`/api/v1/menus/${id}`);
   },
 };
 

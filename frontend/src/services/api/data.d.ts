@@ -87,3 +87,18 @@ export type MenuNode = {
   path?: string;
   children?: MenuNode[];
 };
+
+export type ConfigItem = {
+  id: string;
+  config_key: string;
+  config_name: string;
+  config_value: string;
+  config_type: string;
+  is_encrypt: string;
+  status: number;
+  remark?: string;
+  created_by?: string;
+  updated_by?: string;
+  created_at: string;
+  updated_at: string;
+};

@@ -1,186 +1,91 @@
-import { useState, useEffect } from 'react';
-import {
-  Card,
-  Table,
-  Tag,
-  Space,
-  Button,
-  message,
-  Form,
-  Input,
-  Select,
-  Modal,
-  Tooltip,
-  Popconfirm,
-} from 'antd';
-import {
-  DownloadOutlined,
-  ReloadOutlined,
-} from '@ant-design/icons';
-import type { TableRowSelection, ColumnsType } from 'antd/es/table/interface';
+import { ReloadOutlined } from '@ant-design/icons';
+import { ProColumns, ProTable } from '@ant-design/pro-components';
+import { ActionType } from '@ant-design/pro-components';
+import { App, Popconfirm, Tag, Tooltip, Button } from 'antd';
+import React, { useRef } from 'react';
+import * as api from '@/services/api/monitoring';
+import type { OnlineUser } from '@/services/api/monitoring';
 
-import {
-  fetchOnlineUsers,
-  OnlineUser,
-  forceLogout,
-} from '@/services/api/monitoring';
+const OnlineUserList: React.FC = () => {
+  const actionRef = useRef<ActionType>();
+  const { message } = App.useApp();
 
-const OnlineUserList = () => {
-  const [users, setUsers] = useState<OnlineUser[]>([]);
-  const [total, setTotal] = useState(0);
-  const [loading, setLoading] = useState(false);
-  const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
-  const [searchForm] = Form.useForm();
-
-  const [forceLogoutModal, setForceLogoutModal] = useState(false);
-  const [userToLogout, setUserToLogout] = useState<{ session_id: string; user_id: string } | null>(null);
-  const [logoutReason, setLogoutReason] = useState('');
-
-  const loadData = async () => {
-    setLoading(true);
+  const handleForceLogout = async (record: OnlineUser) => {
     try {
-      const data = await fetchOnlineUsers();
-      setUsers(data.list);
-      setTotal(data.total);
-    } catch (error) {
-      console.error('Failed to load online users:', error);
-      message.error('Failed to load online users');
-    } finally {
-      setLoading(false);
+      await api.forceLogout(record.session_id, record.user_id, '管理员手动踢出');
+      message.success('强制下线成功');
+      actionRef.current?.reload();
+    } catch (error: any) {
+      message.error(error?.response?.data?.message || '强制下线失败');
     }
   };
 
-  useEffect(() => {
-    loadData();
-
-    // Auto-refresh every 15 seconds
-    const interval = setInterval(() => {
-      loadData();
-    }, 15000);
-
-    return () => clearInterval(interval);
-  }, []);
-
-  const handleSearch = (values: any) => {
-    // In future, add search API
-    console.log('Search values:', values);
-  };
-
-  const handleReset = () => {
-    searchForm.resetFields();
-    loadData();
-  };
-
-  const handleForceLogout = (record: OnlineUser) => {
-    setUserToLogout({
-      session_id: record.session_id,
-      user_id: record.user_id,
-    });
-    setLogoutReason('');
-    setForceLogoutModal(true);
-  };
-
-  const handleConfirmLogout = async () => {
-    if (!userToLogout) return;
-
-    try {
-      await forceLogout(
-        userToLogout.session_id,
-        userToLogout.user_id,
-        logoutReason || 'Manual logout by admin'
-      );
-      message.success('User logged out successfully');
-      setForceLogoutModal(false);
-      setUserToLogout(null);
-      loadData();
-    } catch (error) {
-      message.error('Failed to force logout user');
-    }
-  };
-
-  const handleDeleteSelected = async () => {
-    if (selectedRowKeys.length === 0) {
-      message.warning('Please select users to remove');
-      return;
-    }
-
-    try {
-      await Promise.all(
-        selectedRowKeys.map((key) => {
-          const user = users.find((u) => u.session_id === key);
-          if (user) {
-            return forceLogout(user.session_id, user.user_id, 'Removed from active session list');
-          }
-          return Promise.resolve();
-        })
-      );
-      message.success('Selected users removed from session list');
-      setSelectedRowKeys([]);
-      loadData();
-    } catch (error) {
-      message.error('Failed to remove selected users');
-    }
-  };
-
-  const columns: ColumnsType<OnlineUser> = [
+  const columns: ProColumns<OnlineUser>[] = [
     {
-      title: 'Session ID',
-      dataIndex: 'session_id',
-      key: 'session_id',
-      width: 200,
-    },
-    {
-      title: 'Username',
+      title: '用户名',
       dataIndex: 'username',
       key: 'username',
+      width: 120,
     },
     {
-      title: 'Department',
+      title: '部门',
       dataIndex: 'dept_name',
       key: 'dept_name',
+      width: 120,
+      hideInSearch: true,
     },
     {
-      title: 'IP Address',
+      title: 'IP地址',
       dataIndex: 'ip_address',
       key: 'ip_address',
+      width: 140,
     },
     {
-      title: 'User Agent',
+      title: '用户代理',
       dataIndex: 'user_agent',
       key: 'user_agent',
       ellipsis: true,
+      hideInSearch: true,
+      hideInTable: true,
     },
     {
-      title: 'Status',
+      title: '状态',
       dataIndex: 'status',
       key: 'status',
-      render: (status: number) => (
-        <Tag color={status === 1 ? 'success' : 'default'}>
-          {status === 1 ? 'Active' : 'Force Logged Out'}
+      width: 100,
+      render: (_, record) => (
+        <Tag color={record.status === 1 ? 'success' : 'default'}>
+          {record.status === 1 ? '在线' : '已下线'}
         </Tag>
       ),
     },
     {
-      title: 'Last Activity',
+      title: '最后活动',
       dataIndex: 'last_activity_time',
       key: 'last_activity_time',
+      width: 180,
+      valueType: 'dateTime',
+      hideInSearch: true,
     },
     {
-      title: 'Expire Time',
+      title: '过期时间',
       dataIndex: 'expire_time',
       key: 'expire_time',
+      width: 180,
+      valueType: 'dateTime',
+      hideInSearch: true,
     },
     {
-      title: 'Actions',
-      key: 'actions',
-      width: 120,
-      render: (_: any, record: OnlineUser) => (
-        <Tooltip title="Force Logout">
+      title: '操作',
+      valueType: 'option',
+      width: 100,
+      render: (_, record) => (
+        <Tooltip title="强制下线">
           <Popconfirm
-            title="Are you sure to force logout this user?"
+            title="确定强制下线此用户?"
             onConfirm={() => handleForceLogout(record)}
-            okText="Yes"
-            cancelText="No"
+            okText="确定"
+            cancelText="取消"
           >
             <Button danger size="small" icon={<ReloadOutlined />} />
           </Popconfirm>
@@ -189,118 +94,27 @@ const OnlineUserList = () => {
     },
   ];
 
-  const rowSelection: TableRowSelection<OnlineUser> = {
-    selectedRowKeys,
-    onChange: (selectedRowKeys: React.Key[]) => {
-      setSelectedRowKeys(selectedRowKeys);
-    },
-  };
-
   return (
-    <Card
-      title="Online Users"
-      extra={
-        <Space>
-          <Button
-            type="primary"
-            icon={<ReloadOutlined />}
-            onClick={() => loadData()}
-            loading={loading}
-          >
-            Refresh
-          </Button>
-          <Button
-            danger
-            onClick={handleDeleteSelected}
-            disabled={selectedRowKeys.length === 0}
-          >
-            Remove Selected
-          </Button>
-          <Button icon={<DownloadOutlined />}>
-            Export
-          </Button>
-        </Space>
-      }
-    >
-      {/* Search Form */}
-      <Form
-        form={searchForm}
-        layout="inline"
-        onFinish={handleSearch}
-        style={{ marginBottom: 16 }}
-      >
-        <Form.Item name="username" label="Username">
-          <Input placeholder="Username" />
-        </Form.Item>
-        <Form.Item name="ip_address" label="IP Address">
-          <Input placeholder="IP Address" />
-        </Form.Item>
-        <Form.Item name="status" label="Status">
-          <Select placeholder="Status" allowClear>
-            <Select.Option value={1}>Active</Select.Option>
-            <Select.Option value={0}>Force Logged Out</Select.Option>
-          </Select>
-        </Form.Item>
-        <Form.Item>
-          <Space>
-            <Button type="primary" htmlType="submit">
-              Search
-            </Button>
-            <Button htmlType="button" onClick={handleReset}>
-              Reset
-            </Button>
-          </Space>
-        </Form.Item>
-      </Form>
-
-      {/* Table */}
-      <Table
-        columns={columns}
-        dataSource={users}
-        rowSelection={rowSelection}
-        pagination={{
-          total,
-          showSizeChanger: true,
-          showQuickJumper: true,
-          showTotal: (total: number) => `Total ${total} users`,
-        }}
-        rowKey="session_id"
-        loading={loading}
-      />
-
-      {/* Force Logout Modal */}
-      <Modal
-        title="Force Logout User"
-        open={forceLogoutModal}
-        onCancel={() => {
-          setForceLogoutModal(false);
-          setUserToLogout(null);
-        }}
-        onOk={handleConfirmLogout}
-        okText="Force Logout"
-        cancelText="Cancel"
-        okButtonProps={{ danger: true }}
-      >
-        <Form form={searchForm} layout="vertical">
-          <Form.Item label="Username">
-            {userToLogout
-              ? users.find((u) => u.session_id === userToLogout.session_id)?.username
-              : '-'}
-          </Form.Item>
-          <Form.Item label="Session ID">
-            {userToLogout?.session_id}
-          </Form.Item>
-          <Form.Item label="Reason">
-            <Input.TextArea
-              value={logoutReason}
-              onChange={(e) => setLogoutReason(e.target.value)}
-              placeholder="Enter logout reason"
-              rows={3}
-            />
-          </Form.Item>
-        </Form>
-      </Modal>
-    </Card>
+    <ProTable<OnlineUser>
+      columns={columns}
+      actionRef={actionRef}
+      request={async (params) => {
+        const response = await api.fetchOnlineUsers();
+        let data = response.list || [];
+        if (params.username) {
+          data = data.filter(u => u.username.includes(params.username));
+        }
+        return {
+          data,
+          total: response.total || 0,
+          success: true,
+        };
+      }}
+      rowKey="session_id"
+      search={false}
+      pagination={{ pageSize: 10 }}
+      toolBarRender={() => []}
+    />
   );
 };
 

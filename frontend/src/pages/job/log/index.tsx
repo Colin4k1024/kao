@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   Table,
   Button,
@@ -25,6 +26,8 @@ import { jobApi, JobLog } from '@/services/api/job';
 
 // JobLog Page Component
 export const JobLogPage: React.FC = () => {
+  const [searchParams] = useSearchParams();
+  const jobIdFromUrl = searchParams.get('job_id');
   const [logs, setJobLogs] = useState<JobLog[]>([]);
   const [loading, setLoading] = useState(false);
   const [pagination, setPagination] = useState({
@@ -45,6 +48,7 @@ export const JobLogPage: React.FC = () => {
         pageSize: pagination.pageSize,
         job_name: values.job_name,
         execute_status: values.execute_status,
+        job_id: jobIdFromUrl ? parseInt(jobIdFromUrl) : undefined,
       };
       const data = await jobApi.logs(params);
       setJobLogs(data.list);

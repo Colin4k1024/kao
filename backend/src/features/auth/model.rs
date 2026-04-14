@@ -44,6 +44,7 @@ fn validate_password_complexity(password: &str) -> Result<(), validator::Validat
 #[derive(Debug, Serialize)]
 pub struct LoginResponse {
     pub token: String,
+    pub session_id: Option<String>,
     pub userInfo: UserProfile,
 }
 

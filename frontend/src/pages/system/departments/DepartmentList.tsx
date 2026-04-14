@@ -21,8 +21,8 @@ const DepartmentList: React.FC = () => {
   const fetchDepartments = async () => {
     setLoading(true);
     try {
-      const data = await request.get<Department[]>('/api/system/departments/tree');
-      setDepartments(data);
+      const response = await request.get<{ data: Department[] }>('/api/v1/departments');
+      setDepartments(response.data || []);
     } catch (error) {
       console.error('获取部门列表失败', error);
     } finally {

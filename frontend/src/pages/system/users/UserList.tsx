@@ -16,10 +16,10 @@ const UserList: React.FC = () => {
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      const data = await request.get<{ list: User[]; total: number }>('/api/system/users', {
-        params: { page: pagination.current, pageSize: pagination.pageSize },
+      const data = await request.get<{ items: User[]; total: number }>('/api/v1/users', {
+        params: { page: pagination.current, page_size: pagination.pageSize },
       });
-      setUsers(data.list);
+      setUsers(data.items || []);
       setPagination({ ...pagination, total: data.total });
     } catch (error) {
       message.error('获取用户列表失败');

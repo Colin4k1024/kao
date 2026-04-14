@@ -20,7 +20,6 @@ pub struct LoginLog {
     pub status: i32,
     pub message: Option<String>,
     pub login_time: String,
-    pub create_time: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -101,8 +100,9 @@ impl LoginLogService {
 
         // Simplified query without dynamic WHERE clause (needs refactoring for full filter support)
         let logs: Vec<LoginLog> = sqlx::query_as(
-            r#"SELECT id, user_id, username, ip_address, user_agent, status, message, create_time
-               FROM sys_login_log ORDER BY create_time DESC LIMIT $1 OFFSET $2"#
+            r#"SELECT id, user_id, username, ip_address, browser as user_agent, status, msg as message,
+               login_time::text as login_time
+               FROM sys_login_log ORDER BY login_time DESC LIMIT $1 OFFSET $2"#
         )
         .bind(page_size)
         .bind(offset)
@@ -125,7 +125,8 @@ impl LoginLogService {
     pub async fn get_login_log_by_id(&self, id: Uuid) -> Result<Option<LoginLog>, sqlx::Error> {
         let log = sqlx::query_as(
             r#"
-            SELECT id, user_id, username, ip_address, user_agent, status, message, create_time
+            SELECT id, user_id, username, ip_address, browser as user_agent, status, msg as message,
+               login_time::text as login_time
             FROM sys_login_log
             WHERE id = $1
             "#,

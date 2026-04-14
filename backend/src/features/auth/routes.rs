@@ -128,9 +128,11 @@ pub async fn login(
     }
 
     Ok(ApiResponse::success(serde_json::json!({
-        "token": response.token,
-        "session_id": session_id,
-        "userInfo": response.userInfo
+        "access_token": response.token,
+        "refresh_token": "",
+        "token_type": "Bearer",
+        "expires_in": 86400,
+        "user": response.userInfo
     })))
 }
 

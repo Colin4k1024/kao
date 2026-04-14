@@ -20,6 +20,7 @@ import {
   DeleteOutlined,
   ReloadOutlined,
   SearchOutlined,
+  FileTextOutlined,
 } from '@ant-design/icons';
 import type { ColumnType, ColumnsType } from 'antd/es/table';
 import request from '@/lib/api';
@@ -217,16 +218,25 @@ export const JobPage: React.FC = () => {
     {
       title: '操作',
       key: 'action',
-      width: 250,
+      width: 300,
       fixed: 'right',
       render: (_a: any, record: Job) => (
         <Space size="small">
           <Button
             type="link"
+            icon={<FileTextOutlined />}
+            onClick={() => {
+              window.location.href = '/job/log?job_id=' + record.id;
+            }}
+          >
+            日志
+          </Button>
+          <Button
+            type="link"
             icon={<PlusOutlined />}
             onClick={() => handleRunOnce(record.id)}
           >
-            执行一次
+            执行
           </Button>
           <Button
             type="link"
@@ -334,7 +344,7 @@ export const JobPage: React.FC = () => {
             label="任务编码"
             rules={[{ required: true, message: '请输入任务编码' }]}
           >
-            <Input placeholder="请输入任务编码，如：sys.job.test" />
+            <Input placeholder="请输入任务编码，如：sys.job.test" disabled={!!editingJob} />
           </Form.Item>
           <Form.Item
             name="job_group"

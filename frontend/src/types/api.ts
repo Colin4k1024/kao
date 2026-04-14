@@ -40,8 +40,11 @@ export interface LoginParams {
 }
 
 export interface LoginResult {
-  token: string
-  userInfo: UserInfo
+  access_token: string
+  refresh_token: string
+  token_type: string
+  expires_in: number
+  user: UserInfo
 }
 
 export interface UserInfo {

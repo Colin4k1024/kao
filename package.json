@@ -10,7 +10,11 @@
     "test": "playwright test",
     "test:headed": "playwright test --headed",
     "test:ui": "playwright test --ui",
-    "test:report": "playwright show-report"
+    "test:report": "playwright show-report",
+    "test:smoke": "playwright test smoke-pages.spec.ts",
+    "test:login": "playwright test login.spec.ts",
+    "test:basic": "playwright test basic.spec.ts",
+    "test:home": "playwright test home.spec.ts"
   },
   "repository": {
     "type": "git",

@@ -16,6 +16,8 @@ import JobPage from '@/pages/job/index';
 import JobLogPage from '@/pages/job/log/index';
 import SecurityMonitoring from '@/pages/monitoring/security';
 import OnlineUser from '@/pages/monitoring/online-user';
+import OperationLog from '@/pages/monitoring/operation-log';
+import LoginLog from '@/pages/monitoring/login-log';
 
 const AppRoutes: React.FC = () => {
   const isAuthenticated = !!localStorage.getItem('access_token');
@@ -50,6 +52,8 @@ const AppRoutes: React.FC = () => {
           <Route path="monitoring">
             <Route path="security" element={<SecurityMonitoring />} />
             <Route path="online-user" element={<OnlineUser />} />
+            <Route path="operation-log" element={<OperationLog />} />
+            <Route path="login-log" element={<LoginLog />} />
           </Route>
         </Route>
       </Routes>

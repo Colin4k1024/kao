@@ -19,7 +19,7 @@ pub struct OnlineUser {
     pub ip_address: String,
     pub user_agent: Option<String>,
     pub login_time: String,
-    pub last_activity_time: String,
+    pub last_activity_time: Option<String>,
     pub expire_time: String,
     pub status: i32, // 0: active, 1: force logged out
 }
@@ -52,23 +52,23 @@ impl OnlineUserService {
 
         let users: Vec<OnlineUser> = sqlx::query_as(
             r#"
-            SELECT 
+            SELECT
                 session_id,
                 user_id,
                 username,
-                dept_name,
+                login_location as dept_name,
                 ip_address,
-                user_agent,
-                login_time,
-                last_activity_time,
-                expire_time,
-                status
+                browser as user_agent,
+                login_time::text,
+                last_access_time::text as last_activity_time,
+                expire_time::text,
+                1 as status
             FROM sys_online_user
             WHERE expire_time > $1
-            ORDER BY last_activity_time DESC
+            ORDER BY last_access_time DESC
             "#,
         )
-        .bind(now.to_rfc3339())
+        .bind(now)
         .fetch_all(&self.pool)
         .await?;
 
@@ -80,14 +80,10 @@ impl OnlineUserService {
     pub async fn force_logout(&self, request: ForceLogoutRequest) -> Result<bool, sqlx::Error> {
         let rows_affected = sqlx::query(
             r#"
-            UPDATE sys_online_user
-            SET status = $1, remark = $2, update_time = $3
-            WHERE session_id = $4 AND user_id = $5
+            DELETE FROM sys_online_user
+            WHERE session_id = $1 AND user_id = $2
             "#,
         )
-        .bind(1i32)
-        .bind(request.reason.unwrap_or_else(|| "Force logout by admin".to_string()))
-        .bind(chrono::Utc::now().to_rfc3339())
         .bind(&request.session_id)
         .bind(request.user_id)
         .execute(&self.pool)

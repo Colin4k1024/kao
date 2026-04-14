@@ -3,6 +3,8 @@ use kao_backend::db;
 use kao_backend::common::logging::init_logger_with_level;
 use kao_backend::common::cache::redis::RedisCache;
 use std::net::SocketAddr;
+use std::sync::Arc;
+use kao_backend::features::job::scheduler;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -32,22 +34,37 @@ async fn main() -> anyhow::Result<()> {
     }
     tracing::info!("Database migrations completed");
 
-    // Create Redis cache instance
-    let cache = if let Some(redis_url) = &settings.redis.url {
-        tracing::info!("Initializing Redis cache...");
-        RedisCache::from_url(redis_url, settings.redis.cache_ttl)
-    } else {
-        tracing::info!("Redis URL not configured, running without cache");
-        RedisCache::new(None, kao_backend::common::cache::redis::CacheConfig::default())
-    };
+    // Initialize job scheduler
+    tracing::info!("Initializing job scheduler...");
+    match scheduler::init_scheduler(&pool).await {
+        Ok((scheduler, state)) => {
+            tracing::info!("Job scheduler started successfully");
+            // Store the running_jobs from scheduler state
+            let running_jobs = state.running_jobs;
+            // Wrap scheduler in Arc for sharing with routes
+            let scheduler = Arc::new(scheduler);
+            // Create Redis cache instance
+            let cache = if let Some(redis_url) = &settings.redis.url {
+                tracing::info!("Initializing Redis cache...");
+                RedisCache::from_url(redis_url, settings.redis.cache_ttl)
+            } else {
+                tracing::info!("Redis URL not configured, running without cache");
+                RedisCache::new(None, kao_backend::common::cache::redis::CacheConfig::default())
+            };
 
-    let app = kao_backend::app::create_app(pool, settings, cache);
+            let app = kao_backend::app::create_app(pool, settings, cache, running_jobs, scheduler);
 
-    let addr = SocketAddr::from(([0, 0, 0, 0], 8080));
-    tracing::info!("Server listening on {}", addr);
+            let addr = SocketAddr::from(([0, 0, 0, 0], 8080));
+            tracing::info!("Server listening on {}", addr);
 
-    let listener = tokio::net::TcpListener::bind(addr).await?;
-    axum::serve(listener, app.into_make_service()).await?;
+            let listener = tokio::net::TcpListener::bind(addr).await?;
+            axum::serve(listener, app.into_make_service()).await?;
 
-    Ok(())
+            Ok(())
+        }
+        Err(e) => {
+            tracing::error!("Failed to initialize job scheduler: {}", e);
+            Err(anyhow::anyhow!("Scheduler initialization failed: {}", e))
+        }
+    }
 }

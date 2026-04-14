@@ -17,7 +17,7 @@ pub struct UpdateTypeRequest {
     pub remark: Option<String>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct TypeResponse {
     pub id: Uuid,
     pub dict_name: String,

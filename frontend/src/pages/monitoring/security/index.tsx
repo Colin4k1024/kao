@@ -118,9 +118,6 @@ const SecurityMonitoring: React.FC = () => {
   const loadPasswordHealth = async () => {
     setPasswordHealthLoading(true);
     try {
-      // In a real scenario, we would fetch a list of users first
-      // For now, we'll show how the API works with a sample user
-      // The actual implementation would iterate through active users
       setPasswordHealth([]);
     } catch (error) {
       console.error('Failed to load password health:', error);
@@ -192,17 +189,17 @@ const SecurityMonitoring: React.FC = () => {
       style={{ marginBottom: 8 }}
     >
       <Descriptions column={2} size="small">
-        <Descriptions.Item label="Check">
+        <Descriptions.Item label="检查项">
           <Tag color={getStatusColor(check.status)}>
             {getStatusIcon(check.status)} {check.name}
           </Tag>
         </Descriptions.Item>
-        <Descriptions.Item label="Status">
+        <Descriptions.Item label="状态">
           <Tag color={getStatusColor(check.status)}>
             {check.status.toUpperCase()}
           </Tag>
         </Descriptions.Item>
-        <Descriptions.Item label="Details" span={2}>
+        <Descriptions.Item label="详情" span={2}>
           {check.details}
         </Descriptions.Item>
       </Descriptions>
@@ -220,7 +217,7 @@ const SecurityMonitoring: React.FC = () => {
         <Col span={6}>
           <Card>
             <Statistic
-              title="Total Checks"
+              title="总检查项"
               value={summary.total_checks}
               prefix={<SafetyCertificateOutlined />}
               valueStyle={{ color: '#1890ff' }}
@@ -230,7 +227,7 @@ const SecurityMonitoring: React.FC = () => {
         <Col span={6}>
           <Card>
             <Statistic
-              title="Passed"
+              title="通过"
               value={summary.passed_checks}
               prefix={<CheckCircleOutlined />}
               valueStyle={{ color: '#52c41a' }}
@@ -240,7 +237,7 @@ const SecurityMonitoring: React.FC = () => {
         <Col span={6}>
           <Card>
             <Statistic
-              title="Warnings"
+              title="警告"
               value={summary.warning_checks}
               prefix={<WarningOutlined />}
               valueStyle={{ color: '#faad14' }}
@@ -250,7 +247,7 @@ const SecurityMonitoring: React.FC = () => {
         <Col span={6}>
           <Card>
             <Statistic
-              title="Failed"
+              title="失败"
               value={summary.failed_checks}
               prefix={<ExclamationCircleOutlined />}
               valueStyle={{ color: '#ff4d4f' }}
@@ -272,7 +269,7 @@ const SecurityMonitoring: React.FC = () => {
     }
 
     if (!typeScanResult) {
-      return <Empty description="No scan data available" />;
+      return <Empty description="无扫描数据" />;
     }
 
     const { checks, summary, status } = typeScanResult;
@@ -281,8 +278,8 @@ const SecurityMonitoring: React.FC = () => {
       <div>
         {status !== 'healthy' && (
           <Alert
-            message={`Security ${status === 'critical' ? 'Critical' : 'Warning'}`}
-            description={`Found ${summary.failed_checks} failed and ${summary.warning_checks} warning checks`}
+            message={`安全${status === 'critical' ? '严重' : '警告'}`}
+            description={`发现 ${summary.failed_checks} 个失败和 ${summary.warning_checks} 个警告检查项`}
             type={status === 'critical' ? 'error' : 'warning'}
             showIcon
             style={{ marginBottom: 16 }}
@@ -290,7 +287,7 @@ const SecurityMonitoring: React.FC = () => {
         )}
 
         {checks.length === 0 ? (
-          <Empty description="No checks available" />
+          <Empty description="无可用检查项" />
         ) : (
           checks.map(renderCheckItem)
         )}
@@ -301,17 +298,17 @@ const SecurityMonitoring: React.FC = () => {
   // Locked accounts columns
   const lockedAccountsColumns: TableColumnsType<LockedAccount> = [
     {
-      title: 'Username',
+      title: '用户名',
       dataIndex: 'username',
       key: 'username',
     },
     {
-      title: 'Locked Until',
+      title: '锁定至',
       dataIndex: 'locked_until',
       key: 'locked_until',
     },
     {
-      title: 'Reason',
+      title: '原因',
       dataIndex: 'reason',
       key: 'reason',
       render: (reason) => reason || '-',
@@ -321,23 +318,23 @@ const SecurityMonitoring: React.FC = () => {
   // Failed login attempts columns
   const failedAttemptsColumns: TableColumnsType<FailedLoginAttempt> = [
     {
-      title: 'Username',
+      title: '用户名',
       dataIndex: 'username',
       key: 'username',
     },
     {
-      title: 'IP Address',
+      title: 'IP地址',
       dataIndex: 'ip_address',
       key: 'ip_address',
     },
     {
-      title: 'Attempt Count',
+      title: '尝试次数',
       dataIndex: 'attempt_count',
       key: 'attempt_count',
       render: (count) => <Tag color={count > 3 ? 'error' : 'warning'}>{count}</Tag>,
     },
     {
-      title: 'Last Attempt',
+      title: '最后尝试',
       dataIndex: 'last_attempt',
       key: 'last_attempt',
     },
@@ -346,27 +343,27 @@ const SecurityMonitoring: React.FC = () => {
   // Brute force columns
   const bruteForceColumns: TableColumnsType<BruteForceDetection> = [
     {
-      title: 'IP Address',
+      title: 'IP地址',
       dataIndex: 'ip_address',
       key: 'ip_address',
     },
     {
-      title: 'Attempt Count',
+      title: '尝试次数',
       dataIndex: 'attempt_count',
       key: 'attempt_count',
     },
     {
-      title: 'Status',
+      title: '状态',
       dataIndex: 'is_blocked',
       key: 'is_blocked',
       render: (isBlocked) => (
         <Tag color={isBlocked ? 'error' : 'success'}>
-          {isBlocked ? <LockOutlined /> : <UnlockOutlined />} {isBlocked ? 'Blocked' : 'Active'}
+          {isBlocked ? <LockOutlined /> : <UnlockOutlined />} {isBlocked ? '已封禁' : '活跃'}
         </Tag>
       ),
     },
     {
-      title: 'Blocked Until',
+      title: '封禁至',
       dataIndex: 'blocked_until',
       key: 'blocked_until',
       render: (until) => until || '-',
@@ -376,35 +373,35 @@ const SecurityMonitoring: React.FC = () => {
   // Suspicious input columns
   const suspiciousInputColumns: TableColumnsType<SuspiciousInput> = [
     {
-      title: 'Username',
+      title: '用户名',
       dataIndex: 'username',
       key: 'username',
       render: (username) => username || '-',
     },
     {
-      title: 'IP Address',
+      title: 'IP地址',
       dataIndex: 'ip_address',
       key: 'ip_address',
     },
     {
-      title: 'Event Type',
+      title: '事件类型',
       dataIndex: 'event_type',
       key: 'event_type',
       render: (type) => <Tag color="warning">{type}</Tag>,
     },
     {
-      title: 'Created At',
+      title: '创建时间',
       dataIndex: 'created_at',
       key: 'created_at',
     },
     {
-      title: 'Details',
+      title: '详情',
       dataIndex: 'details',
       key: 'details',
       render: (details) => (
         <Tooltip title={JSON.stringify(details, null, 2)}>
           <Button type="link" icon={<EyeOutlined />}>
-            View
+            查看
           </Button>
         </Tooltip>
       ),
@@ -414,23 +411,23 @@ const SecurityMonitoring: React.FC = () => {
   // Permission denied columns
   const permissionDeniedColumns: TableColumnsType<PermissionDeniedEvent> = [
     {
-      title: 'Username',
+      title: '用户名',
       dataIndex: 'username',
       key: 'username',
       render: (username) => username || '-',
     },
     {
-      title: 'IP Address',
+      title: 'IP地址',
       dataIndex: 'ip_address',
       key: 'ip_address',
     },
     {
-      title: 'Event Type',
+      title: '事件类型',
       dataIndex: 'event_type',
       key: 'event_type',
     },
     {
-      title: 'Created At',
+      title: '创建时间',
       dataIndex: 'created_at',
       key: 'created_at',
     },
@@ -447,7 +444,7 @@ const SecurityMonitoring: React.FC = () => {
     }
 
     if (!securityEvents) {
-      return <Empty description="No security events available" />;
+      return <Empty description="无安全事件" />;
     }
 
     const { summary, locked_accounts, recent_failed_attempts, brute_force_detection, suspicious_inputs, permission_denied_events } = securityEvents;
@@ -459,7 +456,7 @@ const SecurityMonitoring: React.FC = () => {
           <Col span={6}>
             <Card>
               <Statistic
-                title="Total Events"
+                title="总事件数"
                 value={summary.total_events}
                 prefix={<SafetyOutlined />}
               />
@@ -468,7 +465,7 @@ const SecurityMonitoring: React.FC = () => {
           <Col span={6}>
             <Card>
               <Statistic
-                title="Permission Denied"
+                title="权限拒绝"
                 value={summary.permission_denied_count}
                 prefix={<LockOutlined />}
                 valueStyle={{ color: summary.permission_denied_count > 0 ? '#ff4d4f' : '#52c41a' }}
@@ -478,7 +475,7 @@ const SecurityMonitoring: React.FC = () => {
           <Col span={6}>
             <Card>
               <Statistic
-                title="Suspicious Input"
+                title="可疑输入"
                 value={summary.suspicious_input_count}
                 prefix={<WarningOutlined />}
                 valueStyle={{ color: summary.suspicious_input_count > 0 ? '#faad14' : '#52c41a' }}
@@ -488,7 +485,7 @@ const SecurityMonitoring: React.FC = () => {
           <Col span={6}>
             <Card>
               <Statistic
-                title="Brute Force Attempts"
+                title="暴力破解尝试"
                 value={summary.brute_force_attempts}
                 prefix={<ExclamationCircleOutlined />}
                 valueStyle={{ color: summary.brute_force_attempts > 0 ? '#ff4d4f' : '#52c41a' }}
@@ -498,9 +495,9 @@ const SecurityMonitoring: React.FC = () => {
         </Row>
 
         {/* Locked Accounts */}
-        <Card title="Locked Accounts" size="small" style={{ marginBottom: 16 }}>
+        <Card title="锁定账户" size="small" style={{ marginBottom: 16 }}>
           {locked_accounts.length === 0 ? (
-            <Empty description="No locked accounts" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+            <Empty description="无锁定账户" image={Empty.PRESENTED_IMAGE_SIMPLE} />
           ) : (
             <Table
               columns={lockedAccountsColumns}
@@ -513,9 +510,9 @@ const SecurityMonitoring: React.FC = () => {
         </Card>
 
         {/* Failed Login Attempts */}
-        <Card title="Recent Failed Login Attempts" size="small" style={{ marginBottom: 16 }}>
+        <Card title="最近登录失败尝试" size="small" style={{ marginBottom: 16 }}>
           {recent_failed_attempts.length === 0 ? (
-            <Empty description="No failed login attempts" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+            <Empty description="无登录失败尝试" image={Empty.PRESENTED_IMAGE_SIMPLE} />
           ) : (
             <Table
               columns={failedAttemptsColumns}
@@ -528,9 +525,9 @@ const SecurityMonitoring: React.FC = () => {
         </Card>
 
         {/* Brute Force Detection */}
-        <Card title="Brute Force Detection" size="small" style={{ marginBottom: 16 }}>
+        <Card title="暴力破解检测" size="small" style={{ marginBottom: 16 }}>
           {brute_force_detection.length === 0 ? (
-            <Empty description="No brute force detection events" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+            <Empty description="无暴力破解检测事件" image={Empty.PRESENTED_IMAGE_SIMPLE} />
           ) : (
             <Table
               columns={bruteForceColumns}
@@ -543,9 +540,9 @@ const SecurityMonitoring: React.FC = () => {
         </Card>
 
         {/* Suspicious Inputs */}
-        <Card title="Suspicious Inputs" size="small" style={{ marginBottom: 16 }}>
+        <Card title="可疑输入" size="small" style={{ marginBottom: 16 }}>
           {suspicious_inputs.length === 0 ? (
-            <Empty description="No suspicious inputs detected" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+            <Empty description="未检测到可疑输入" image={Empty.PRESENTED_IMAGE_SIMPLE} />
           ) : (
             <Table
               columns={suspiciousInputColumns}
@@ -558,9 +555,9 @@ const SecurityMonitoring: React.FC = () => {
         </Card>
 
         {/* Permission Denied Events */}
-        <Card title="Permission Denied Events" size="small">
+        <Card title="权限拒绝事件" size="small">
           {permission_denied_events.length === 0 ? (
-            <Empty description="No permission denied events" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+            <Empty description="无权限拒绝事件" image={Empty.PRESENTED_IMAGE_SIMPLE} />
           ) : (
             <Table
               columns={permissionDeniedColumns}
@@ -578,12 +575,12 @@ const SecurityMonitoring: React.FC = () => {
   // Password health columns
   const passwordHealthColumns: TableColumnsType<PasswordHealth> = [
     {
-      title: 'Username',
+      title: '用户名',
       dataIndex: 'username',
       key: 'username',
     },
     {
-      title: 'Status',
+      title: '状态',
       dataIndex: 'status',
       key: 'status',
       render: (status) => (
@@ -593,19 +590,19 @@ const SecurityMonitoring: React.FC = () => {
       ),
     },
     {
-      title: 'Days Remaining',
+      title: '剩余天数',
       dataIndex: 'days_remaining',
       key: 'days_remaining',
       render: (days) => days ?? '-',
     },
     {
-      title: 'Expires At',
+      title: '过期时间',
       dataIndex: 'expires_at',
       key: 'expires_at',
       render: (expires) => expires || '-',
     },
     {
-      title: 'Actions',
+      title: '操作',
       key: 'actions',
       render: (_, record) => (
         <Button
@@ -616,7 +613,7 @@ const SecurityMonitoring: React.FC = () => {
             setPasswordHealthModal(true);
           }}
         >
-          View Details
+          查看详情
         </Button>
       ),
     },
@@ -635,15 +632,15 @@ const SecurityMonitoring: React.FC = () => {
     return (
       <div>
         <Alert
-          message="Password Health Monitoring"
-          description="Monitor password expiration status and force password changes for accounts requiring attention."
+          message="密码健康监控"
+          description="监控密码过期状态，强制要求需要更改密码的账户更新密码。"
           type="info"
           showIcon
           style={{ marginBottom: 16 }}
         />
 
         <Card
-          title="Password Health Status"
+          title="密码健康状态"
           extra={
             <Space>
               <Button
@@ -651,13 +648,13 @@ const SecurityMonitoring: React.FC = () => {
                 onClick={loadPasswordHealth}
                 loading={passwordHealthLoading}
               >
-                Refresh
+                刷新
               </Button>
             </Space>
           }
         >
           {passwordHealth.length === 0 ? (
-            <Empty description="No password health data available. Enter a user ID to check individual password health." />
+            <Empty description="无密码健康数据可用" />
           ) : (
             <Table
               columns={passwordHealthColumns}
@@ -675,11 +672,11 @@ const SecurityMonitoring: React.FC = () => {
     <div>
       {/* Header */}
       <Card
-        title="Security Monitoring"
+        title="安全监控"
         extra={
           <Space>
             <span style={{ color: '#666', fontSize: 12 }}>
-              Last scan: {lastScanTime || 'Never'}
+              最后扫描: {lastScanTime || '从未'}
             </span>
             <Button
               type="primary"
@@ -687,7 +684,7 @@ const SecurityMonitoring: React.FC = () => {
               onClick={loadSecurityScan}
               loading={scanLoading}
             >
-              Full Scan
+              全面扫描
             </Button>
           </Space>
         }
@@ -698,22 +695,22 @@ const SecurityMonitoring: React.FC = () => {
       {/* Tabs */}
       <Card style={{ marginTop: 16 }}>
         <Tabs activeKey={activeTab} onChange={handleTabChange}>
-          <TabPane tab="Configuration Security" key="configuration">
+          <TabPane tab="配置安全" key="configuration">
             {renderScanTabContent()}
           </TabPane>
-          <TabPane tab="Input Validation" key="input-validation">
+          <TabPane tab="输入验证" key="input-validation">
             {renderScanTabContent()}
           </TabPane>
-          <TabPane tab="Authentication Security" key="authentication">
+          <TabPane tab="认证安全" key="authentication">
             {renderScanTabContent()}
           </TabPane>
-          <TabPane tab="Authorization Security" key="authorization">
+          <TabPane tab="授权安全" key="authorization">
             {renderScanTabContent()}
           </TabPane>
-          <TabPane tab="Security Events" key="events">
+          <TabPane tab="安全事件" key="events">
             {renderEventsTabContent()}
           </TabPane>
-          <TabPane tab="Password Health" key="password">
+          <TabPane tab="密码健康" key="password">
             {renderPasswordHealthTabContent()}
           </TabPane>
         </Tabs>
@@ -721,7 +718,7 @@ const SecurityMonitoring: React.FC = () => {
 
       {/* Password Health Detail Modal */}
       <Modal
-        title="Password Health Details"
+        title="密码健康详情"
         open={passwordHealthModal}
         onCancel={() => setPasswordHealthModal(false)}
         footer={null}
@@ -729,17 +726,17 @@ const SecurityMonitoring: React.FC = () => {
       >
         {currentPasswordHealth && (
           <Descriptions column={1} bordered size="small">
-            <Descriptions.Item label="User ID">{currentPasswordHealth.user_id}</Descriptions.Item>
-            <Descriptions.Item label="Username">{currentPasswordHealth.username}</Descriptions.Item>
-            <Descriptions.Item label="Status">
+            <Descriptions.Item label="用户ID">{currentPasswordHealth.user_id}</Descriptions.Item>
+            <Descriptions.Item label="用户名">{currentPasswordHealth.username}</Descriptions.Item>
+            <Descriptions.Item label="状态">
               <Tag color={getStatusColor(currentPasswordHealth.status)}>
                 {currentPasswordHealth.status.replace('_', ' ').toUpperCase()}
               </Tag>
             </Descriptions.Item>
-            <Descriptions.Item label="Days Remaining">
+            <Descriptions.Item label="剩余天数">
               {currentPasswordHealth.days_remaining ?? 'N/A'}
             </Descriptions.Item>
-            <Descriptions.Item label="Expires At">
+            <Descriptions.Item label="过期时间">
               {currentPasswordHealth.expires_at || 'N/A'}
             </Descriptions.Item>
           </Descriptions>

@@ -11,6 +11,7 @@ use crate::common::response::ApiResponse;
 use crate::common::error::AppError;
 use super::model::*;
 use super::service::JobService;
+use super::scheduler;
 
 // ============== Job Handlers ==============
 
@@ -172,6 +173,17 @@ pub async fn schedule_job(
 ) -> Result<impl IntoResponse, AppError> {
     let service = JobService::new();
     service.schedule_job(&state.pool, id).await?;
+
+    // Add job to the scheduler
+    if let Some(job) = super::repo::get_job(&state.pool, id).await? {
+        scheduler::add_job_to_scheduler(
+            state.scheduler.as_ref(),
+            &state.pool,
+            &state.running_jobs,
+            &job,
+        ).await?;
+    }
+
     Ok(ApiResponse::success_no_data())
 }
 
@@ -198,6 +210,10 @@ pub async fn unschedule_job(
 ) -> Result<impl IntoResponse, AppError> {
     let service = JobService::new();
     service.unschedule_job(&state.pool, id).await?;
+
+    // Remove job from the scheduler
+    scheduler::remove_job_from_scheduler(id, &state.running_jobs).await?;
+
     Ok(ApiResponse::success_no_data())
 }
 

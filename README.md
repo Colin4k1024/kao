@@ -139,6 +139,78 @@ npm run dev
 - 后端地址: http://localhost:8080
 - 默认账号: `admin` / `admin123`
 
+## 🧪 E2E 测试
+
+项目使用 Playwright 进行端到端测试。
+
+### 环境要求
+- Node.js 18+
+- Playwright (已作为 devDependencies 安装)
+
+### 运行测试
+
+```bash
+# 运行所有测试
+npm test
+
+# 以可视化模式运行（UI 模式）
+npm run test:ui
+
+# 以有头模式运行（可见浏览器）
+npm run test:headed
+
+# 查看测试报告
+npm run test:report
+```
+
+### 测试文件结构
+
+```
+tests/
+├── basic.spec.ts           # 基本功能测试（页面访问、标题、响应式）
+├── login.spec.ts           # 登录页面和认证流程测试
+├── home.spec.ts            # 首页和仪表盘测试
+├── smoke-pages.spec.ts     # 所有页面的冒烟测试（截图验证）
+├── security-fix.spec.ts    # 安全监控页面测试
+└── utils/
+    ├── auth.ts             # 认证辅助（测试用户、登录扩展）
+    └── page-objects.ts     # 页面对象模型（LoginPage、DashboardPage）
+```
+
+### 测试用户
+
+测试使用以下账号：
+
+| 用户名 | 密码 | 描述 |
+|--------|------|------|
+| admin | admin123 | 管理员账号 |
+| testuser2 | Test@123456 | 测试用户 |
+
+### 编写新测试
+
+```typescript
+import { test, expect } from '@playwright/test';
+import { LoginPage, DashboardPage } from './utils/page-objects';
+
+test.describe('我的新测试', () => {
+  test('测试场景描述', async ({ page }) => {
+    const loginPage = new LoginPage(page);
+    await loginPage.goto();
+    await loginPage.login('testuser2', 'Test@123456');
+    await loginPage.expectToBeLoggedIn();
+  });
+});
+```
+
+### 配置文件
+
+`playwright.config.ts` 包含测试配置：
+- 测试目录：`./tests`
+- 基础 URL：`http://localhost:3000`
+- 浏览器：Chromium
+- 报告格式：HTML
+- 截图：仅在失败时保存
+
 ## 📁 项目结构
 
 ```

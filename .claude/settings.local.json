@@ -23,7 +23,20 @@
       "Bash(cargo test:*)",
       "Skill(gsd:list-workspaces)",
       "Bash(cargo clippy:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(npm run:*)",
+      "Bash(npm ls:*)",
+      "Bash(npm install:*)",
+      "Skill(gsd:fast)",
+      "Bash(node $HOME/.claude/get-shit-done/bin/gsd-tools.cjs phase-plan-index 03)",
+      "Bash(node -e \"const o=JSON.parse\\(require\\(''''fs''''\\).readFileSync\\(''''/dev/stdin'''',''''utf8''''\\)\\); console.log\\(''''incomplete:'''', o.incomplete\\)\")",
+      "Bash(node:*)",
+      "Bash(grep -rn \"users\\\\|roles\\\\|departments\\\\|menus\" backend/src/repositories/ --include=*.rs)",
+      "Bash(chmod:*)",
+      "Bash(grep -r name.*kao /Users/ailabuser1/Desktop/gitcode/kao/backend/Cargo.toml)",
+      "Bash(docker:*)",
+      "Bash(open -a Docker)",
+      "Bash(git status:*)"
     ]
   }
 }

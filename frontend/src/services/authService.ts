@@ -3,23 +3,23 @@ import { LoginRequest, LoginResponse, RegisterRequest, RefreshTokenRequest, User
 
 export const authService = {
   login(data: LoginRequest) {
-    return request.post<LoginResponse>('/api/auth/login', data);
+    return request.post<LoginResponse>('/api/v1/login', data);
   },
-  
+
   register(data: RegisterRequest) {
-    return request.post<User>('/api/auth/register', data);
+    return request.post<User>('/api/v1/register', data);
   },
-  
+
   logout() {
-    return request.post('/api/auth/logout');
+    return request.post('/api/v1/logout');
   },
-  
+
   refreshToken(data: RefreshTokenRequest) {
-    return request.post<LoginResponse>('/api/auth/refresh', data);
+    return request.post<LoginResponse>('/api/v1/refresh', data);
   },
-  
+
   getCurrentUser() {
-    return request.get<User>('/api/auth/me');
+    return request.get<User>('/api/v1/profile');
   },
 };
 

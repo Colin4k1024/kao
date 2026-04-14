@@ -1,3 +1,4 @@
+pub mod activity_tracker;
 pub mod auth;
 pub mod cors;
 pub mod logger;

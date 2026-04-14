@@ -1,240 +1,81 @@
-import { useState, useEffect } from 'react';
-import {
-  Card,
-  Table,
-  Tag,
-  Space,
-  Button,
- 	message,
-  Form,
-  Input,
-  Select,
-  DatePicker,
-  Modal,
-} from 'antd';
-import { DownloadOutlined, ReloadOutlined, EyeOutlined } from '@ant-design/icons';
-import type { TableRowSelection } from 'antd/es/table/interface';
+import { ProColumns, ProTable } from '@ant-design/pro-components';
+import { ActionType } from '@ant-design/pro-components';
+import { App } from 'antd';
+import React, { useRef } from 'react';
+import * as api from '@/services/api/monitoring';
+import type { LoginLog } from '@/services/api/monitoring';
 
-import {
-  fetchLoginLogs,
-  LoginLog,
-} from '@/services/api/monitoring';
+const LoginLogList: React.FC = () => {
+  const actionRef = useRef<ActionType>();
+  const { message } = App.useApp();
 
-const LoginLogList = () => {
-  const [logs, setLogs] = useState<LoginLog[]>([]);
-  const [total, setTotal] = useState(0);
-  const [loading, setLoading] = useState(false);
-  const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
-  const [searchForm] = Form.useForm();
-  
-  const [viewModalOpen, setViewModalOpen] = useState(false);
-  const [selectedLog, setSelectedLog] = useState<LoginLog | null>(null);
-  const [viewForm] = Form.useForm();
-
-  const loadData = async (filters?: any) => {
-    setLoading(true);
-    try {
-      const params: any = {
-        page: 1,
-        page_size: 10,
-      };
-      
-      if (filters) {
-        Object.assign(params, filters);
-      }
-      
-      const data = await fetchLoginLogs(params);
-      setLogs(data.list);
-      setTotal(data.total);
-    } catch (error) {
-      console.error('Failed to load login logs:', error);
-      message.error('Failed to load login logs');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  const handleSearch = (values: any) => {
-    loadData(values);
-  };
-
-  const handleReset = () => {
-    searchForm.resetFields();
-    loadData();
-  };
-
-  const handleView = (record: LoginLog) => {
-    setSelectedLog(record);
-    viewForm.setFieldsValue(record);
-    setViewModalOpen(true);
-  };
-
-  const columns = [
+  const columns: ProColumns<LoginLog>[] = [
     {
-      title: 'ID',
-      dataIndex: 'id',
-      key: 'id',
-    },
-    {
-      title: 'Username',
+      title: '用户名',
       dataIndex: 'username',
       key: 'username',
+      width: 120,
     },
     {
-      title: 'IP Address',
+      title: 'IP地址',
       dataIndex: 'ip_address',
       key: 'ip_address',
+      width: 140,
     },
     {
-      title: 'User Agent',
+      title: '用户代理',
       dataIndex: 'user_agent',
       key: 'user_agent',
       ellipsis: true,
+      hideInTable: true,
     },
     {
-      title: 'Status',
+      title: '状态',
       dataIndex: 'status',
       key: 'status',
-      render: (status: number) => (
-        <Tag color={status === 1 ? 'success' : 'error'}>
-          {status === 1 ? 'Success' : 'Failed'}
-        </Tag>
+      width: 80,
+      render: (_, record) => (
+        <span style={{ color: record.status === 1 ? '#52c41a' : '#ff4d4f' }}>
+          {record.status === 1 ? '成功' : '失败'}
+        </span>
       ),
     },
     {
-      title: 'Message',
+      title: '消息',
       dataIndex: 'message',
       key: 'message',
+      ellipsis: true,
     },
     {
-      title: 'Login Time',
+      title: '登录时间',
       dataIndex: 'login_time',
       key: 'login_time',
-    },
-    {
-      title: 'Actions',
-      key: 'actions',
-      render: (_: any, record: LoginLog) => (
-        <Space>
-          <Button
-            type="link"
-            icon={<EyeOutlined />}
-            onClick={() => handleView(record)}
-          >
-            View
-          </Button>
-        </Space>
-      ),
+      width: 180,
+      valueType: 'dateTime',
     },
   ];
 
-  const rowSelection: TableRowSelection<LoginLog> = {
-    selectedRowKeys,
-    onChange: (selectedRowKeys: React.Key[]) => {
-      setSelectedRowKeys(selectedRowKeys);
-    },
-  };
-
   return (
-    <Card
-      title="Login Logs"
-      extra={
-        <Space>
-          <Button
-            type="primary"
-            icon={<ReloadOutlined />}
-            onClick={() => loadData()}
-            loading={loading}
-          >
-            Refresh
-          </Button>
-          <Button icon={<DownloadOutlined />}>
-            Export
-          </Button>
-        </Space>
-      }
-    >
-      {/* Search Form */}
-      <Form
-        form={searchForm}
-        layout="inline"
-        onFinish={handleSearch}
-        style={{ marginBottom: 16 }}
-      >
-        <Form.Item name="username" label="Username">
-          <Input placeholder="Username" />
-        </Form.Item>
-        <Form.Item name="ip_address" label="IP Address">
-          <Input placeholder="IP Address" />
-        </Form.Item>
-        <Form.Item name="status" label="Status">
-          <Select placeholder="Status" allowClear>
-            <Select.Option value={1}>Success</Select.Option>
-            <Select.Option value={0}>Failed</Select.Option>
-          </Select>
-        </Form.Item>
-        <Form.Item name="create_time_range" label="Time Range">
-          <DatePicker.RangePicker format="YYYY-MM-DD HH:mm:ss" />
-        </Form.Item>
-        <Form.Item>
-          <Space>
-            <Button type="primary" htmlType="submit">
-              Search
-            </Button>
-            <Button htmlType="button" onClick={handleReset}>
-              Reset
-            </Button>
-          </Space>
-        </Form.Item>
-      </Form>
-
-      {/* Table */}
-      <Table
-        columns={columns}
-        dataSource={logs}
-        rowSelection={rowSelection}
-        pagination={{
-          total,
-          showSizeChanger: true,
-          showQuickJumper: true,
-          showTotal: (total: number) => `Total ${total} items`,
-        }}
-        rowKey="id"
-        loading={loading}
-      />
-
-      {/* View Modal */}
-      <Modal
-        title="Login Log Detail"
-        open={viewModalOpen}
-        onCancel={() => setViewModalOpen(false)}
-        footer={null}
-        width={700}
-      >
-        {selectedLog && (
-          <Form form={viewForm} layout="vertical">
-            <Form.Item label="ID">{selectedLog.id}</Form.Item>
-            <Form.Item label="Username">{selectedLog.username}</Form.Item>
-            <Form.Item label="IP Address">{selectedLog.ip_address}</Form.Item>
-            <Form.Item label="User Agent">
-              {selectedLog.user_agent || '-'}
-            </Form.Item>
-            <Form.Item label="Status">
-              <Tag color={selectedLog.status === 1 ? 'success' : 'error'}>
-                {selectedLog.status === 1 ? 'Success' : 'Failed'}
-              </Tag>
-            </Form.Item>
-            <Form.Item label="Message">{selectedLog.message}</Form.Item>
-            <Form.Item label="Login Time">{selectedLog.login_time}</Form.Item>
-            <Form.Item label="Create Time">{selectedLog.create_time}</Form.Item>
-          </Form>
-        )}
-      </Modal>
-    </Card>
+    <ProTable<LoginLog>
+      columns={columns}
+      actionRef={actionRef}
+      request={async (params) => {
+        const response = await api.fetchLoginLogs({
+          page: params.current,
+          page_size: params.pageSize,
+          username: params.username,
+        });
+        return {
+          data: response.list || [],
+          total: response.total || 0,
+          success: true,
+        };
+      }}
+      rowKey="id"
+      search={false}
+      pagination={{ pageSize: 10 }}
+      toolBarRender={() => []}
+    />
   );
 };
 

@@ -1,3 +1,4 @@
+use uuid::Uuid;
 use crate::common::error::AppError;
 
 use super::{
@@ -23,8 +24,7 @@ impl PostService {
                 id: p.id,
                 post_name: p.post_name,
                 post_code: p.post_code,
-                post_group: p.post_group,
-                sort: p.sort,
+                display_order: p.display_order,
                 status: p.status,
                 created_by: p.created_by,
                 created_at: p.created_at,
@@ -36,15 +36,14 @@ impl PostService {
     pub async fn get_post_by_id(
         &self,
         db: &sqlx::PgPool,
-        post_id: i64,
+        post_id: Uuid,
     ) -> Result<Option<PostResponse>, AppError> {
         let post = get_post_by_id(db, post_id).await?;
         Ok(post.map(|p| PostResponse {
             id: p.id,
             post_name: p.post_name,
             post_code: p.post_code,
-            post_group: p.post_group,
-            sort: p.sort,
+            display_order: p.display_order,
             status: p.status,
             created_by: p.created_by,
             created_at: p.created_at,
@@ -66,15 +65,14 @@ impl PostService {
             });
         }
 
-        let sort = req.sort.unwrap_or(0);
+        let display_order = req.display_order.unwrap_or(0);
         let status = req.status.unwrap_or(1);
 
         let post = create_post(
             db,
             req.post_name,
             req.post_code,
-            req.post_group,
-            sort,
+            display_order,
             status,
             created_by,
         )
@@ -84,8 +82,7 @@ impl PostService {
             id: post.id,
             post_name: post.post_name,
             post_code: post.post_code,
-            post_group: post.post_group,
-            sort: post.sort,
+            display_order: post.display_order,
             status: post.status,
             created_by: post.created_by,
             created_at: post.created_at,
@@ -96,7 +93,7 @@ impl PostService {
     pub async fn update_post(
         &self,
         db: &sqlx::PgPool,
-        post_id: i64,
+        post_id: Uuid,
         req: UpdatePostRequest,
     ) -> Result<PostResponse, AppError> {
         let post = update_post(
@@ -104,8 +101,7 @@ impl PostService {
             post_id,
             req.post_name,
             req.post_code,
-            req.post_group,
-            req.sort,
+            req.display_order,
             req.status,
         )
         .await?;
@@ -114,8 +110,7 @@ impl PostService {
             id: post.id,
             post_name: post.post_name,
             post_code: post.post_code,
-            post_group: post.post_group,
-            sort: post.sort,
+            display_order: post.display_order,
             status: post.status,
             created_by: post.created_by,
             created_at: post.created_at,
@@ -123,7 +118,7 @@ impl PostService {
         })
     }
 
-    pub async fn delete_post(&self, db: &sqlx::PgPool, post_id: i64) -> Result<(), AppError> {
+    pub async fn delete_post(&self, db: &sqlx::PgPool, post_id: Uuid) -> Result<(), AppError> {
         delete_post(db, post_id).await
     }
 }

@@ -10,6 +10,8 @@ import {
   DatabaseOutlined,
   NotificationOutlined,
   SafetyOutlined,
+  FileTextOutlined,
+  LoginOutlined,
 } from '@ant-design/icons';
 
 const { Header, Sider, Content } = Layout;
@@ -50,19 +52,19 @@ const MainLayout: React.FC = () => {
           label: <Link to="/system/menus">菜单管理</Link>,
         },
         {
-          key: '/system/dictionary/type',
+          key: '/dictionary/type',
           icon: <DatabaseOutlined />,
-          label: <Link to="/system/dictionary/type">字典管理</Link>,
+          label: <Link to="/dictionary/type">字典管理</Link>,
         },
         {
-          key: '/system/config',
+          key: '/config',
           icon: <SettingOutlined />,
-          label: <Link to="/system/config">参数配置</Link>,
+          label: <Link to="/config">参数配置</Link>,
         },
         {
-          key: '/system/notice',
+          key: '/notice',
           icon: <NotificationOutlined />,
-          label: <Link to="/system/notice">通知公告</Link>,
+          label: <Link to="/notice">通知公告</Link>,
         },
       ],
     },
@@ -80,6 +82,16 @@ const MainLayout: React.FC = () => {
           key: '/monitoring/online-user',
           icon: <UserOutlined />,
           label: <Link to="/monitoring/online-user">在线用户</Link>,
+        },
+        {
+          key: '/monitoring/operation-log',
+          icon: <FileTextOutlined />,
+          label: <Link to="/monitoring/operation-log">操作日志</Link>,
+        },
+        {
+          key: '/monitoring/login-log',
+          icon: <LoginOutlined />,
+          label: <Link to="/monitoring/login-log">登录日志</Link>,
         },
       ],
     },

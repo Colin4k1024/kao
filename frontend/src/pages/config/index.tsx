@@ -1,429 +1,293 @@
-import React, { useEffect, useState } from 'react';
-import {
-  Table,
-  Button,
-  Space,
-  Input,
-  Tag,
-  Modal,
-  Form,
-  message,
-  Popconfirm,
-  Switch,
-  Alert,
-  Select,
-} from 'antd';
-import {
-  PlusOutlined,
-  EditOutlined,
-  DeleteOutlined,
-  ReloadOutlined,
-  SearchOutlined,
-  EyeOutlined,
-} from '@ant-design/icons';
-import request from '@/lib/api';
-import type { PageParams } from '@/types/api';
-import type { ColumnType, ColumnsType } from 'antd/es/table';
+import { PlusOutlined } from '@ant-design/icons';
+import { ModalForm, ProFormSelect, ProFormText } from '@ant-design/pro-components';
+import { ActionType, ProColumns, ProTable } from '@ant-design/pro-components';
+import { App, Popconfirm, Tag } from 'antd';
+import React, { useRef, useState } from 'react';
+import * as api from '@/services/api';
+import type { ConfigItem } from '@/services/api/data';
 
-// Config interface
-export interface Config {
-  id: number;
+// ConfigItem interface - matches backend ConfigResponse
+export interface ConfigItem {
+  id: string;
   config_key: string;
   config_name: string;
   config_value: string;
-  config_type: number;
+  config_type: string;
+  is_encrypt: string;
   status: number;
-  description?: string;
+  remark?: string;
+  created_by?: string;
+  updated_by?: string;
   created_at: string;
   updated_at: string;
 }
 
-// API service
-export const configApi = {
-  list(params: PageParams & { config_key?: string; config_name?: string }) {
-    return request.get<{ list: Config[]; total: number }>(
-      '/api/system/config',
-      { params }
-    );
-  },
-  get(id: number) {
-    return request.get<Config>(`/api/system/config/${id}`);
-  },
-  create(data: Partial<Config>) {
-    return request.post<Config>('/api/system/config', data);
-  },
-  update(id: number, data: Partial<Config>) {
-    return request.put<Config>(`/api/system/config/${id}`, data);
-  },
-  delete(id: number) {
-    return request.delete(`/api/system/config/${id}`);
-  },
-  preview(data: Partial<Config>) {
-    return request.post<Config>('/api/system/config/preview', data);
-  },
-};
+const ConfigManagement: React.FC = () => {
+  const actionRef = useRef<ActionType>();
+  const { message } = App.useApp();
+  const [modalVisible, setModalVisible] = useState(false);
+  const [editingRecord, setEditingRecord] = useState<ConfigItem | null>(null);
 
-// Config Page Component
-export const ConfigPage: React.FC = () => {
-  const [configs, setConfigs] = useState<Config[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [pagination, setPagination] = useState({
-    current: 1,
-    pageSize: 10,
-    total: 0,
-  });
-  const [isModalVisible, setIsModalVisible] = useState(false);
-  const [isPreviewModalVisible, setIsPreviewModalVisible] = useState(false);
-  const [editingConfig, setEditingConfig] = useState<Config | null>(null);
-  const [previewConfig, setPreviewConfig] = useState<Config | null>(null);
-  const [searchForm] = Form.useForm();
-  const [form] = Form.useForm();
-
+  // Fetch configs from API
   const fetchConfigs = async () => {
-    setLoading(true);
+    const response = await api.queryConfigs();
+    return {
+      data: response.data?.items || response.data || [],
+      total: response.data?.total || (response.data?.items || response.data || []).length,
+      success: true,
+    };
+  };
+
+  // Handle create/update
+  const handleAdd = async (values: Record<string, unknown>) => {
     try {
-      const values = searchForm.getFieldsValue();
-      const params: PageParams = {
-        page: pagination.current,
-        pageSize: pagination.pageSize,
-        keyword: values.config_key || values.config_name,
-      };
-      const data = await configApi.list(params);
-      setConfigs(data.list);
-      setPagination({ ...pagination, total: data.total });
-    } catch (error) {
-      message.error('获取参数配置列表失败');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchConfigs();
-  }, [pagination.current, pagination.pageSize]);
-
-  const handleSearch = () => {
-    setPagination({ ...pagination, current: 1 });
-    fetchConfigs();
-  };
-
-  const handleReset = () => {
-    searchForm.resetFields();
-    setPagination({ ...pagination, current: 1 });
-    fetchConfigs();
-  };
-
-  const handleAdd = () => {
-    setEditingConfig(null);
-    form.resetFields();
-    form.setFieldsValue({ config_type: 1, status: 1 });
-    setIsModalVisible(true);
-  };
-
-  const handleEdit = (record: Config) => {
-    setEditingConfig(record);
-    form.setFieldsValue(record);
-    setIsModalVisible(true);
-  };
-
-  const handleDelete = async (id: number) => {
-    try {
-      await configApi.delete(id);
-      message.success('删除成功');
-      fetchConfigs();
-    } catch (error) {
-      message.error('删除失败');
-    }
-  };
-
-  const handleStatusChange = async (id: number, status: number) => {
-    try {
-      await configApi.update(id, { status });
-      message.success('状态更新成功');
-      fetchConfigs();
-    } catch (error) {
-      message.error('状态更新失败');
-    }
-  };
-
-  const handleSubmit = async () => {
-    try {
-      const values = await form.validateFields();
-      if (editingConfig) {
-        await configApi.update(editingConfig.id, values);
+      if (editingRecord) {
+        await api.updateConfig(editingRecord.config_key, values);
         message.success('更新成功');
       } else {
-        await configApi.create(values);
+        await api.createConfig(values);
         message.success('创建成功');
       }
-      setIsModalVisible(false);
-      fetchConfigs();
-    } catch (error) {
-      message.error('操作失败');
+      setModalVisible(false);
+      actionRef.current?.reload();
+    } catch (error: any) {
+      message.error(error?.response?.data?.message || '操作失败');
     }
   };
 
-  const handlePreview = () => {
-    form.validateFields().then((values) => {
-      configApi.preview(values).then((result) => {
-        setPreviewConfig(result);
-        setIsModalVisible(false);
-        setIsPreviewModalVisible(true);
-      }).catch((err) => {
-        message.error('预览失败');
-      });
-    });
+  // Handle delete
+  const handleDelete = async (config_key: string) => {
+    try {
+      await api.deleteConfig(config_key);
+      message.success('删除成功');
+      actionRef.current?.reload();
+    } catch (error: any) {
+      message.error(error?.response?.data?.message || '删除失败');
+    }
   };
 
-  const columns = [
+  // Config type mapping
+  const getConfigTypeTag = (type: string) => {
+    const typeMap: Record<string, { text: string; color: string }> = {
+      '0': { text: '自定义', color: 'blue' },
+      '1': { text: '系统内置', color: 'green' },
+      '2': { text: '加密', color: 'orange' },
+    };
+    const configType = typeMap[type] || { text: type, color: 'default' };
+    return <Tag color={configType.color}>{configType.text}</Tag>;
+  };
+
+  // Status mapping
+  const getStatusTag = (status: number) => {
+    return status === 1 ? (
+      <Tag color="success">启用</Tag>
+    ) : (
+      <Tag color="error">禁用</Tag>
+    );
+  };
+
+  // Table columns
+  const columns: ProColumns<ConfigItem>[] = [
     {
       title: '参数键',
       dataIndex: 'config_key',
       key: 'config_key',
-      width: 150,
+      width: 200,
+      copyable: true,
     },
     {
-      title: '参数名',
+      title: '参数名称',
       dataIndex: 'config_name',
       key: 'config_name',
       width: 150,
+      ellipsis: true,
     },
     {
       title: '参数值',
       dataIndex: 'config_value',
       key: 'config_value',
+      width: 200,
       ellipsis: true,
-      render: (value: string, record: Config) => (
-        <Button
-          type="link"
-          icon={<EyeOutlined />}
-          onClick={() => {
-            setPreviewConfig({ ...record, config_value: value });
-            setIsPreviewModalVisible(true);
-          }}
-        >
-          查看
-        </Button>
-      ),
+      hideInSearch: true,
     },
     {
       title: '参数类型',
       dataIndex: 'config_type',
       key: 'config_type',
       width: 100,
-      render: (type: number) => (
-        <Tag color={type === 1 ? 'green' : 'blue'}>
-          {type === 1 ? '系统内置' : '自定义'}
-        </Tag>
-      ),
+      render: (_, record) => getConfigTypeTag(record.config_type),
+      valueType: 'select',
+      valueEnum: {
+        '0': { text: '自定义', status: 'Default' },
+        '1': { text: '系统内置', status: 'Success' },
+        '2': { text: '加密', status: 'Processing' },
+      },
+    },
+    {
+      title: '加密',
+      dataIndex: 'is_encrypt',
+      key: 'is_encrypt',
+      width: 80,
+      hideInSearch: true,
+      render: (_, record) => (record.is_encrypt === '1' ? '是' : '否'),
     },
     {
       title: '状态',
       dataIndex: 'status',
       key: 'status',
-      width: 100,
-      render: (status: number, record: Config) => (
-        <Switch
-          checked={status === 1}
-          onChange={(checked) => handleStatusChange(record.id, checked ? 1 : 0)}
-          size="small"
-        />
-      ),
+      width: 80,
+      render: (_, record) => getStatusTag(record.status),
+      valueType: 'select',
+      valueEnum: {
+        1: { text: '启用', status: 'Success' },
+        0: { text: '禁用', status: 'Error' },
+      },
+    },
+    {
+      title: '备注',
+      dataIndex: 'remark',
+      key: 'remark',
+      width: 150,
+      ellipsis: true,
+      hideInSearch: true,
     },
     {
       title: '创建时间',
       dataIndex: 'created_at',
       key: 'created_at',
       width: 180,
-      render: (date: string) => new Date(date).toLocaleString('zh-CN'),
+      valueType: 'dateTime',
+      hideInSearch: true,
     },
     {
       title: '操作',
-      key: 'action',
-      width: 180,
+      valueType: 'option',
+      width: 150,
       fixed: 'right',
-      render: (_: any, record: Config) => (
-        <Space size="small">
-          <Button
-            type="link"
-            icon={<EditOutlined />}
-            onClick={() => handleEdit(record)}
-          >
-            编辑
-          </Button>
-          <Popconfirm
-            title="确认删除"
-            description="确定要删除该参数配置吗？"
-            onConfirm={() => handleDelete(record.id)}
-          >
-            <Button type="link" danger icon={<DeleteOutlined />}>
-              删除
-            </Button>
-          </Popconfirm>
-        </Space>
-      ),
+      render: (_, record) => [
+        <a
+          key="edit"
+          onClick={() => {
+            setEditingRecord(record);
+            setModalVisible(true);
+          }}
+        >
+          编辑
+        </a>,
+        <Popconfirm
+          key="delete"
+          title="确定删除此参数配置?"
+          description="删除后无法恢复，请确认"
+          onConfirm={() => handleDelete(record.config_key)}
+        >
+          <a style={{ color: 'red' }}>删除</a>
+        </Popconfirm>,
+      ],
     },
   ];
 
   return (
-    <div style={{ padding: 24 }}>
-      <div style={{ marginBottom: 16 }}>
-        <Space direction="vertical" style={{ width: '100%' }}>
-          <Form
-            form={searchForm}
-            layout="inline"
-            onFinish={handleSearch}
-            initialValues={{ status: undefined }}
-          >
-            <Form.Item label="参数键" name="config_key">
-              <Input placeholder="请输入参数键" />
-            </Form.Item>
-            <Form.Item label="参数名" name="config_name">
-              <Input placeholder="请输入参数名" />
-            </Form.Item>
-            <Form.Item>
-              <Space>
-                <Button
-                  type="primary"
-                  icon={<SearchOutlined />}
-                  htmlType="submit"
-                >
-                  搜索
-                </Button>
-                <Button icon={<ReloadOutlined />} onClick={handleReset}>
-                  重置
-                </Button>
-              </Space>
-            </Form.Item>
-          </Form>
-          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-            <Button
-              type="primary"
-              icon={<PlusOutlined />}
-              onClick={handleAdd}
-            >
-              新增参数
-            </Button>
-            <Button icon={<ReloadOutlined />} onClick={fetchConfigs}>
-              刷新
-            </Button>
-          </div>
-        </Space>
-      </div>
-      <Table
+    <>
+      <ProTable<ConfigItem>
         columns={columns}
-        dataSource={configs}
-        loading={loading}
-        rowKey="id"
+        actionRef={actionRef}
+        request={fetchConfigs}
+        rowKey="config_key"
+        search={{
+          labelWidth: 'auto',
+        }}
         pagination={{
-          current: pagination.current,
-          pageSize: pagination.pageSize,
-          total: pagination.total,
+          pageSize: 10,
           showSizeChanger: true,
-          showTotal: (total) => `共 ${total} 条`,
-          onChange: (page, pageSize) =>
-            setPagination({ ...pagination, current: page, pageSize }),
+          showQuickJumper: true,
         }}
+        toolBarRender={() => [
+          <PlusOutlined
+            style={{ fontSize: 18, cursor: 'pointer', color: '#1890ff' }}
+            key="primary"
+            onClick={() => {
+              setEditingRecord(null);
+              setModalVisible(true);
+            }}
+          />,
+        ]}
       />
-      {/* Edit/Add Modal */}
-      <Modal
-        title={editingConfig ? '编辑参数配置' : '新增参数配置'}
-        open={isModalVisible}
-        onOk={handleSubmit}
-        onCancel={() => {
-          setIsModalVisible(false);
-          form.resetFields();
+
+      <ModalForm
+        title={editingRecord ? '编辑参数配置' : '新建参数配置'}
+        open={modalVisible}
+        onOpenChange={setModalVisible}
+        onFinish={handleAdd}
+        initialValues={editingRecord || { config_type: '0', is_encrypt: '0', status: 1 }}
+        layout="horizontal"
+        modalProps={{
+          destroyOnClose: true,
         }}
-        width={600}
       >
-        <Form form={form} layout="vertical">
-          <Form.Item
-            name="config_key"
-            label="参数键"
-            rules={[{ required: true, message: '请输入参数键' }]}
-          >
-            <Input placeholder="请输入参数键，如：sys.test.key" />
-          </Form.Item>
-          <Form.Item
-            name="config_name"
-            label="参数名"
-            rules={[{ required: true, message: '请输入参数名' }]}
-          >
-            <Input placeholder="请输入参数名" />
-          </Form.Item>
-          <Form.Item
-            name="config_value"
-            label="参数值"
-            rules={[{ required: true, message: '请输入参数值' }]}
-          >
-            <Input.TextArea rows={5} placeholder="请输入参数值" />
-          </Form.Item>
-          <Form.Item
-            name="config_type"
-            label="参数类型"
-            rules={[{ required: true, message: '请选择参数类型' }]}
-          >
-            <Select>
-              <Select.Option value={1}>系统内置</Select.Option>
-              <Select.Option value={0}>自定义</Select.Option>
-            </Select>
-          </Form.Item>
-          <Form.Item name="description" label="描述">
-            <Input.TextArea rows={2} placeholder="请输入描述" />
-          </Form.Item>
-          <Form.Item
-            name="status"
-            label="状态"
-            rules={[{ required: true, message: '请选择状态' }]}
-          >
-            <Select>
-              <Select.Option value={1}>启用</Select.Option>
-              <Select.Option value={0}>禁用</Select.Option>
-            </Select>
-          </Form.Item>
-        </Form>
-      </Modal>
-      {/* Preview Modal */}
-      <Modal
-        title="参数预览"
-        open={isPreviewModalVisible}
-        onCancel={() => setIsPreviewModalVisible(false)}
-        width={600}
-        footer={null}
-      >
-        {previewConfig && (
-          <>
-            <Alert
-              message="参数预览"
-              description={`参数键：${previewConfig.config_key}
-参数名：${previewConfig.config_name}
-参数值：
-${previewConfig.config_value}
-描述：${previewConfig.description || '无'}`}
-              type="info"
-              showIcon
-            />
-            <div style={{ marginTop: 16, textAlign: 'right' }}>
-              <Button
-                type="primary"
-                onClick={() => {
-                  const text = `参数键：${previewConfig.config_key}
-参数名：${previewConfig.config_name}
-参数值：
-${previewConfig.config_value}
-描述：${previewConfig.description || '无'}`;
-                  navigator.clipboard.writeText(text);
-                  message.success('已复制到剪贴板');
-                }}
-              >
-                复制
-              </Button>
-            </div>
-          </>
-        )}
-      </Modal>
-    </div>
+        <ProFormText
+          name="config_key"
+          label="参数键"
+          placeholder="请输入参数键，如：sys.app.name"
+          disabled={!!editingRecord}
+          rules={[
+            { required: true, message: '请输入参数键' },
+            { pattern: /^[a-zA-Z][a-zA-Z0-9_.]+$/, message: '参数键以字母开头，支持字母、数字、下划线和点' },
+          ]}
+          tooltip="参数键是唯一标识，编辑后不可修改"
+        />
+        <ProFormText
+          name="config_name"
+          label="参数名称"
+          placeholder="请输入参数名称"
+          rules={[{ required: true, message: '请输入参数名称' }]}
+        />
+        <ProFormText
+          name="config_value"
+          label="参数值"
+          placeholder="请输入参数值"
+          rules={[{ required: true, message: '请输入参数值' }]}
+          fieldProps={{
+            rows: 3,
+          }}
+        />
+        <ProFormSelect
+          name="config_type"
+          label="参数类型"
+          options={[
+            { label: '自定义', value: '0' },
+            { label: '系统内置', value: '1' },
+            { label: '加密', value: '2' },
+          ]}
+          rules={[{ required: true, message: '请选择参数类型' }]}
+        />
+        <ProFormSelect
+          name="is_encrypt"
+          label="是否加密"
+          options={[
+            { label: '否', value: '0' },
+            { label: '是', value: '1' },
+          ]}
+        />
+        <ProFormSelect
+          name="status"
+          label="状态"
+          options={[
+            { label: '启用', value: 1 },
+            { label: '禁用', value: 0 },
+          ]}
+          rules={[{ required: true, message: '请选择状态' }]}
+        />
+        <ProFormText
+          name="remark"
+          label="备注"
+          placeholder="请输入备注信息"
+          fieldProps={{
+            rows: 2,
+          }}
+        />
+      </ModalForm>
+    </>
   );
 };
 
-export default ConfigPage;
+export default ConfigManagement;

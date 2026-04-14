@@ -141,40 +141,48 @@ pub async fn list_jobs(pool: &PgPool, params: &JobListParams) -> Result<(Vec<Job
     let page_size = params.page_size.unwrap_or(10).min(100);
     let offset = (page - 1) * page_size;
 
-    // Build WHERE clause
-    let mut conditions = Vec::new();
-    let mut param_idx = 1;
+    // Whitelist of allowed filter fields - column names are hardcoded, never from user input
+    let job_name = params.job_name.as_ref();
+    let job_code = params.job_code.as_ref();
+    let job_status = params.job_status;
 
-    if params.job_name.is_some() {
-        conditions.push(format!("job_name LIKE ${}", param_idx));
-        param_idx += 1;
-    }
-    if params.job_code.is_some() {
-        conditions.push(format!("job_code LIKE ${}", param_idx));
-        param_idx += 1;
-    }
-    if params.job_status.is_some() {
-        conditions.push(format!("job_status = ${}", param_idx));
-        param_idx += 1;
-    }
+    // Build parameterized WHERE clause
+    let (where_clause, bindings): (String, Vec<String>) = {
+        let mut clauses = Vec::new();
+        let mut vals = Vec::new();
 
-    let where_clause = if conditions.is_empty() {
-        String::new()
-    } else {
-        format!("WHERE {}", conditions.join(" AND "))
+        if job_name.is_some() {
+            clauses.push("job_name LIKE $1".to_string());
+            vals.push(format!("%{}%", job_name.unwrap()));
+        }
+        if job_code.is_some() {
+            clauses.push(format!("job_code = ${}", vals.len() + 1));
+            vals.push(job_code.unwrap().clone());
+        }
+        if let Some(status) = job_status {
+            clauses.push(format!("job_status = ${}", vals.len() + 1));
+            vals.push(status.to_string());
+        }
+
+        let where_clause = if clauses.is_empty() {
+            String::new()
+        } else {
+            format!("WHERE {}", clauses.join(" AND "))
+        };
+        (where_clause, vals)
     };
 
     // Count total
     let count_query = format!("SELECT COUNT(*) FROM sys_job {}", where_clause);
     let total: i64 = {
         let mut q = sqlx::query_scalar::<_, i64>(&count_query);
-        if let Some(ref name) = params.job_name {
+        if let Some(ref name) = job_name {
             q = q.bind(format!("%{}%", name));
         }
-        if let Some(ref code) = params.job_code {
-            q = q.bind(format!("%{}%", code));
+        if let Some(ref code) = job_code {
+            q = q.bind(code);
         }
-        if let Some(status) = params.job_status {
+        if let Some(status) = job_status {
             q = q.bind(status);
         }
         q.fetch_one(pool).await.map_err(|e| AppError::Internal(Some(format!("Failed to count jobs: {}", e))))?
@@ -196,13 +204,13 @@ pub async fn list_jobs(pool: &PgPool, params: &JobListParams) -> Result<(Vec<Job
     );
 
     let mut q = sqlx::query_as::<_, JobRecord>(&list_query).bind(page_size).bind(offset);
-    if let Some(ref name) = params.job_name {
+    if let Some(ref name) = job_name {
         q = q.bind(format!("%{}%", name));
     }
-    if let Some(ref code) = params.job_code {
-        q = q.bind(format!("%{}%", code));
+    if let Some(ref code) = job_code {
+        q = q.bind(code);
     }
-    if let Some(status) = params.job_status {
+    if let Some(status) = job_status {
         q = q.bind(status);
     }
 
@@ -364,4 +372,43 @@ pub async fn clear_job_logs(pool: &PgPool, job_id: Option<i64>) -> Result<u64, A
     .map_err(|e| AppError::Internal(Some(format!("Failed to clear job logs: {}", e))))?;
 
     Ok(result.rows_affected())
+}
+
+/// List all running jobs (status = 1)
+pub async fn list_running_jobs(pool: &PgPool) -> Result<Vec<JobRecord>, AppError> {
+    let jobs = sqlx::query_as::<_, JobRecord>(
+        r#"
+        SELECT
+            id, job_name, job_code, job_group, job_status,
+            cron_expression, retry_count, retry_interval, timeout,
+            description, created_by, created_at, updated_at
+        FROM sys_job
+        WHERE job_status = 1
+        "#
+    )
+    .fetch_all(pool)
+    .await
+    .map_err(|e| AppError::Internal(Some(format!("Failed to list running jobs: {}", e))))?;
+
+    Ok(jobs)
+}
+
+/// Update a job log entry
+pub async fn update_job_log(pool: &PgPool, id: i64, log: &JobLogRecord) -> Result<(), AppError> {
+    sqlx::query(
+        r#"
+        UPDATE sys_job_log
+        SET execute_status = $1, execute_message = $2, execute_time = $3
+        WHERE id = $4
+        "#
+    )
+    .bind(log.execute_status)
+    .bind(&log.execute_message)
+    .bind(&log.execute_time)
+    .bind(id)
+    .execute(pool)
+    .await
+    .map_err(|e| AppError::Internal(Some(format!("Failed to update job log: {}", e))))?;
+
+    Ok(())
 }

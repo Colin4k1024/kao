@@ -38,8 +38,8 @@ export default function LoginPage() {
       })
 
       if (response.code === 200) {
-        localStorage.setItem('access_token', response.data.token)
-        localStorage.setItem('user', JSON.stringify(response.data.userInfo))
+        localStorage.setItem('access_token', response.data.access_token)
+        localStorage.setItem('user', JSON.stringify(response.data.user))
         window.location.href = '/'
       } else {
         setError(response.message || '登录失败')
