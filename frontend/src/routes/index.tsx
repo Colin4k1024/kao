@@ -18,6 +18,12 @@ import SecurityMonitoring from '@/pages/monitoring/security';
 import OnlineUser from '@/pages/monitoring/online-user';
 import OperationLog from '@/pages/monitoring/operation-log';
 import LoginLog from '@/pages/monitoring/login-log';
+import ToolsIndex from '@/pages/tools';
+import InterfaceDoc from '@/pages/tools/interface-doc';
+import DatabaseManagement from '@/pages/tools/database';
+import CacheManagement from '@/pages/tools/cache';
+import FileManagement from '@/pages/tools/file';
+import AdminConsoleIndex from '@/pages/admin/roles/RoleAdminPage';
 
 const AppRoutes: React.FC = () => {
   const isAuthenticated = !!localStorage.getItem('access_token');
@@ -54,6 +60,16 @@ const AppRoutes: React.FC = () => {
             <Route path="online-user" element={<OnlineUser />} />
             <Route path="operation-log" element={<OperationLog />} />
             <Route path="login-log" element={<LoginLog />} />
+          </Route>
+          <Route path="tools">
+            <Route path="" element={<ToolsIndex />} />
+            <Route path="interface-doc" element={<InterfaceDoc />} />
+            <Route path="database" element={<DatabaseManagement />} />
+            <Route path="cache" element={<CacheManagement />} />
+            <Route path="file" element={<FileManagement />} />
+          </Route>
+          <Route path="admin">
+            <Route path="roles" element={<AdminConsoleIndex />} />
           </Route>
         </Route>
       </Routes>

@@ -12,6 +12,10 @@ import {
   SafetyOutlined,
   FileTextOutlined,
   LoginOutlined,
+  ClockCircleOutlined,
+  IdcardOutlined,
+  ToolOutlined,
+  ControlOutlined,
 } from '@ant-design/icons';
 
 const { Header, Sider, Content } = Layout;
@@ -52,9 +56,19 @@ const MainLayout: React.FC = () => {
           label: <Link to="/system/menus">菜单管理</Link>,
         },
         {
+          key: '/system/posts',
+          icon: <IdcardOutlined />,
+          label: <Link to="/system/posts">岗位管理</Link>,
+        },
+        {
           key: '/dictionary/type',
           icon: <DatabaseOutlined />,
           label: <Link to="/dictionary/type">字典管理</Link>,
+        },
+        {
+          key: '/dictionary/data',
+          icon: <DatabaseOutlined />,
+          label: <Link to="/dictionary/data">字典数据</Link>,
         },
         {
           key: '/config',
@@ -65,6 +79,16 @@ const MainLayout: React.FC = () => {
           key: '/notice',
           icon: <NotificationOutlined />,
           label: <Link to="/notice">通知公告</Link>,
+        },
+        {
+          key: '/job',
+          icon: <ClockCircleOutlined />,
+          label: <Link to="/job">定时任务</Link>,
+        },
+        {
+          key: '/job/log',
+          icon: <FileTextOutlined />,
+          label: <Link to="/job/log">任务日志</Link>,
         },
       ],
     },
@@ -92,6 +116,23 @@ const MainLayout: React.FC = () => {
           key: '/monitoring/login-log',
           icon: <LoginOutlined />,
           label: <Link to="/monitoring/login-log">登录日志</Link>,
+        },
+      ],
+    },
+    {
+      key: '/tools',
+      icon: <ToolOutlined />,
+      label: <Link to="/tools">系统工具</Link>,
+    },
+    {
+      key: '/admin',
+      icon: <ControlOutlined />,
+      label: 'Admin Console',
+      children: [
+        {
+          key: '/admin/roles',
+          icon: <TeamOutlined />,
+          label: <Link to="/admin/roles">角色管理</Link>,
         },
       ],
     },
