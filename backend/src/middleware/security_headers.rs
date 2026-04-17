@@ -8,12 +8,12 @@ use axum::{
 
 /// Security headers to be applied to all responses
 const SECURITY_HEADERS: &[(&str, &str)] = &[
-    ("X-Frame-Options", "DENY"),
-    ("X-Content-Type-Options", "nosniff"),
-    ("X-XSS-Protection", "1; mode=block"),
-    ("Referrer-Policy", "strict-origin-when-cross-origin"),
-    ("Permissions-Policy", "geolocation=(), microphone=(), camera=()"),
-    ("Strict-Transport-Security", "max-age=31536000; includeSubDomains"),
+    ("x-frame-options", "DENY"),
+    ("x-content-type-options", "nosniff"),
+    ("x-xss-protection", "1; mode=block"),
+    ("referrer-policy", "strict-origin-when-cross-origin"),
+    ("permissions-policy", "geolocation=(), microphone=(), camera=()"),
+    ("strict-transport-security", "max-age=31536000; includeSubDomains"),
 ];
 
 /// Middleware that adds security headers to all responses

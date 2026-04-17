@@ -4,7 +4,7 @@ use std::env;
 use axum::http::{header, HeaderValue, Method};
 
 /// Initialize CORS layer with restricted origins.
-///
+/// 
 /// CORS is restricted to specific origins configured via CORS_ALLOWED_ORIGINS env var.
 /// Defaults to localhost:5173 (Vite dev server) if not configured.
 /// Production should always set explicit origins.

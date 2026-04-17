@@ -1,21 +1,22 @@
--- Scheduled Job Table
+--定时任务表
 CREATE TABLE sys_job (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id BIGSERIAL PRIMARY KEY,
     job_name VARCHAR(100) NOT NULL,
-    job_group VARCHAR(50) NOT NULL,
-    job_type VARCHAR(20) DEFAULT 'http',
-    invoke_target VARCHAR(500) NOT NULL,
-    cron_expression VARCHAR(50),
-    misfire_policy VARCHAR(20) DEFAULT '1',
-    concurrent CHAR(1) DEFAULT '1',
-    status INTEGER DEFAULT 0,
-    remark TEXT,
-    created_by UUID,
-    updated_by UUID,
+    job_code VARCHAR(100) NOT NULL UNIQUE,
+    job_group VARCHAR(50) DEFAULT 'default',
+    job_status INTEGER DEFAULT 0,
+    cron_expression VARCHAR(100) NOT NULL,
+    retry_count INTEGER DEFAULT 0,
+    retry_interval INTEGER DEFAULT 60,
+    timeout INTEGER DEFAULT 0,
+    description TEXT,
+    created_by VARCHAR(50),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     deleted_at TIMESTAMP WITH TIME ZONE
 );
 
+CREATE INDEX idx_job_code ON sys_job(job_code);
 CREATE INDEX idx_job_group ON sys_job(job_group);
-CREATE INDEX idx_job_status ON sys_job(status);
+CREATE INDEX idx_job_status ON sys_job(job_status);
+CREATE INDEX idx_job_deleted ON sys_job(deleted_at);

@@ -1,6 +1,10 @@
 #!/bin/sh
 set -e
 
-echo "Database migrations are handled automatically by the backend application on startup."
+echo "Running database migrations..."
+
+# Let the backend application handle migrations internally
+# The entrypoint will pass arguments to kao-backend which handles migrations
+
 echo "Starting kao-backend..."
 exec "$@"

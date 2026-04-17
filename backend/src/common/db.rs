@@ -64,12 +64,16 @@ pub async fn run_migrations(pool: &PgPool) -> Result<(), MigrationError> {
         return Ok(());
     }
 
-    // Create migrations tracking table if it doesn't exist
+    // Create migrations tracking table if it doesn't exist (sqlx-compatible schema)
+    // sqlx uses: version BIGINT, description TEXT, checksum BYTEA, success BOOLEAN, execution_time BIGINT
     sqlx::query(
         r#"
         CREATE TABLE IF NOT EXISTS _sqlx_migrations (
-            version VARCHAR(255) PRIMARY KEY,
-            applied_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            version BIGINT PRIMARY KEY,
+            description TEXT NOT NULL,
+            checksum TEXT NOT NULL,
+            success BOOLEAN NOT NULL,
+            execution_time BIGINT NOT NULL
         )
         "#,
     )
@@ -82,21 +86,25 @@ pub async fn run_migrations(pool: &PgPool) -> Result<(), MigrationError> {
         MigrationError::ReadDir(e.to_string())
     })?;
 
-    let mut migration_files: Vec<String> = Vec::new();
+    // Store (version, filename) pairs
+    let mut migration_files: Vec<(i64, String)> = Vec::new();
     while let Some(entry) = entries.next_entry().await.map_err(|e| MigrationError::ReadDir(e.to_string()))? {
         let path = entry.path();
         if path.extension().and_then(|s| s.to_str()) == Some("sql") {
             if let Some(name) = path.file_name().and_then(|s| s.to_str()) {
-                migration_files.push(name.to_string());
+                // Extract version number from filename (e.g., "0001_create_sys_department.sql" -> 1)
+                if let Ok(version) = name.split('_').next().unwrap_or("0").parse::<i64>() {
+                    migration_files.push((version, name.to_string()));
+                }
             }
         }
     }
 
-    // Sort migration files to ensure order
-    migration_files.sort();
+    // Sort migration files by version to ensure order
+    migration_files.sort_by(|a, b| a.0.cmp(&b.0));
 
     // Track applied migrations
-    let applied: std::collections::HashSet<String> = sqlx::query_scalar::<_, String>(
+    let applied: std::collections::HashSet<i64> = sqlx::query_scalar::<_, i64>(
         "SELECT version FROM _sqlx_migrations"
     )
     .fetch_all(pool)
@@ -106,9 +114,9 @@ pub async fn run_migrations(pool: &PgPool) -> Result<(), MigrationError> {
     .collect();
 
     // Run pending migrations
-    for filename in &migration_files {
-        if applied.contains(filename) {
-            tracing::info!("Migration {} already applied, skipping", filename);
+    for (version, filename) in &migration_files {
+        if applied.contains(version) {
+            tracing::info!("Migration {} already applied, skipping", version);
             continue;
         }
 
@@ -131,8 +139,13 @@ pub async fn run_migrations(pool: &PgPool) -> Result<(), MigrationError> {
         }
 
         // Record the migration
-        sqlx::query("INSERT INTO _sqlx_migrations (version) VALUES ($1)")
-            .bind(filename)
+        let checksum = hex::encode(md5::compute(format!("{}-{}", version, filename)).0);
+        sqlx::query("INSERT INTO _sqlx_migrations (version, description, checksum, success, execution_time) VALUES ($1, $2, $3, $4, $5)")
+            .bind(version)
+            .bind(&filename)
+            .bind(checksum)
+            .bind(true)
+            .bind(0)
             .execute(pool)
             .await
             .map_err(|e| MigrationError::Record(format!("{}: {}", filename, e)))?;

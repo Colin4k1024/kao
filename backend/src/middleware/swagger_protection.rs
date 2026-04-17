@@ -41,7 +41,7 @@ pub async fn swagger_protection_middleware(
 
             return Ok(Response::builder()
                 .status(StatusCode::FORBIDDEN)
-                .header("Content-Type", "application/json")
+                .header("content-type", "application/json")
                 .body(axum::body::Body::from(response.to_string()))
                 .unwrap());
         }

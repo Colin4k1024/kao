@@ -71,24 +71,24 @@ CREATE TABLE sys_menus (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
--- Create sys_user_roles junction table
-CREATE TABLE sys_user_roles (
+-- Create sys_users_roles junction table
+CREATE TABLE sys_users_roles (
     user_id UUID NOT NULL REFERENCES sys_users(id) ON DELETE CASCADE,
     role_id UUID NOT NULL REFERENCES sys_roles(id) ON DELETE CASCADE,
     assigned_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (user_id, role_id)
 );
 
--- Create sys_role_menus junction table
-CREATE TABLE sys_role_menus (
+-- Create sys_roles_menus junction table
+CREATE TABLE sys_roles_menus (
     role_id UUID NOT NULL REFERENCES sys_roles(id) ON DELETE CASCADE,
     menu_id UUID NOT NULL REFERENCES sys_menus(id) ON DELETE CASCADE,
     assigned_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (role_id, menu_id)
 );
 
--- Create sys_role_departments junction table
-CREATE TABLE sys_role_departments (
+-- Create sys_roles_departments junction table
+CREATE TABLE sys_roles_departments (
     role_id UUID NOT NULL REFERENCES sys_roles(id) ON DELETE CASCADE,
     dept_id UUID NOT NULL REFERENCES sys_departments(id) ON DELETE CASCADE,
     assigned_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,

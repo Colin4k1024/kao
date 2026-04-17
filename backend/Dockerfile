@@ -64,6 +64,9 @@ COPY migrate.sh /app/migrate.sh
 COPY .env.example /app/.env.example
 RUN chmod +x /app/entrypoint.sh /app/migrate.sh
 
+# Copy migrations directory for sqlx
+COPY migrations/ /app/migrations/
+
 # Switch to non-root user
 USER appuser
 
