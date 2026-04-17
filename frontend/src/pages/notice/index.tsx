@@ -26,7 +26,7 @@ import type { PageParams } from '@/types/api';
 
 // Notice interface
 export interface Notice {
-  id: number;
+  id: string;
   notice_title: string;
   notice_content: string;
   notice_type: number;
@@ -44,22 +44,22 @@ export const noticeApi = {
       { params }
     );
   },
-  get(id: number) {
+  get(id: string) {
     return request.get<Notice>(`/api/system/notice/${id}`);
   },
   create(data: Partial<Notice>) {
     return request.post<Notice>('/api/system/notice', data);
   },
-  update(id: number, data: Partial<Notice>) {
+  update(id: string, data: Partial<Notice>) {
     return request.put<Notice>(`/api/system/notice/${id}`, data);
   },
-  delete(id: number) {
+  delete(id: string) {
     return request.delete(`/api/system/notice/${id}`);
   },
-  publish(id: number) {
+  publish(id: string) {
     return request.put(`/api/system/notice/${id}/publish`);
   },
-  unpublish(id: number) {
+  unpublish(id: string) {
     return request.put(`/api/system/notice/${id}/unpublish`);
   },
 };
@@ -136,7 +136,7 @@ export const NoticePage: React.FC = () => {
     setIsModalVisible(true);
   };
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (id: string) => {
     try {
       await noticeApi.delete(id);
       message.success('删除成功');
@@ -146,7 +146,7 @@ export const NoticePage: React.FC = () => {
     }
   };
 
-  const handleStatusChange = async (id: number, status: number) => {
+  const handleStatusChange = async (id: string, status: number) => {
     try {
       if (status === 1) {
         await noticeApi.publish(id);

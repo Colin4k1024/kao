@@ -48,7 +48,7 @@ export const JobLogPage: React.FC = () => {
         pageSize: pagination.pageSize,
         job_name: values.job_name,
         execute_status: values.execute_status,
-        job_id: jobIdFromUrl ? parseInt(jobIdFromUrl) : undefined,
+        job_id: jobIdFromUrl || undefined,
       };
       const data = await jobApi.logs(params);
       setJobLogs(data.list);
@@ -80,7 +80,7 @@ export const JobLogPage: React.FC = () => {
     setIsDetailModalVisible(true);
   };
 
-  const handleClearJobLogs = async (jobId?: number) => {
+  const handleClearJobLogs = async (jobId?: string) => {
     try {
       await jobApi.clearLog(jobId);
       message.success(jobId ? '任务日志清除成功' : '日志清除成功');

@@ -3,7 +3,7 @@ import type { PageParams } from '@/types/api';
 
 // Job interface
 export interface Job {
-  id: number;
+  id: string;
   job_name: string;
   job_code: string;
   job_group: string;
@@ -20,8 +20,8 @@ export interface Job {
 
 // Job log interface
 export interface JobLog {
-  id: number;
-  job_id: number;
+  id: string;
+  job_id: string;
   job_name: string;
   job_code: string;
   job_group: string;
@@ -40,39 +40,39 @@ export const jobApi = {
       { params }
     );
   },
-  get(id: number) {
+  get(id: string) {
     return request.get<Job>(`/api/jobs/${id}`);
   },
   create(data: Partial<Job>) {
     return request.post<Job>('/api/jobs', data);
   },
-  update(id: number, data: Partial<Job>) {
+  update(id: string, data: Partial<Job>) {
     return request.put<Job>(`/api/jobs/${id}`, data);
   },
-  delete(id: number) {
+  delete(id: string) {
     return request.delete(`/api/jobs/${id}`);
   },
-  schedule(id: number) {
+  schedule(id: string) {
     return request.put(`/api/jobs/${id}/schedule`);
   },
-  unschedule(id: number) {
+  unschedule(id: string) {
     return request.put(`/api/jobs/${id}/unschedule`);
   },
-  runOnce(id: number) {
+  runOnce(id: string) {
     return request.post(`/api/jobs/${id}/run`);
   },
 
   // Job log APIs
-  logs(params: PageParams & { job_id?: number; job_name?: string; execute_status?: number }) {
+  logs(params: PageParams & { job_id?: string; job_name?: string; execute_status?: number }) {
     return request.get<{ list: JobLog[]; total: number }>(
       '/api/jobs/logs',
       { params }
     );
   },
-  getLog(id: number) {
+  getLog(id: string) {
     return request.get<JobLog>(`/api/jobs/logs/${id}`);
   },
-  clearLog(jobId?: number) {
+  clearLog(jobId?: string) {
     return request.delete(
       jobId
         ? `/api/jobs/logs/clear?job_id=${jobId}`

@@ -94,7 +94,7 @@ export const JobPage: React.FC = () => {
     setIsModalVisible(true);
   };
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (id: string) => {
     Modal.confirm({
       title: '确认删除',
       content: '确定要删除该定时任务吗？这将停止任务执行。',
@@ -110,7 +110,7 @@ export const JobPage: React.FC = () => {
     });
   };
 
-  const handleStatusChange = async (id: number, status: number) => {
+  const handleStatusChange = async (id: string, status: number) => {
     try {
       if (status === 1) {
         await jobApi.schedule(id);
@@ -124,7 +124,7 @@ export const JobPage: React.FC = () => {
     }
   };
 
-  const handleRunOnce = async (id: number) => {
+  const handleRunOnce = async (id: string) => {
     try {
       await jobApi.runOnce(id);
       message.success('任务执行成功');
