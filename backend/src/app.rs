@@ -1,4 +1,4 @@
-use axum::{extract::State, routing::{get, post, put, delete}, Router, response::{IntoResponse, Response}, http::HeaderMap as AxumHeaderMap, http::HeaderName, http::HeaderValue};
+use axum::{extract::State, routing::{get, post, put, delete}, Router, response::{IntoResponse, Response}, http::HeaderMap as AxumHeaderMap, http::HeaderName, http::HeaderValue, http::Method};
 use sqlx::PgPool;
 use serde::Serialize;
 use std::sync::Arc;
@@ -28,6 +28,41 @@ use crate::features::dictionary::data::routes::data_routes;
 use crate::features::job;
 use crate::features::posts::routes::post_routes;
 
+/// Handle CORS preflight requests directly
+async fn cors_preflight_handler(req: axum::extract::Request, next: axum::middleware::Next) -> Result<impl IntoResponse, axum::http::StatusCode> {
+    if req.method() == Method::OPTIONS {
+        // Check if this is a preflight request
+        if req.headers().contains_key("access-control-request-method") {
+            let mut response = axum::http::StatusCode::NO_CONTENT.into_response();
+            // Add CORS headers to preflight response
+            response.headers_mut().insert(
+                HeaderName::from_static("access-control-allow-origin"),
+                HeaderValue::from_static("http://localhost:3000"),
+            );
+            response.headers_mut().insert(
+                HeaderName::from_static("access-control-allow-methods"),
+                HeaderValue::from_static("GET, POST, PUT, DELETE, PATCH, OPTIONS"),
+            );
+            response.headers_mut().insert(
+                HeaderName::from_static("access-control-allow-headers"),
+                HeaderValue::from_static("Content-Type, Authorization"),
+            );
+            response.headers_mut().insert(
+                HeaderName::from_static("access-control-allow-credentials"),
+                HeaderValue::from_static("true"),
+            );
+            response.headers_mut().insert(
+                HeaderName::from_static("access-control-max-age"),
+                HeaderValue::from_static("3600"),
+            );
+            return Ok(response);
+        }
+    }
+    
+    // For non-OPTIONS requests, continue to next middleware
+    Ok(next.run(req).await)
+}
+
 pub fn create_app(
     pool: PgPool,
     settings: Settings,
@@ -50,7 +85,8 @@ pub fn create_app(
         .nest("/", type_routes())
         .nest("/", data_routes());
 
-    let app = Router::new()
+    // Build base router without middleware
+    let base_router = Router::new()
         // Health check endpoint
         .route("/health", get(health_check))
         // Prometheus metrics endpoint at root for easy scraping
@@ -80,7 +116,12 @@ pub fn create_app(
         .route("/api/jobs/logs/:id", get(job::routes::get_job_log))
         // Monitoring routes under /api/monitoring
         .nest("/api/monitoring", monitoring_router())
-        // Apply CORS middleware
+        .with_state(state.clone());
+
+    let app = Router::new()
+        // First: Handle CORS preflight OPTIONS requests directly
+        .layer(axum::middleware::from_fn(cors_preflight_handler))
+        // Apply CORS middleware (handles actual CORS headers)
         .layer(init_cors())
         // Apply request logging middleware to all routes
         .layer(axum::middleware::from_fn(request_logger))
@@ -89,10 +130,10 @@ pub fn create_app(
         // Apply activity tracking middleware for online user updates
         .layer(axum::middleware::from_fn(track_activity))
         // Apply security headers middleware
-        .layer(axum::middleware::from_fn(security_headers_middleware))
+        // .layer(axum::middleware::from_fn(security_headers_middleware))
         // Apply Swagger protection middleware
-        .layer(axum::middleware::from_fn(swagger_protection_middleware))
-        .with_state(state);
+        // .layer(axum::middleware::from_fn(swagger_protection_middleware))
+        .nest("/", base_router);
 
     // Apply OpenAPI/Swagger UI middleware (after state is set)
     setup_openapi_middleware(app)

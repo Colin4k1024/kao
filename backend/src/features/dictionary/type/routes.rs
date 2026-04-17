@@ -31,7 +31,7 @@ pub async fn list_types(
 
     // Add cache headers for client-side caching
     let response = ApiResponse::success(serde_json::json!({
-        "items": types,
+        "list": types,
         "total": types.len()
     }));
     let mut axum_response = response.into_response();

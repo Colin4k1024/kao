@@ -1,6 +1,8 @@
 use axum::{
   extract::{Json, Path, Query, State},
   response::IntoResponse,
+  http::{StatusCode, HeaderMap},
+  http::header::ACCESS_CONTROL_ALLOW_ORIGIN,
 };
 use serde::Deserialize;
 use uuid::Uuid;
@@ -27,9 +29,31 @@ pub fn user_routes() -> axum::Router<AppState> {
   axum::Router::new()
     .route("/users", axum::routing::get(list_users))
     .route("/users", axum::routing::post(create_user))
+    .route("/users", axum::routing::options(options_handler))
     .route("/users/:id", axum::routing::get(get_user))
     .route("/users/:id", axum::routing::put(update_user))
     .route("/users/:id", axum::routing::delete(delete_user))
+    .route("/users/:id", axum::routing::options(options_handler))
+}
+
+/// OPTIONS handler for CORS preflight
+async fn options_handler() -> Result<impl IntoResponse, StatusCode> {
+  let mut headers = HeaderMap::new();
+  headers.insert(ACCESS_CONTROL_ALLOW_ORIGIN, "*".parse().unwrap());
+  headers.insert(
+    axum::http::header::ACCESS_CONTROL_ALLOW_METHODS,
+    "GET, POST, PUT, DELETE, PATCH".parse().unwrap(),
+  );
+  headers.insert(
+    axum::http::header::ACCESS_CONTROL_ALLOW_HEADERS,
+    "Content-Type, Authorization".parse().unwrap(),
+  );
+  headers.insert(
+    axum::http::header::ACCESS_CONTROL_MAX_AGE,
+    "3600".parse().unwrap(),
+  );
+  
+  Ok((StatusCode::NO_CONTENT, headers, ()))
 }
 
 /// GET /api/v1/users - List all users

@@ -49,7 +49,7 @@ pub async fn list_notices(
   let items: Vec<_> = notices.into_iter().skip(start).take(page_size).collect();
   
   Ok(ApiResponse::success(serde_json::json!({
-      "items": items,
+      "list": items,
       "total": total,
       "page": page,
       "pageSize": page_size

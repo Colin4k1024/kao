@@ -31,7 +31,7 @@ pub async fn list_data(
     // Return empty list for empty type query - cached version not needed for this edge case
     let data = service.list_data_by_type(&state.pool, "").await?;
     Ok(ApiResponse::success(serde_json::json!({
-        "items": data,
+        "list": data,
         "total": data.len()
     })))
 }

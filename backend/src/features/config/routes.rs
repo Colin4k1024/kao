@@ -27,7 +27,7 @@ pub async fn list_configs(
     let service = ConfigService::new();
     let configs = service.list_configs(&state.pool, None, None).await?;
     Ok(ApiResponse::success(serde_json::json!({
-        "items": configs,
+        "list": configs,
         "total": configs.len()
     })))
 }
